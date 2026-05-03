@@ -87,7 +87,7 @@ export function patchProfile(
   baseProfile: Uint8Array,
   changes: ConversionParams,
 ): Uint8Array<ArrayBuffer> {
-  const patched = new Uint8Array(baseProfile.length) as Uint8Array<ArrayBuffer>
+  const patched = new Uint8Array(baseProfile.length)
   patched.set(baseProfile)
   const view = new DataView(patched.buffer)
   const numParams = view.getUint16(0, true)
