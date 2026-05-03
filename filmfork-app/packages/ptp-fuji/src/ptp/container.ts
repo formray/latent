@@ -55,7 +55,7 @@ export function unpackContainer(raw: Uint8Array): PTPContainerData {
   }
 
   const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength)
-  const _length = unpackU32(view, 0)
+  // length field at offset 0 not needed for unpacking; raw byte length already drives slicing
   const type = unpackU16(view, 4)
   const code = unpackU16(view, 6)
   const transactionId = unpackU32(view, 8)
