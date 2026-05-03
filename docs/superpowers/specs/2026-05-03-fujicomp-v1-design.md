@@ -1,7 +1,7 @@
-# FilmFork V1 — Design Spec (R3)
+# FilmFork V1 — Design Spec (R4)
 
-**Status:** Draft awaiting user review (revised after Codex adversarial review R2)
-**Date:** 2026-05-03 (revised same day, R3 iteration)
+**Status:** Draft converged after Codex adversarial reviews R1+R2+R3
+**Date:** 2026-05-03 (R4 iteration, same day)
 **Author:** Giuseppe Albrizio + Claude (brainstorming session)
 **Project working title:** FilmFork (final naming subject to trademark check — see §15.5)
 **Previous title:** FujiComp (deprecated due to trademark exposure with Fujifilm — see §15.5)
@@ -48,7 +48,7 @@ V1 success criteria: recipe library + AI generator + push to camera (with verifi
 | First-class macOS support | Requires signed/notarized native helper to manage `ptpcamerad` cleanly. Real engineering surface — not "in V1" honest. | V2 |
 | Full atomic write rollback | PTP multi-property writes cannot be made atomic over USB. V1 uses verified backup + restore-on-demand instead. | Never (out by physics); backup/restore covers it |
 | Lossless full-preset capture | Schema in V1 is creative-recipe subset of filmkit-proven writable fields. Full lossless capture (Image Size, Quality, Color Space, body-specific menus) requires per-body RE. | V2 if user demand justifies |
-| **Recipe fields not yet proven slot-writable via filmkit** (D Range Priority, Long Exposure NR, Lens Modulation Optimizer, WB modes White Priority/Custom 1-3) | Listed in Fuji menus but filmkit's translator does not currently write them to C-slots. We do not ship recipe fields that we cannot actually push. | V2 — add per field as PTP-write proof is captured (Wireshark + verified round-trip) |
+| **Recipe fields not yet proven slot-writable via filmkit** (D Range Priority, Dynamic Range Auto value, Long Exposure NR, Lens Modulation Optimizer, WB modes White Priority/Custom 1-3) | Listed in Fuji menus but filmkit's translator does not currently write them to C-slots. We do not ship recipe fields that we cannot actually push. | V2 — add per field as PTP-write proof is captured (Wireshark + verified round-trip) |
 | Authenticated community sharing / accounts | Backend, auth, moderation surface. V1 = local + URL-based + import/export only. | V2 |
 | Managed AI proxy | V1 = bring-your-own-key, session-only by default. Managed proxy with rate-limiting is a backend project. | V2 |
 | WebGL approximation preview when no camera connected | Adds complexity and a "this is approximate" caveat conflicts with our positioning. V1 shows "camera required" state. | V2 |
@@ -232,7 +232,7 @@ export const Recipe = z.object({
     warmCool: z.number().int().min(-9).max(9),  // filmkit D193 (monoWC)
     greenMagenta: z.number().int().min(-9).max(9), // filmkit D194 (monoMG)
   }).optional(),
-  dynamicRange: z.enum(["DR100", "DR200", "DR400", "DRAuto"]),
+  dynamicRange: z.enum(["DR100", "DR200", "DR400"]),  // DRAuto deferred to V2 — see §2 / §5 deferred tables
   whiteBalance: z.object({
     mode: z.enum([
       "Auto", "AutoAmbiencePriority",            // filmkit-supported only in V1
@@ -274,6 +274,7 @@ export type Recipe = z.infer<typeof Recipe>;
 | Field | Why removed in V1 | Reinstatement criteria |
 |---|---|---|
 | `dRangePriority` (Off/Auto/Weak/Strong) | filmkit parses but does not translate it into slot writes | V2 — needs Wireshark capture proving the slot property write + filmkit translator update |
+| `dynamicRange: "DRAuto"` value | filmkit's `UI_DR_TO_PRESET` only maps `1→100`, `2→200`, `3→400`; no proven Auto encoding for slot writes | V2 — needs Wireshark capture proving the Auto-mode slot write + filmkit translator update |
 | `longExposureNR` (boolean) | filmkit identifies `D1A3` but preserves base/default rather than user-writable | V2 — same |
 | `lensModulationOptimizer` (boolean) | No filmkit custom-slot property mapping found | V2 — same |
 | WB modes `AutoWhitePriority`, `Custom1`, `Custom2`, `Custom3` | Not in filmkit's enum or translator | V2 — same |
@@ -317,7 +318,7 @@ Error handling: if `OpenSession` reports session already open, app prompts user 
 1. User opens AI Agent panel: text input + photo drop zone
 2. **Privacy gate:** if photo is dropped, app shows explicit consent: "This image will be sent to Anthropic for analysis. EXIF data will be stripped before upload. Continue?" Yes/No.
 3. **EXIF stripping policy (V1, narrow & safe):**
-   - Accepted formats for AI reference: **JPEG only**. HEIF / PNG / TIFF / RAW are rejected at upload with a clear "convert to JPEG first" message.
+   - Accepted formats for AI reference: **JPEG only**. HEIF / PNG / TIFF / RAW are rejected at upload with a fallback message tailored to the user's platform. iPhone-detected uploads (HEIC default since iOS 11): "Modern iPhones save photos as HEIC by default. To use this image as a reference, share or export it as JPEG first — Photos app: Share → Save to Files → choose JPEG, or Settings → Camera → Formats → Most Compatible." Generic fallback for other unsupported formats: "This format is not supported in V1. Convert to JPEG and try again."
    - Stripping method: decode source JPEG to a `<canvas>` (drops every metadata segment by construction since canvas only carries pixel data), re-encode as JPEG at quality 0.85 with no metadata writers used. Resize so max edge ≤ 2048px, target file size ≤ 1MB.
    - Verification: confirm that the re-encoded blob's header contains no `Exif`, `XMP`, `IPTC`, or `MakerNote` markers (a tiny byte-scan helper, not a full parser). If verification fails, abort and surface "We could not strip metadata from this image. Try saving it as a fresh JPEG with no metadata first."
 4. On consent + successful strip, image is sent to Claude Sonnet 4.6 (default — see §15.6) with the Recipe schema as a tool input, vision input, and prompt caching enabled per formray module 16
@@ -337,6 +338,7 @@ Error handling: if `OpenSession` reports session already open, app prompts user 
    - PTP session healthy (ping by reading a known property)
    - Capability set known and not in "unknown firmware → read-only" mode (§9). If the active body is in unknown-firmware fallback, an extra "experimental writes" confirmation gate appears with explicit text about risks.
 3. **Transactional verified backup:**
+   - **Slot selection gate:** app calls `SetDevicePropValue(D18C, targetSlot)` to switch the camera's active slot, then immediately reads back `D18C` and verifies it equals `targetSlot`. If not, abort with `BackupIncomplete` and **do not persist anything** — a backup taken from the wrong active slot is worse than no backup.
    - App requests the full set of writable slot properties for the active capability set (writableSlotProperties whitelist from §9)
    - For each property, app reads via `GetDevicePropValue` and stores result in a temporary backup buffer
    - On any read error, the partial backup is **discarded** (NOT persisted)
@@ -858,13 +860,14 @@ Every item in §2 In-V1 maps to an acceptance check below. No new requirements a
 - [ ] Public API per §8 (transport DI, AbortSignal, progress callbacks, typed errors)
 - [ ] Transport contract per §8 documented and tested
 - [ ] Tests pass: container codec, profile encoding, edge cases, error paths, AbortSignal propagation, fake-transport conformance
-- [ ] X-S20 round-trip verified end-to-end (read presets, transactional backup with verify, write to C2, restore from verified backup, camera-side preview round-trip)
+- [ ] X-S20 round-trip verified end-to-end (read presets, **slot-selection-gated** transactional backup with verify, write to C2, restore from verified backup, camera-side preview round-trip)
 
 ### `@filmfork/recipe-schema`
-- [ ] Recipe schema per §5 (filmkit-proven writable subset only — no `dRangePriority`/`longExposureNR`/`lensModulationOptimizer`/extra WB modes in V1)
+- [ ] Recipe schema per §5 (filmkit-proven writable subset only — no `dRangePriority`/`longExposureNR`/`lensModulationOptimizer`/extra WB modes / `DRAuto` in V1)
 - [ ] Capability-aware translator gated by `writableSlotProperties` whitelist
 - [ ] Schema v1 → v2 migration scaffolding present
 - [ ] JSON ↔ property bytes round-trip tests pass for X-S20 capability set
+- [ ] Explicit codec round-trip test for `AutoAmbiencePriority` (schema) ↔ `AmbiencePriority` (filmkit) WB mode naming
 
 ### `@filmfork/ai-agent`
 - [ ] All five modes implemented (vibe, reference, refinement, critique, persona-opt-in)
@@ -961,4 +964,32 @@ R2 said "10 weeks honest baseline + 2 weeks buffer". R3 schema trim and unknown-
 
 ---
 
-*End of design spec R3. Awaiting user review before invoking `superpowers:writing-plans`.*
+## 18. Changelog (R3 → R4)
+
+Driven by Codex adversarial review R3 (`docs/superpowers/codex-review-output-r3.md`). Codex verdict: ready-with-two-small-fixes. R4 applies all four findings; spec is now considered converged.
+
+### Blockers fixed
+- **NB1 R3 (DRAuto remained in schema without filmkit proof):** §5 `dynamicRange` enum reduced to `["DR100", "DR200", "DR400"]`. §2 deferred row updated to mention "Dynamic Range Auto value". §5 explicitly-out table adds the `DRAuto` value with reinstatement criteria. §16 acceptance updated.
+
+### Highs fixed
+- **NH1 R3 (backup did not verify target slot):** §6.3 transactional backup now begins with explicit slot-selection gate: `SetDevicePropValue(D18C, targetSlot)` + readback verification. Mismatch aborts with `BackupIncomplete` and does NOT persist. §16 acceptance checklist now requires "slot-selection-gated transactional backup".
+
+### Mediums fixed
+- **NM1 R3 (HEIC UX cliff):** §6.2 EXIF rejection message now platform-aware. iPhone-detected uploads receive specific guidance: Photos app export to JPEG, or Settings → Camera → Formats → Most Compatible. Generic fallback for other formats.
+
+### Lows fixed
+- **NL1 R3 (`AutoAmbiencePriority` ↔ `AmbiencePriority` mapping):** §16 acceptance now explicitly requires a recipe-schema codec round-trip test for the WB mode name translation between schema and filmkit.
+
+### What was NOT changed
+- All locked decisions (B2 macOS-beta, B5 creative-recipe, H10 FilmFork, TS V1 stack) — unchanged.
+- All R1/R2 fixes — unchanged.
+- Timeline — Codex's verdict was "yes-with-two-small-fixes" on 10 weeks. R4 closes both. Timeline confirmed: 10 weeks honest baseline + 2 weeks buffer.
+
+### Convergence statement
+After three rounds of Codex adversarial review (R1 → R2 → R3) and three iterations of the spec (R2 → R3 → R4), all blockers and high-priority findings are closed or explicitly downgraded with rationale. The §15 open questions are now structured as ADR-eligible tasks with owner/output/pass-fail. Schema is restricted to filmkit-proven slot-writable fields. Backup transaction is verified at the target-slot level. macOS is honestly beta. EXIF stripping is narrow and safe. Confidence is deterministically capped where the model cannot truly know.
+
+The spec is ready for `superpowers:writing-plans` to produce the implementation plan.
+
+---
+
+*End of design spec R4. Convergence reached. Ready for `superpowers:writing-plans`.*
