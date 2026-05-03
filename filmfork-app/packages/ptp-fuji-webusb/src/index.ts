@@ -10,6 +10,8 @@
  *     browser device picker and returns an open transport.
  *   - {@link getAlreadyPairedFujiCameras} — enumerate previously-permitted
  *     Fujifilm devices for silent reconnect.
+ *   - {@link connectAndReadPresets} — convenience wrapper for the Phase 3
+ *     React UI.
  */
 
 export { WebUsbPtpTransport } from "./webusb-transport.js";
@@ -19,3 +21,5 @@ export type {
   RequestFujiCameraResult,
   RequestFujiCameraOptions,
 } from "./request-camera.js";
+export { connectAndReadPresets } from "./connect.js";
+export type { RawPreset, ConnectAndReadPresetsResult } from "./connect.js";
