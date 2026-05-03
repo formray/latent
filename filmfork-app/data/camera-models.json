@@ -1,0 +1,64 @@
+{
+  "capabilitySets": {
+    "x-s20-fw1.10": {
+      "cameraModel": "X-S20",
+      "firmwareVersion": "1.10",
+      "usbProductId": "0x02F7",
+      "generation": "X-Trans-IV",
+      "customSlots": 4,
+      "filmSimulations": [
+        "ProviaStandard", "VelviaVivid", "AstiaSoft", "ClassicChrome",
+        "ProNegHi", "ProNegStd", "ClassicNegative", "EternaCinema",
+        "EternaBleachBypass", "AcrosStd", "AcrosYe", "AcrosR", "AcrosG",
+        "Monochrome", "MonochromeYe", "MonochromeR", "MonochromeG", "Sepia",
+        "NostalgicNeg"
+      ],
+      "parameterRanges": {
+        "highlightTone": { "min": -2, "max": 4, "step": 0.5 },
+        "shadowTone": { "min": -2, "max": 4, "step": 0.5 },
+        "color": { "min": -4, "max": 4, "step": 1 },
+        "sharpness": { "min": -4, "max": 4, "step": 1 },
+        "noiseReduction": { "min": -4, "max": 4, "step": 1 },
+        "clarity": { "min": -5, "max": 5, "step": 1 },
+        "wbShiftR": { "min": -9, "max": 9, "step": 1 },
+        "wbShiftB": { "min": -9, "max": 9, "step": 1 },
+        "wbColorTemperatureK": { "min": 2500, "max": 10000, "step": 100 }
+      },
+      "supports": {
+        "monochromaticColor": true,
+        "smoothSkinEffect": true,
+        "colorChromeEffect": true,
+        "colorChromeEffectBlue": true
+      },
+      "writableSlotProperties": [
+        "filmSimulation",
+        "monochromaticColor",
+        "dynamicRange",
+        "whiteBalance",
+        "highlightTone",
+        "shadowTone",
+        "color",
+        "sharpness",
+        "noiseReduction",
+        "clarity",
+        "grainEffect",
+        "colorChromeEffect",
+        "colorChromeEffectBlue",
+        "smoothSkinEffect"
+      ],
+      "tested": "verified-2026-05-03",
+      "knownIssues": []
+    }
+  },
+  "models": {
+    "X-S20": {
+      "knownCapabilitySets": ["x-s20-fw1.10"],
+      "latestKnownFirmware": "1.10"
+    },
+    "X-M5": {
+      "knownCapabilitySets": [],
+      "latestKnownFirmware": "unknown",
+      "status": "experimental — pending hardware verification"
+    }
+  }
+}
