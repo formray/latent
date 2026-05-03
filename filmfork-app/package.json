@@ -8,12 +8,13 @@
     "node": ">=22.0.0"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
-    "lint": "eslint --no-error-on-unmatched-pattern packages",
-    "format": "prettier --write packages",
-    "format:check": "prettier --check packages",
+    "lint": "eslint --no-error-on-unmatched-pattern packages apps",
+    "format": "prettier --write packages apps",
+    "format:check": "prettier --check packages apps",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",

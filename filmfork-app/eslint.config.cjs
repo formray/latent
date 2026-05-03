@@ -8,7 +8,10 @@ module.exports = tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        project: ["./packages/*/tsconfig.json"],
+        project: [
+          "./packages/*/tsconfig.json",
+          "./apps/*/tsconfig.json",
+        ],
         tsconfigRootDir: __dirname,
       },
     },
@@ -24,6 +27,9 @@ module.exports = tseslint.config(
       "**/node_modules/**",
       "**/coverage/**",
       "**/tests/**",
+      "**/vite.config.ts",
+      "**/vitest.config.ts",
+      "**/vitest.workspace.ts",
     ],
   },
 );
