@@ -58,6 +58,16 @@ export const Recipe = z.object({
   colorChromeEffect: TriState,
   colorChromeEffectBlue: TriState,
   smoothSkinEffect: TriState.optional(),
+
+  // AI-generated structured explanation (optional, excluded from URL share by default)
+  // R5: replaces flat `explanation` with three-field structure for better explainability
+  reasoning: z.array(z.object({
+    parameter: z.string(),
+    visualEffect: z.string().max(200),     // what this parameter visually does
+    reason: z.string().max(300),           // why chosen for this recipe / feedback
+    risk: z.string().max(200).optional(),  // when this setting may fail or look bad
+    confidence: z.enum(["low", "medium", "high"]).optional(),
+  })).max(40).optional(),
 });
 
 export type Recipe = z.infer<typeof Recipe>;
