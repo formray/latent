@@ -154,7 +154,7 @@ export const FUJI_PRODUCT_IDS = [
 // Preset value formatting — human-readable decoding
 // ==========================================================================
 
-import { FilmSimLabels, WBModeLabels } from '../profile/enums.ts'
+import { FilmSimLabels, WBModeLabels } from '../profile/enums.js'
 
 /**
  * Preset effect encoding (1-indexed, unlike d185 profile format).
