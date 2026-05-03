@@ -1,0 +1,24 @@
+{
+  "name": "@filmfork/ptp-fuji",
+  "version": "0.0.0",
+  "private": false,
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "default": "./dist/errors.js"
+    }
+  },
+  "files": ["dist", "LICENSE", "NOTICE", "UPSTREAM"],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run --dir tests"
+  }
+}

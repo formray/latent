@@ -1,0 +1,21 @@
+@filmfork/ptp-fuji
+
+This package is an independent fork of filmkit (https://github.com/eggricesoy/filmkit)
+by eggricesoy, licensed under MIT. FilmFork is NOT endorsed by or affiliated with
+filmkit's authors.
+
+Files in src/ptp/, src/profile/, and src/util/binary.ts derive from filmkit.
+The pinned upstream commit SHA is recorded in UPSTREAM.
+
+filmkit's protocol implementation was built on the following reverse-engineering
+references, acknowledged here for transparency and chain-of-attribution:
+
+- rawji (https://github.com/pinpox/rawji)
+- fudge (https://github.com/petabyt/fudge)
+- libgphoto2 (http://www.gphoto.org/)
+- ISO 15740 (PTP specification)
+- Wireshark USB captures of Fujifilm X RAW Studio
+
+All RE work in those projects was performed by their respective authors. This
+package's contribution is the TypeScript fork structure, the PtpTransport DI
+boundary, the typed error taxonomy, and the integration with FilmFork.
