@@ -4,6 +4,7 @@
     { "path": "packages/recipe-schema" },
     { "path": "packages/ptp-fuji" },
     { "path": "packages/ptp-fuji-webusb" },
-    { "path": "packages/ai-agent" }
+    { "path": "packages/ai-agent" },
+    { "path": "apps/web" }
   ]
 }
