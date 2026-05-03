@@ -1,0 +1,17 @@
+{
+  "name": "@filmfork/ptp-fuji-webusb",
+  "version": "0.0.0",
+  "private": false,
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "LICENSE"],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run --dir tests"
+  },
+  "dependencies": {
+    "@filmfork/ptp-fuji": "0.0.0"
+  }
+}
