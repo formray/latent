@@ -5,8 +5,8 @@
  * a 12-byte header. This mirrors the PTPContainer class in rawji's fuji_usb.py.
  */
 
-import { packU16, packU32, unpackU16, unpackU32, concat } from '../util/binary.ts'
-import { ContainerType } from './constants.ts'
+import { packU16, packU32, unpackU16, unpackU32, concat } from '../util/binary.js'
+import { ContainerType } from './constants.js'
 
 export interface PTPContainerData {
   type: number

@@ -9,10 +9,22 @@
  *   Tone:     preset ×10 → UI integer (÷10)
  */
 
-// FIXME(ptp-fuji): replace with PtpTransport — RawProp comes from filmkit's session.ts
-// (not copied in Task 16); will be redefined inline / extracted in Task 17 refactor.
-import type { RawProp } from '../ptp/session.ts'
-import { GrainEffect, MONOCHROME_SIMS, WBMode } from './enums.ts'
+import { GrainEffect, MONOCHROME_SIMS, WBMode } from './enums.js'
+
+/**
+ * Decoded PTP property as returned by a camera property scan.
+ *
+ * Originally defined in filmkit's `src/ptp/session.ts` (not ported here);
+ * re-declared in this module to keep `preset-translate` self-contained.
+ * Future RawProp consumers can re-export it from a dedicated types module.
+ */
+export interface RawProp {
+  id: number
+  name: string
+  bytes: Uint8Array
+  /** Decoded: int16 for 2-byte, uint32 for 4-byte, PTP string if starts with valid length byte */
+  value: number | string
+}
 
 /** UI-ready values extracted from a camera preset */
 export interface PresetUIValues {
@@ -189,7 +201,7 @@ export function createSnapshot(name: string, settings: RawProp[]): PresetSnapsho
 // d185 profile → PresetUIValues bridge
 // ==========================================================================
 
-import { packU16, packI16 } from '../util/binary.ts'
+import { packU16, packI16 } from '../util/binary.js'
 
 /**
  * Extract PresetUIValues from the camera's native d185 base profile.

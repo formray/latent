@@ -9,7 +9,7 @@
  * the rawji 632-byte write format. See NativeIdx for the confirmed mapping.
  */
 
-import { NR_ENCODE } from './preset-translate.ts'
+import { NR_ENCODE } from './preset-translate.js'
 
 /** User-friendly parameters for conversion */
 export interface ConversionParams {
