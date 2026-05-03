@@ -1,7 +1,7 @@
-# FilmFork V1 — Design Spec (R4)
+# FilmFork V1 — Design Spec (R5)
 
-**Status:** Draft converged after Codex adversarial reviews R1+R2+R3
-**Date:** 2026-05-03 (R4 iteration, same day)
+**Status:** Innovation pass on top of R4 (which converged after Codex R1+R2+R3 adversarial reviews)
+**Date:** 2026-05-03 (R5 iteration, same day)
 **Author:** Giuseppe Albrizio + Claude (brainstorming session)
 **Project working title:** FilmFork (final naming subject to trademark check — see §15.5)
 **Previous title:** FujiComp (deprecated due to trademark exposure with Fujifilm — see §15.5)
@@ -10,14 +10,17 @@
 
 ## 1. Vision
 
-An open-source web platform for photographers using Fujifilm cameras to discover, create, and apply film simulation recipes. Differentiated from existing tools (fujilab.vercel.app, fuji-x-weekly, FUJISTYLE) by four properties working together:
+**FilmFork is not only a recipe browser; it is a camera-backed look lab for iterating toward a personal Fuji style.** Open-source web platform for photographers using Fujifilm cameras to discover, create, refine, and apply film simulation recipes — with the camera itself in the rendering loop and AI as an iteration assistant.
 
-1. **AI agent** that proposes a plausible starting recipe from a text vibe or reference photo, with multi-turn refinement, per-parameter reasoning, and a deterministic confidence rubric (see §7). The agent is positioned as a starting point for camera-side iteration, not an exact match.
-2. **Direct browser-to-camera push** via WebUSB on Linux, Windows, and Android Chrome (with OTG cable). macOS supported as an experimental/beta path in V1; first-class macOS support arrives in V2 via a signed native helper.
-3. **Camera-side live preview** — the camera itself processes the JPEG with the recipe applied, returning pixel-accurate output. This is the camera's real image processor, not a WebGL approximation.
-4. **Open creative-recipe spec** with provenance — fork tree, attribution, remix lineage encoded in the format. The schema captures the look-affecting subset of camera settings that filmkit has proven writable to custom slots; lossless full-preset capture is V2.
+Differentiated from existing tools (fujilab.vercel.app, fuji-x-weekly, FUJISTYLE) by five properties working together:
 
-V1 success criteria: recipe library + AI generator + push to camera (with verified backup/restore) + camera-side preview, deployed publicly, validated end-to-end on Fujifilm X-S20 (already confirmed during validation session 2026-05-03). Public launch in 10 weeks honest baseline, +2 weeks buffer.
+1. **Camera-side iteration loop** (the headline V1 workflow) — load a RAF, get an AI-proposed starting recipe, the camera renders the real JPEG, the user gives natural-language feedback ("warmer", "less digital", "softer skin"), the AI changes only a small targeted set of parameters, the camera re-renders, the user compares iterations and saves the chosen version. The camera is the rendering engine; the AI is the assistant; the user is the editor.
+2. **AI agent** that proposes a plausible starting recipe from a text vibe or reference photo, with multi-turn refinement, **structured per-parameter explanation** (visual effect, reason, risk) and a deterministic confidence rubric (see §7).
+3. **Direct browser-to-camera push** via WebUSB on Linux, Windows, and Android Chrome (with OTG cable). macOS supported as an experimental/beta path in V1; first-class macOS support arrives in V2 via a signed native helper.
+4. **Camera-side live preview + deterministic recipe diff** — the camera processes JPEGs with the recipe applied (pixel-accurate, not WebGL approximation); a rule-based diff translator turns parameter deltas between two recipes into human-readable visual impact ("WB shift +R/+B → warmer magenta cast", "Shadow −0.5 → more open shadows") so the user can compare AI iterations, forks, and before/after camera slots.
+5. **Open creative-recipe spec + Local Taste Profile** — provenance with fork tree, attribution, remix lineage; an opt-in local-only Taste Profile (tone preference, grain tolerance, preferred film sims, shooting contexts) that the user inspects, edits, exports, and wipes — never leaves the browser unless they export it themselves.
+
+V1 success criteria: recipe library + AI generator with iteration loop + recipe diff & comparison + push to camera (with verified backup/restore) + camera-side preview + Local Taste Profile (opt-in), deployed publicly, validated end-to-end on Fujifilm X-S20 (already confirmed during validation session 2026-05-03). Public launch in 10 weeks honest baseline, +2 weeks buffer.
 
 ---
 
@@ -29,7 +32,10 @@ V1 success criteria: recipe library + AI generator + push to camera (with verifi
 |---|---|---|
 | Recipe library | Browse, filter (by film sim, capability set, mood tags), search, share via URL hash, favorites | All supported browsers |
 | Recipe detail view | All settings rendered with validation per camera capability set + camera setup walkthrough | All |
-| AI Recipe Agent | Multi-turn dialog from text vibe or reference photo, structured Recipe JSON via Claude tool use, per-parameter reasoning + deterministic confidence rubric, critique mode on user's photos | All |
+| AI Recipe Agent | Multi-turn dialog from text vibe or reference photo, structured Recipe JSON via Claude tool use, **structured per-parameter explanation (visualEffect / reason / risk) + deterministic confidence rubric**, critique mode on user's photos | All |
+| **Camera-side iteration loop** | Load RAF → AI proposes starting recipe → camera renders real JPEG → user gives natural-language feedback → AI changes a small targeted parameter set → camera re-renders → user compares and saves. Headline V1 workflow (see §6.7). | Connected camera required for render step |
+| **Recipe diff & visual comparison** | Deterministic rule-based delta translator: given two recipes, returns parameter deltas annotated with human-readable visual impact ("WB shift +R/+B → warmer magenta cast"). Used for AI iterations, forks, before/after slot comparison. Not AI-generated; lookup-table-driven (see §6.8). | All |
+| **Local Taste Profile (opt-in)** | Structured user preferences (tone, grain tolerance, preferred film sims, shooting contexts) stored locally only. Off by default. User can inspect, edit, export, and wipe. AI uses it as context only when explicitly enabled. TTL applies. Included in library export/import. | All |
 | WebUSB connect | Chrome/Edge ≥ 122 desktop on Linux/Windows; macOS = experimental/beta; Chrome ≥ 122 on Android via OTG = experimental | See §9 + §10 |
 | Read presets | C1-C7 or C1-C4 depending on body | All |
 | Push to camera | Pre-flight checks → **transactional verified backup** of current slot to local storage → translate Recipe to property writes via PTP `SetDevicePropValue` → fail-loud on first error → manual "restore from backup" available **only when backup is verified complete and connection is healthy** | See §6.3 |
@@ -258,16 +264,57 @@ export const Recipe = z.object({
   colorChromeEffectBlue: TriState,
   smoothSkinEffect: TriState.optional(),
 
-  // AI-generated reasoning (optional, excluded from URL share by default)
+  // AI-generated structured explanation (optional, excluded from URL share by default)
+  // R5: replaces flat `explanation` with three-field structure for better explainability
   reasoning: z.array(z.object({
     parameter: z.string(),
-    explanation: z.string().max(500),
+    visualEffect: z.string().max(200),     // what this parameter visually does (e.g. "lifts shadows, opens detail in dark areas")
+    reason: z.string().max(300),           // why chosen for this recipe / feedback (e.g. "user asked for less crushed blacks")
+    risk: z.string().max(200).optional(),  // when this setting may fail or look bad (e.g. "noise becomes visible above ISO 3200")
     confidence: z.enum(["low", "medium", "high"]).optional(),
   })).max(40).optional(),
 });
 
 export type Recipe = z.infer<typeof Recipe>;
 ```
+
+### Local Taste Profile schema (R5 — opt-in user preferences, not part of Recipe)
+
+The Taste Profile is **not** embedded in recipes. It is a user-level structure stored separately in `localStorage` under key `filmfork-taste-profile-v1`. It is opt-in, off by default, and AI uses it as context only after the user explicitly enables it. TTL applies (90 days unless touched). It is included in library export/import for portability and exits the browser only when the user exports it themselves.
+
+```ts
+// packages/recipe-schema/src/taste-profile.ts
+import { z } from "zod";
+import { FilmSimulation } from "./recipe";
+
+export const ShootingContext = z.enum([
+  "portraits", "travel", "street", "landscape", "night",
+  "documentary", "wedding", "studio",
+]);
+
+export const TasteProfile = z.object({
+  schemaVersion: z.literal(1),
+  enabled: z.boolean().default(false),                  // opt-in gate
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  lastTouchedAt: z.string().datetime(),                 // for 90-day TTL
+
+  // structured preferences (all optional)
+  tonePreference: z.enum(["warm", "neutral", "cool"]).optional(),
+  grainTolerance: z.enum(["none", "low", "medium", "high"]).optional(),
+  contrastPreference: z.enum(["soft", "balanced", "punchy"]).optional(),
+  preferredFilmSimulations: z.array(FilmSimulation).max(10).default([]),
+  avoidedFilmSimulations: z.array(FilmSimulation).max(10).default([]),
+  shootingContexts: z.array(ShootingContext).max(8).default([]),
+
+  // free-form notes (capped, sanitized before injection into AI prompt)
+  notes: z.string().max(500).optional(),
+});
+
+export type TasteProfile = z.infer<typeof TasteProfile>;
+```
+
+The AI agent reads the Taste Profile from `localStorage` only when `enabled === true`. The profile is sanitized (HTML/markdown stripped, length capped) before being injected into the system prompt. Wipe and export are first-class UI affordances in settings, not buried.
 
 ### Explicitly out of V1 schema (visible in Fuji menus, NOT proven slot-writable via filmkit)
 
@@ -326,8 +373,8 @@ Error handling: if `OpenSession` reports session already open, app prompts user 
 6. Recipe parsed and validated via Zod against the user's selected capability set
 7. Multi-turn refinement: user types follow-up ("more shadow detail"), agent iterates on previous Recipe with delta reasoning
 8. The UI explicitly frames AI output as a **starting recipe**, not a match — with "Refine on camera with live preview" as the next-step CTA
-9. On Anthropic API failure: typed error category per §6.7 with user-facing recovery copy
-10. **Persona** (opt-in only): user can save preferences ("portraits, warm tones") to localStorage. One-click wipe in settings. Off by default. No persistent BYO API key in localStorage by default — see §11.
+9. On Anthropic API failure: typed error category per §6.9 with user-facing recovery copy
+10. **Local Taste Profile** (opt-in only, R5): user maintains a structured profile (tone preference, grain tolerance, preferred film sims, shooting contexts, free-form notes). Schema in §5. Stored locally only. Off by default. AI reads it as system-prompt context only when `enabled: true`. One-click wipe + export in settings. 90-day TTL on `lastTouchedAt`. No persistent BYO API key in localStorage by default — see §11.
 
 ### 6.3 Push recipe to camera (transactional verified backup, no rollback claim)
 
@@ -399,7 +446,87 @@ Flow:
 | USB stall (camera unresponsive but technically connected) | Timeout per operation (default 30s, see §8 transport contract), abort the in-flight op, mark session degraded, offer reconnect |
 | Camera in wrong mode mid-flow | Detect via property read failure; show "Camera left RAW Conv. mode" and ask user to reset |
 
-### 6.7 Typed error taxonomy
+### 6.7 Camera-side iteration loop (R5 — headline V1 workflow)
+
+This is the differentiating flow. It composes §6.2 (AI), §6.4 (camera-side preview), and the new recipe diff (§6.8) into a single user experience: the camera is the rendering engine, the AI is the iteration assistant, the user is the editor.
+
+Pre-conditions: camera connected and healthy (§6.1); user has a RAF file ready; AI API key entered (session-only by default per §11).
+
+1. **Load.** User drops a RAF onto the iteration loop pane. App keeps the RAF in a session-scoped buffer (not persisted, not uploaded — see §11).
+2. **AI proposes starting recipe.** App calls the AI agent in vibe-or-reference mode (§7). User sees the proposed recipe with structured per-parameter explanation (visualEffect / reason / risk) and confidence badges. This is iteration `i = 0`.
+3. **Camera renders real JPEG (iteration `i`).** App runs the §6.4 camera-side preview flow with the current iteration's recipe. The user sees the actual JPEG the camera would produce. No WebGL approximation.
+4. **User feedback.** User types natural-language feedback in the iteration panel (e.g. "warmer", "less digital", "softer skin", "more film grain", "less crushed blacks"). Free text, but framed in the UI as "what would you change?".
+5. **AI proposes targeted delta (iteration `i + 1`).** AI agent receives: previous recipe + user feedback + Taste Profile (if opt-in enabled). It produces a new recipe **with a constraint to change only a small targeted set of parameters** (system-prompt instruction: prefer changing 1-3 parameters that map to the feedback; do not retune everything). The structured explanation describes only the changed parameters and their visualEffect/reason/risk.
+6. **Recipe diff displayed.** App shows the deterministic recipe diff (§6.8) between iteration `i` and `i + 1` so the user sees exactly what changed and the human-readable visual impact, before committing to re-render.
+7. **User decides:** apply the proposed delta (go to step 3 with iteration `i + 1`), reject (return to iteration `i`), or edit any parameter manually before re-render.
+8. **Re-render.** Camera processes the new recipe; back to step 3.
+9. **Iteration history.** App keeps the last N iterations (N = 10 in V1) with their JPEG output thumbnails, recipe state, user feedback, and confidence/explanation. Stored in session memory only — cleared on tab close. User can pick any iteration as "the one" and save it to library.
+10. **Save & push.** Chosen iteration is saved to the recipe library with provenance (parent = whatever recipe seeded the loop, if any). User can push it to a camera slot via §6.3 from the saved entry.
+
+Constraints and safety:
+- AI is constrained per system prompt to change a **small targeted parameter set per iteration** (1-3 parameters typical). The structured explanation reflects only the changed parameters. Test: assert that ≥ 90% of iterations change ≤ 5 fields.
+- The RAF stays in browser memory for the iteration session. It is never uploaded to Anthropic. Only the AI-generated recipe text and the user's feedback text go to the AI.
+- All §6.9 typed errors apply (camera disconnect mid-render, AI rate limit, invalid RAF, etc.).
+- Unknown-firmware mode (§9) blocks step 3 unless the user has accepted the experimental-write gate AND a verified backup exists for any push action.
+- Iteration history is opt-out from URL sharing (cannot share an iteration session by URL — the user must save the chosen iteration to library first).
+
+Acceptance for the loop end-to-end is in §16.
+
+### 6.8 Recipe diff & visual comparison (R5 — deterministic, rule-based)
+
+Given two recipes (`A`, `B`), produce a structured diff annotated with human-readable visual impact strings. Used inside the iteration loop (§6.7 step 6), in the recipe library (compare two saved recipes side-by-side), and in the push flow (compare the recipe-to-be-pushed against the slot's current contents from the verified backup).
+
+The translator is **deterministic and lookup-table-driven**, not AI-generated. Every parameter has rule entries that map a delta range to a human-readable phrase. AI generates explanations for AI-proposed recipes (`reasoning` field per §5); the diff translator generates explanations for *changes between two recipes*.
+
+Example rules (illustrative, full table lives in `packages/recipe-schema/src/diff/`):
+
+| Parameter | Delta | Human-readable visual impact (en) |
+|---|---|---|
+| `whiteBalance.shiftR` | +1 to +3 | "slightly warmer red cast" |
+| `whiteBalance.shiftR` | +4 to +9 | "noticeably warmer red cast" |
+| `whiteBalance.shiftR` | −1 to −3 | "slightly cooler, removing red" |
+| `whiteBalance.shiftB` | +1 to +3 | "slightly bluer cast" |
+| `shadowTone` | −2 to −0.5 | "more open shadows; recovers detail" |
+| `shadowTone` | +0.5 to +4 | "deeper, more closed shadows" |
+| `highlightTone` | −2 to −0.5 | "softer highlight rolloff" |
+| `highlightTone` | +0.5 to +4 | "harsher highlights, more bite" |
+| `clarity` | +1 to +3 | "subtle local contrast lift" |
+| `clarity` | +4 to +5 | "noticeable local contrast and edge bite" |
+| `clarity` | −1 to −5 | "softer, more diffuse rendering" |
+| `noiseReduction` | +1 to +4 | "smoother, less grain texture (can soften detail)" |
+| `noiseReduction` | −1 to −4 | "more grain texture; preserves detail" |
+| `grainEffect.strength` | Off → Weak | "adds light film-grain texture" |
+| `grainEffect.strength` | Off → Strong | "adds visible film-grain texture" |
+| `colorChromeEffect` | Off → Weak | "denser saturated colors (subtle)" |
+| `colorChromeEffectBlue` | Off → Weak | "richer blues in skies and water" |
+| `filmSimulation` | A → B | "switches base look from {A-name} to {B-name}" |
+
+Italian translations live alongside in the i18n catalog. The diff API:
+
+```ts
+// packages/recipe-schema/src/diff/index.ts (signature only — no implementation here)
+export interface RecipeDiffEntry {
+  parameter: string;
+  before: unknown;
+  after: unknown;
+  delta?: number;             // for numeric params
+  visualImpact: string;       // localized phrase from rule lookup
+  ruleKey: string;            // diagnostic key, useful for tests
+}
+
+export interface RecipeDiff {
+  changedCount: number;
+  unchangedCount: number;
+  entries: RecipeDiffEntry[];
+  summary: string;            // localized one-liner ("3 parameters changed: warmer, more open shadows, less grain")
+}
+
+export function diffRecipes(a: Recipe, b: Recipe, locale: "en" | "it"): RecipeDiff;
+```
+
+Tested with property-based tests against the rule table: every numeric parameter range produces a localized phrase; missing rule entries default to a generic phrase; cross-camera diff (recipes from different capability sets) flags incompatible fields rather than diffing them silently.
+
+### 6.9 Typed error taxonomy
 
 `@filmfork/ptp-fuji/errors.ts` exports:
 
@@ -454,7 +581,8 @@ V1 capabilities, with explicit confidence framing:
 | **One-shot from reference** | Photo (vision input, with explicit consent) | Recipe matching general look characteristics + confidence (typically lower) | "Photos contain lighting, lens, and edit information that camera recipes can't fully match. Use this as a direction, not a copy." |
 | **Multi-turn refinement** | Previous Recipe + follow-up text | Adjusted Recipe + delta explanation | "I changed X and Y because…" |
 | **Critique mode** | Recipe + user photos shot with it | Suggested tweaks + reasoning | "Try lifting shadows by +0.5 — your blacks look crushed in these shots." |
-| **Persona-aware (opt-in)** | Same as above + localStorage history | Recipe biased toward user's expressed preferences | Explicit opt-in, one-click wipe |
+| **Taste Profile-aware (opt-in)** | Same as above + Local Taste Profile (§5) | Recipe biased toward user's structured preferences (tone, grain tolerance, preferred sims, shooting contexts) | Explicit opt-in via Taste Profile `enabled: true`; one-click wipe; 90-day TTL |
+| **Camera-side iteration loop (R5)** | Previous iteration's recipe + user feedback ("warmer", "less digital") + RAF rendered by camera | Targeted-delta Recipe (1-3 parameters typical) + structured per-parameter explanation, used to drive a real camera re-render | See §6.7 — composes AI + §6.4 preview + §6.8 diff |
 
 ### Deterministic confidence rubric (R3)
 
@@ -478,10 +606,10 @@ Implementation:
 ### Implementation patterns (formray module 16 alignment)
 
 - **Prompt caching:** static system prompts and the Recipe schema cached per Anthropic's prompt-caching API
-- **Retry/fallback:** exponential backoff on rate limit; fallback to non-vision flow if vision fails; user-facing typed error per §6.7
+- **Retry/fallback:** exponential backoff on rate limit; fallback to non-vision flow if vision fails; user-facing typed error per §6.9
 - **Rate/cost controls:** soft per-session budget warning (e.g. ≥ $0.50/session) with opt-in to continue
 - **Prompt-injection treatment:** reference photos are vision input only; user text is sandboxed; tool-use schema is the only writeable surface
-- **Memory TTL:** persona snippets expire after 90 days unless touched; explicit "wipe persona" in settings
+- **Memory TTL:** Taste Profile expires after 90 days unless touched (`lastTouchedAt` updated); explicit "wipe Taste Profile" + "export Taste Profile" in settings
 
 ### API key handling
 
@@ -544,7 +672,7 @@ filmkit (MIT) is the foundation. Pinned-commit fork strategy:
    - Progress callback in constructor
    - Explicit session state
    - Capabilities exposed
-   - Typed errors thrown per §6.7
+   - Typed errors thrown per §6.9
 
 ### Transport contract (R3 — added per Codex NM4)
 
@@ -702,7 +830,7 @@ This is its own milestone. Timeline: ~6-10 weeks after V1 ships.
 |---|---|
 | Accounts | None |
 | Telemetry / analytics | None — no third-party scripts in V1 |
-| Storage | localStorage only; explicit list documented in `docs/privacy.md` (favorites, persona snippets opt-in, last-seen version, slot backups, UI prefs) |
+| Storage | localStorage only; explicit list documented in `docs/privacy.md` (favorites, **Local Taste Profile opt-in (R5)**, last-seen version, slot backups, UI prefs, iteration history is **session-only** not persisted) |
 | WebUSB | HTTPS-only (or `localhost` for dev), user gesture per session, vendor-filtered to Fujifilm only |
 | AI API key | **Session-only by default**, in memory only. Persistent localStorage opt-in with explicit risk text + one-click wipe. Never in URL params. Never logged. |
 | AI reference images | JPEG only in V1. Sent to Anthropic only after **explicit per-image consent**. Decoded to canvas + re-encoded as JPEG with no metadata writers (drops EXIF/XMP/IPTC/MakerNote by construction). Verifier scans output for residual metadata markers; abort on failure. Resized to ≤ 2048px max edge, ≤ 1MB. No retention on our side. Anthropic data handling per their commercial terms — linked in `docs/privacy.md`. |
@@ -730,7 +858,7 @@ This is its own milestone. Timeline: ~6-10 weeks after V1 ships.
 
 ### Data export & portability
 
-Users can export their full library (recipes + persona + favorites + slot backups) to a JSON file at any time, and re-import it. This is the only "backend" feature in V1.
+Users can export their full library (recipes + Local Taste Profile if enabled + favorites + slot backups) to a JSON file at any time, and re-import it. This is the only "backend" feature in V1. Iteration loop history (§6.7) is session-only and not part of export — the user must save a chosen iteration to library first to persist it.
 
 ---
 
@@ -836,7 +964,7 @@ Each open question now has an explicit owner, output artifact, and pass/fail con
 ### New questions added in R2/R3 (now ADR-eligible per Codex NM7)
 
 9. **Browser/OS/camera firmware support matrix.** Owner: project lead. Output: `docs/browser-matrix.md`. Pass: matrix lists Chrome ≥ 122 + Edge ≥ 122 + macOS 13+ minimum + Android Chrome ≥ 122 + OTG note + dev-time HTTPS/localhost story; each row tested at least once. Fail: ship without and document gaps.
-10. **Camera-write failure and restore procedure UX.** Owner: project lead. Output: wireframes + recovery copy in `docs/architecture.md` + reviewed by self before V1. Pass: every error in §6.7 has a recovery prompt; transactional backup behavior is observable in the UI. Fail: no public V1 release until UX is reviewed.
+10. **Camera-write failure and restore procedure UX.** Owner: project lead. Output: wireframes + recovery copy in `docs/architecture.md` + reviewed by self before V1. Pass: every error in §6.9 has a recovery prompt; transactional backup behavior is observable in the UI. Fail: no public V1 release until UX is reviewed.
 11. **Privacy policy for AI reference images and API keys.** Owner: project lead. Output: `docs/privacy.md` (en + it). Pass: plain-language doc covering localStorage contents, AI image flow, key handling, EXIF policy, third-party (Anthropic) data handling. Fail: blocking — V1 cannot ship without this.
 12. **Data export/import/migration plan.** Owner: project lead. Output: export/import implementation + tests + `docs/recipe-format.md` migration section. Pass: round-trip export/import test green; v1→v2 migrator scaffolding present. Fail: no public V1 release.
 13. **Bilingual content scope (en/it).** Owner: project lead. Output: en + it message catalogs in `apps/web/src/i18n/`, README.it.md. Pass: every UI string i18n-keyed; both catalogs complete with no missing keys at build time (CI enforced). Fail: launch in English only and document the deviation.
@@ -864,6 +992,9 @@ Every item in §2 In-V1 maps to an acceptance check below. No new requirements a
 
 ### `@filmfork/recipe-schema`
 - [ ] Recipe schema per §5 (filmkit-proven writable subset only — no `dRangePriority`/`longExposureNR`/`lensModulationOptimizer`/extra WB modes / `DRAuto` in V1)
+- [ ] **Structured `reasoning` (visualEffect / reason / risk / confidence) per §5 (R5)**
+- [ ] **Local Taste Profile schema (R5) — separate Zod schema, opt-in `enabled` gate, TTL field, export/import round-trip tested**
+- [ ] **Recipe diff translator (R5) — deterministic rule-based, lookup tables in `packages/recipe-schema/src/diff/`, en + it locales, property-based tests against rule table**
 - [ ] Capability-aware translator gated by `writableSlotProperties` whitelist
 - [ ] Schema v1 → v2 migration scaffolding present
 - [ ] JSON ↔ property bytes round-trip tests pass for X-S20 capability set
@@ -882,6 +1013,10 @@ Every item in §2 In-V1 maps to an acceptance check below. No new requirements a
 - [ ] Recipe detail view + camera setup walkthrough
 - [ ] Recipe editor with capability-aware parameter validation (only `writableSlotProperties` editable)
 - [ ] AI Agent panel with explicit consent gates per §6.2 + §11
+- [ ] **Camera-side iteration loop UI (R5) per §6.7 — load RAF, AI proposal, camera-rendered JPEG, natural-language feedback, deterministic diff between iterations, history of last 10 iterations (session-only), save chosen iteration to library**
+- [ ] **AI iteration constraint test (R5): assert ≥ 90% of refinement-mode iterations change ≤ 5 schema fields**
+- [ ] **Recipe diff comparison view (R5) per §6.8 — used in iteration loop, library compare-two-recipes, and push-flow before/after slot view**
+- [ ] **Local Taste Profile settings UI (R5) — inspect / edit / export / wipe / opt-in toggle / last-touched indicator**
 - [ ] Camera connect button with platform-aware messaging (macOS beta banner)
 - [ ] Push to camera with **transactional verified backup** + restore-from-verified-backup UI per §6.3
 - [ ] Unknown-firmware confirmation gate UI before any write
@@ -890,7 +1025,7 @@ Every item in §2 In-V1 maps to an acceptance check below. No new requirements a
 - [ ] URL share with reasoning excluded by default + 1.5KB cap + file fallback per §6.5
 - [ ] Recipe genealogy display (parent/fork attribution)
 - [ ] Library export/import (JSON file)
-- [ ] Diagnostic bundle export per §6.7
+- [ ] Diagnostic bundle export per §6.9
 - [ ] Bilingual UI: en + it message catalogs, language switcher
 - [ ] WCAG 2.2 AA target met (axe-core + manual audit per §12)
 - [ ] Strict CSP per §11 incl. `worker-src`/`manifest-src`; CSP validation in CI
@@ -992,4 +1127,56 @@ The spec is ready for `superpowers:writing-plans` to produce the implementation 
 
 ---
 
-*End of design spec R4. Convergence reached. Ready for `superpowers:writing-plans`.*
+## 19. Changelog (R4 → R5) — Innovation Pass
+
+User-driven (not Codex-driven) revision. Adds the differentiating product layer without expanding V1 scope into accounts/community/backend and without changing locked stack or scope decisions.
+
+### What's added
+
+1. **Camera-side iteration loop (§1, §2, §6.7, §7, §16)** — the headline V1 workflow: AI proposes a starting recipe, camera renders the real JPEG, user gives natural-language feedback ("warmer", "less digital"), AI changes a small targeted parameter set (1-3 typical, ≥ 90% iterations change ≤ 5 fields per acceptance), camera re-renders, deterministic diff displayed before commit. Iteration history is session-only (last 10), not persisted. Camera = rendering engine; AI = assistant; user = editor.
+2. **Recipe diff & visual comparison (§2, §6.8, §16)** — deterministic, rule-based, lookup-table-driven (NOT AI). API: `diffRecipes(a, b, locale)` returns parameter deltas annotated with localized human-readable visual impact ("WB shift +R/+B → warmer magenta cast"). en + it locales. Used in iteration loop, library compare, push flow.
+3. **Structured per-parameter explanation (§5)** — `reasoning` array entries upgraded from flat `explanation` to three fields: `visualEffect` (what it does, ≤ 200 chars) + `reason` (why chosen, ≤ 300 chars) + optional `risk` (when it fails, ≤ 200 chars) + `confidence`. Total payload caps preserved (max 40 entries, total still excluded from URL share by default).
+4. **Local Taste Profile (§5, §6.2, §7, §11, §16)** — replaces vague "persona" with a structured Zod schema (tonePreference, grainTolerance, contrastPreference, preferredFilmSimulations, avoidedFilmSimulations, shootingContexts, notes). Stored in localStorage at `filmfork-taste-profile-v1`. **Opt-in via `enabled: true` field, off by default**. AI uses it as system-prompt context only when enabled, after sanitization. 90-day TTL on `lastTouchedAt`. First-class settings UI: inspect / edit / export / wipe. Included in library export/import.
+5. **Innovation positioning (§1)** — "FilmFork is not only a recipe browser; it is a camera-backed look lab for iterating toward a personal Fuji style." Single sentence opening §1, no marketing bloat elsewhere.
+
+### Section numbering changes
+
+- §6.7 was "Typed error taxonomy" → moved to §6.9
+- §6.7 is now "Camera-side iteration loop" (R5 new)
+- §6.8 is now "Recipe diff & visual comparison" (R5 new)
+- §6.9 is now "Typed error taxonomy" (was §6.7)
+- All cross-references updated
+
+### What's NOT changed (locked constraints from user)
+
+- V1 stack: TypeScript / React 19 / Vite / Tailwind v4 / Zustand / Zod 4 / Vitest — unchanged
+- macOS = beta in V1 — unchanged
+- `.ffr.json` = creative recipe subset — unchanged (Taste Profile is separate)
+- Schema = filmkit-proven writable fields only — unchanged (no new camera parameters added)
+- No accounts, no community marketplace, no backend, no managed AI proxy in V1 — unchanged
+- Privacy posture — unchanged or stronger: iteration RAF stays in browser, never uploaded to AI; iteration history session-only, not persisted; Taste Profile opt-in with sanitization before prompt injection
+
+### What's still V2
+
+- Tauri macOS helper (unchanged)
+- Lossless preset capture (unchanged)
+- Authenticated community library (unchanged)
+- Managed AI proxy (unchanged)
+- Iteration loop with no-camera fallback (V1 requires connected camera for the render step; WebGL approximation for the no-camera case is V2)
+- Cross-session iteration history (V1 = session-only)
+- Cross-session Taste Profile sync (V1 = local-only)
+
+### Implementation impact
+
+- `packages/recipe-schema` adds: `taste-profile.ts`, `diff/` subdirectory with rule tables (en + it) and `diffRecipes()` API
+- `packages/ai-agent` adds: iteration-mode system prompt with "change a small targeted parameter set" constraint, Taste Profile injection (sanitized) when `enabled: true`, structured explanation generator (visualEffect / reason / risk)
+- `apps/web` adds: iteration loop pane, recipe diff component, Taste Profile settings UI
+- All changes additive; no refactor of validated R4 surfaces
+
+### Timeline impact
+
+The original 10-week + 2-week buffer accounted for AI agent + camera-side preview + library/editor. Iteration loop composes existing surfaces (AI + preview + diff). Recipe diff is small, deterministic, well-bounded. Taste Profile is a small Zod schema + settings UI. Net add: ~1 week of work, absorbed into the existing 2-week buffer. **Timeline target preserved: 10 weeks + 2 buffer.** If absorption proves optimistic during Phase 5 execution, candidate cut: defer iteration history "save and compare last 10" → V2, ship V1 with last-3 only.
+
+---
+
+*End of design spec R5. Innovation pass applied. Ready for Codex validation pass before resuming `superpowers:writing-plans`.*
