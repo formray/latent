@@ -1,20 +1,13 @@
-export type {
-  CameraDriver,
-  ConnectOptions,
-  DriverConnectResult,
-} from "./driver.js";
+export type { CameraDriver, ConnectOptions, DriverConnectResult } from "./driver.js";
 export type {
   CameraSessionPort,
+  DecodedPresetEnum,
+  DecodedPresetValues,
   DeviceInfo,
   DeviceValue,
   RawPreset,
 } from "./session-port.js";
-export {
-  ERROR_REASONS,
-  assertNever,
-  type ConnectionState,
-  type ErrorReason,
-} from "./types.js";
+export { ERROR_REASONS, assertNever, type ConnectionState, type ErrorReason } from "./types.js";
 export { classifyDriverError } from "./classifier.js";
 export {
   backoffDelayMs,
