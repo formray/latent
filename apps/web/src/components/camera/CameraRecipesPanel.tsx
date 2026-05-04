@@ -5,6 +5,7 @@ import { useCameraStore } from "../../stores/camera";
 import { useRecipesStore } from "../../stores/recipes";
 import {
   cameraPresetImportKey,
+  cameraPresetMatchesRecipe,
   cameraPresetToRecipe,
   canImportCameraPreset,
   recipeCameraImportKey,
@@ -194,9 +195,11 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
   const existingImport = recipes.find(
     (recipe) => recipeCameraImportKey(recipe) === existingImportKey,
   );
+  const existingImportMatches =
+    existingImport !== undefined && cameraPresetMatchesRecipe(preset, importMetadata, existingImport);
   const handleImport = (): void => {
     if (!importCheck.ok) return;
-    if (existingImport) {
+    if (existingImport && existingImportMatches) {
       selectRecipe(existingImport.id);
       return;
     }
@@ -227,7 +230,11 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
           )}
           title={importCheck.ok ? undefined : importDisabledReason}
         >
-          {existingImport ? t("camera.recipes.imported") : t("camera.recipes.import")}
+          {existingImport
+            ? existingImportMatches
+              ? t("camera.recipes.imported")
+              : t("camera.recipes.updateImport")
+            : t("camera.recipes.import")}
         </button>
       </div>
 
