@@ -65,6 +65,7 @@ function connectedState(): ConnectionState {
       getDevicePropValue: vi.fn(),
       setDevicePropValue: vi.fn(),
       getPreset: vi.fn(),
+      renderRawPreview: vi.fn(),
       isOpen: vi.fn(() => true),
     },
     cameraModel: "X-S20",

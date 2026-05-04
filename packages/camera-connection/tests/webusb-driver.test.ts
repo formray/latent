@@ -31,6 +31,10 @@ function session(overrides: Partial<FakeSession> = {}): FakeSession {
       settings: [],
       missing: [],
     })),
+    renderRawPreview: vi.fn(async () => ({
+      jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
+      baseProfile: new Uint8Array([1, 2, 3, 4]),
+    })),
     ...overrides,
   };
 }
@@ -63,6 +67,11 @@ interface FakeSession {
     settings: Array<{ id: number; name: string; bytes: Uint8Array; value: number | string }>;
     missing: number[];
   }>;
+  renderRawPreview: (
+    raf: Uint8Array,
+    profileBuilder?: (baseProfile: Uint8Array) => Uint8Array,
+    signal?: AbortSignal,
+  ) => Promise<{ jpeg: Uint8Array; baseProfile: Uint8Array }>;
 }
 
 function driverWith(usb = new FakeUsb(), fakeSession = session()): WebUsbCameraDriver {
@@ -273,6 +282,21 @@ describe("WebUsbCameraDriver connect", () => {
         dynamicRange: { value: -1, label: "DR Auto" },
       },
     });
+  });
+
+  it("WebUsbSessionPort forwards raw preview rendering to the Fuji session", async () => {
+    const fakeSession = session();
+    const port = new WebUsbSessionPort(fakeSession);
+
+    await expect(port.renderRawPreview(new Uint8Array([1, 2, 3]))).resolves.toEqual({
+      jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
+      baseProfile: new Uint8Array([1, 2, 3, 4]),
+    });
+    expect(fakeSession.renderRawPreview).toHaveBeenCalledWith(
+      new Uint8Array([1, 2, 3]),
+      undefined,
+      undefined,
+    );
   });
 });
 

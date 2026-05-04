@@ -37,6 +37,7 @@ type FujiSessionLike = Pick<
   | "getDevicePropValue"
   | "setDevicePropValue"
   | "getPreset"
+  | "renderRawPreview"
   | "state"
 >;
 
@@ -69,6 +70,14 @@ export class WebUsbSessionPort implements CameraSessionPort {
 
   async getPreset(slot: number, signal?: AbortSignal): Promise<RawPreset> {
     return toRawPreset(await this.session.getPreset(slot, signal));
+  }
+
+  async renderRawPreview(
+    raf: Uint8Array,
+    profileBuilder?: (baseProfile: Uint8Array) => Uint8Array,
+    signal?: AbortSignal,
+  ): Promise<{ jpeg: Uint8Array; baseProfile: Uint8Array }> {
+    return this.session.renderRawPreview(raf, profileBuilder, signal);
   }
 
   isOpen(): boolean {

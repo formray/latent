@@ -59,6 +59,10 @@ function fakePort(verifiedPreset = preset()): CameraSessionPort & {
     ),
     setDevicePropValue: vi.fn(async () => undefined),
     getPreset: vi.fn(async () => verifiedPreset),
+    renderRawPreview: vi.fn(async () => ({
+      jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
+      baseProfile: new Uint8Array([1, 2, 3, 4]),
+    })),
     isOpen: vi.fn(() => true),
   };
 }

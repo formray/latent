@@ -5,6 +5,7 @@ export type {
   DecodedPresetValues,
   DeviceInfo,
   DeviceValue,
+  RawPreviewResult,
   RawPreset,
 } from "./session-port.js";
 export { ERROR_REASONS, assertNever, type ConnectionState, type ErrorReason } from "./types.js";

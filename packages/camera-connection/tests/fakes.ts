@@ -19,6 +19,10 @@ export class FakeSessionPort implements CameraSessionPort {
     name: `C${slot}`,
     properties: {},
   }));
+  renderRawPreview = vi.fn(async () => ({
+    jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
+    baseProfile: new Uint8Array([1, 2, 3, 4]),
+  }));
   isOpen = vi.fn(() => this.open);
 }
 
