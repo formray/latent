@@ -90,6 +90,7 @@ describe("classifyDriverError", () => {
     ["claim NetworkError on windows classifies session-stale", new LatentError("UsbDisconnect", "x", undefined, { stage: "claim", domException: "NetworkError", platform: "windows" }), "session-stale"],
     ["transfer-in classifies cable-unplugged", new LatentError("UsbDisconnect", "x", undefined, { stage: "transfer-in" }), "cable-unplugged"],
     ["transfer-out classifies cable-unplugged", new LatentError("UsbDisconnect", "x", undefined, { stage: "transfer-out" }), "cable-unplugged"],
+    ["PtpTimeout with transfer-in stage classifies camera-off", new LatentError("PtpTimeout", "x", undefined, { stage: "transfer-in" }), "camera-off"],
     ["open classifies session-stale", new LatentError("UsbDisconnect", "x", undefined, { stage: "open" }), "session-stale"],
     ["reset classifies session-stale", new LatentError("UsbDisconnect", "x", undefined, { stage: "reset" }), "session-stale"],
     ["setup-config classifies session-stale", new LatentError("UsbDisconnect", "x", undefined, { stage: "setup-config" }), "session-stale"],

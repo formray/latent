@@ -85,12 +85,26 @@ export class WebUsbCameraDriver implements CameraDriver {
     await openAndSelect(device, this.configurationValue);
     const initialInterface = pickPtpInterface(device);
     await claimWithReset(device, initialInterface.interfaceNumber, this.configurationValue);
-    const iface = pickPtpInterface(device);
-    const transport = this.transportFactory(device, iface.endpointIn, iface.endpointOut, {
+    let iface = pickPtpInterface(device);
+    let transport = this.transportFactory(device, iface.endpointIn, iface.endpointOut, {
       interfaceNumber: iface.interfaceNumber,
     });
-    const session = this.sessionFactory(transport);
-    await openSessionWithStaging(session, opts.signal);
+    let session = this.sessionFactory(transport);
+    try {
+      await openSessionWithStaging(session, opts.signal);
+    } catch (err) {
+      if (nameOf(err) === "AbortError") throw err;
+      if (!(err instanceof LatentError) || err.stage !== "open") throw err;
+      iface = await recoverFromOpenSessionFailure(
+        device,
+        this.configurationValue,
+      );
+      transport = this.transportFactory(device, iface.endpointIn, iface.endpointOut, {
+        interfaceNumber: iface.interfaceNumber,
+      });
+      session = this.sessionFactory(transport);
+      await openSessionWithStaging(session, opts.signal);
+    }
     const port = new WebUsbSessionPort(session);
     const deviceInfo = await port.getDeviceInfo(opts.signal);
 
@@ -309,6 +323,30 @@ async function openAndSelect(device: USBDevice, configurationValue: number): Pro
   } catch (err) {
     throw stageError("setup-config", "failed to open/select configuration", err);
   }
+}
+
+async function recoverFromOpenSessionFailure(
+  device: USBDevice,
+  configurationValue: number,
+): Promise<PtpInterfaceInfo> {
+  try {
+    await device.reset();
+  } catch (resetErr) {
+    throw stageError("reset", "device.reset() failed after OpenSession failure", resetErr);
+  }
+
+  await openAndSelect(device, configurationValue);
+  const iface = pickPtpInterface(device);
+  try {
+    await device.claimInterface(iface.interfaceNumber);
+  } catch (claimErr) {
+    throw stageError(
+      "claim",
+      "claimInterface failed after OpenSession recovery reset",
+      claimErr,
+    );
+  }
+  return iface;
 }
 
 function isClaimCollision(err: unknown): boolean {

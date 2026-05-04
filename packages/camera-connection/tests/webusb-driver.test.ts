@@ -96,6 +96,52 @@ describe("WebUsbCameraDriver connect", () => {
     expect(result.usbSerialNumber).toBe("USB-123");
   });
 
+  it("resets and retries when OpenSession fails after a successful claim", async () => {
+    const firstSession = session({
+      open: vi.fn(async () => {
+        throw new LatentError("UsbDisconnect", "stale", undefined, {
+          stage: "transfer-in",
+        });
+      }),
+    });
+    const secondSession = session();
+    const device = new FakeUSBDevice();
+    const usb = new FakeUsb([device]);
+    const driver = new WebUsbCameraDriver({
+      usb: usb as unknown as USB,
+      sessionFactory: vi.fn()
+        .mockReturnValueOnce(firstSession)
+        .mockReturnValueOnce(secondSession),
+      transportFactory: () => ({
+        send: vi.fn(async () => undefined),
+        receive: vi.fn(async () => new Uint8Array(0)),
+        close: vi.fn(async () => undefined),
+      }),
+    });
+    await expect(driver.connect()).resolves.toMatchObject({
+      deviceInfo: { model: "X-S20" },
+    });
+    expect(device.reset).toHaveBeenCalledTimes(1);
+    expect(device.claimInterface).toHaveBeenCalledTimes(2);
+    expect(secondSession.open).toHaveBeenCalledTimes(1);
+  });
+
+  it("surfaces reset failure during OpenSession stale recovery", async () => {
+    const firstSession = session({
+      open: vi.fn(async () => {
+        throw new LatentError("UsbDisconnect", "stale", undefined, {
+          stage: "transfer-in",
+        });
+      }),
+    });
+    const device = new FakeUSBDevice();
+    device.reset.mockRejectedValueOnce(new DOMException("reset denied", "NetworkError"));
+    const usb = new FakeUsb([device]);
+    await expect(driverWith(usb, firstSession).connect()).rejects.toMatchObject({
+      stage: "reset",
+    });
+  });
+
   it("WebUsbSessionPort reports isOpen from FujiCameraSession state", () => {
     expect(new WebUsbSessionPort(session()).isOpen()).toBe(true);
     expect(new WebUsbSessionPort(session({ state: "closed" })).isOpen()).toBe(false);

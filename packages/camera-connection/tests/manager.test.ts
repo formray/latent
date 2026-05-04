@@ -56,6 +56,34 @@ describe("ConnectionManager public API", () => {
     expect(manager.getSnapshot().kind).toBe("connected");
   });
 
+  it("raw picker cancellation exits connecting as permission-denied", async () => {
+    const driver = new FakeCameraDriver();
+    driver.connect = vi.fn(async () => {
+      throw new DOMException("cancelled", "NotFoundError");
+    });
+    const manager = new ConnectionManager(driver);
+    manager.dispatch({ type: "CONNECT_REQUESTED" });
+    await Promise.resolve();
+    expect(manager.getSnapshot()).toMatchObject({
+      kind: "error",
+      reason: "permission-denied",
+    });
+  });
+
+  it("raw driver errors exit connecting instead of leaving the spinner forever", async () => {
+    const driver = new FakeCameraDriver();
+    driver.connect = vi.fn(async () => {
+      throw new TypeError("raw browser failure");
+    });
+    const manager = new ConnectionManager(driver);
+    manager.dispatch({ type: "CONNECT_REQUESTED" });
+    await Promise.resolve();
+    expect(manager.getSnapshot()).toMatchObject({
+      kind: "error",
+      reason: "cable-unplugged",
+    });
+  });
+
   it("DISCONNECT_REQUESTED calls driver.disconnect", async () => {
     const driver = new FakeCameraDriver();
     const manager = new ConnectionManager(driver);

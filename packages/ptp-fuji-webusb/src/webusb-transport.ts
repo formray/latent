@@ -80,9 +80,13 @@ export class WebUsbPtpTransport implements PtpTransport {
         result = await this.raceWithSignal(
           this.device.transferOut(this.endpointOut, chunk),
           signal,
+          "transfer-out",
         );
       } catch (err) {
         if (nameOf(err) === "AbortError") {
+          throw err;
+        }
+        if (err instanceof LatentError) {
           throw err;
         }
         throw new LatentError("UsbDisconnect", "WebUSB transferOut threw", err, {
@@ -122,9 +126,13 @@ export class WebUsbPtpTransport implements PtpTransport {
       result = await this.raceWithSignal(
         this.device.transferIn(this.endpointIn, this.maxChunkSize),
         signal,
+        "transfer-in",
       );
     } catch (err) {
       if (nameOf(err) === "AbortError") {
+        throw err;
+      }
+      if (err instanceof LatentError) {
         throw err;
       }
       throw new LatentError("UsbDisconnect", "WebUSB transferIn threw", err, {
@@ -187,25 +195,52 @@ export class WebUsbPtpTransport implements PtpTransport {
   private raceWithSignal<T>(
     transfer: Promise<T>,
     signal: AbortSignal | undefined,
+    stage: "transfer-in" | "transfer-out",
   ): Promise<T> {
-    if (!signal) return transfer;
     return new Promise<T>((resolve, reject) => {
+      let settled = false;
+      const timeout = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        signal?.removeEventListener("abort", onAbort);
+        reject(new LatentError(
+          "PtpTimeout",
+          `WebUSB ${stage} timed out after ${this.defaultTimeoutMs}ms`,
+          undefined,
+          {
+            stage,
+            platform: detectPlatform(),
+          },
+        ));
+      }, this.defaultTimeoutMs);
       const onAbort = (): void => {
+        if (!signal) return;
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
         signal.removeEventListener("abort", onAbort);
         reject(makeAbortError(signal));
       };
-      if (signal.aborted) {
+      if (signal?.aborted) {
+        settled = true;
+        clearTimeout(timeout);
         reject(makeAbortError(signal));
         return;
       }
-      signal.addEventListener("abort", onAbort, { once: true });
+      signal?.addEventListener("abort", onAbort, { once: true });
       transfer.then(
         (value) => {
-          signal.removeEventListener("abort", onAbort);
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          signal?.removeEventListener("abort", onAbort);
           resolve(value);
         },
         (err) => {
-          signal.removeEventListener("abort", onAbort);
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          signal?.removeEventListener("abort", onAbort);
           reject(err as Error);
         },
       );
