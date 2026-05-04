@@ -75,6 +75,21 @@ describe("<RecipeDetail />", () => {
     expect(parsed.filmSimulation).toBe("ClassicNegative");
   });
 
+  it("download JSON creates a recipe file download", () => {
+    const createObjectURL = vi.fn(() => "blob:recipe");
+    const revokeObjectURL = vi.fn();
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+
+    render(<RecipeDetail recipe={sample} />);
+    fireEvent.click(screen.getByRole("button", { name: /download .json/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:recipe");
+    click.mockRestore();
+  });
+
   it("toggles the camera setup walkthrough", () => {
     render(<RecipeDetail recipe={sample} />);
     const walkthroughBtn = screen.getByRole("button", {

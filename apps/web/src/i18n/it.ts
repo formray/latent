@@ -14,6 +14,9 @@ export const it: Record<MessageKey, string> = {
   "library.empty.loading": "Caricamento ricette",
   "library.count.one": "1 ricetta",
   "library.count.other": "{n} ricette",
+  "library.importJson": "Importa JSON",
+  "library.import.success": "{n} importate",
+  "library.import.error": "JSON ricetta non valido",
 
   // Detail
   "detail.title": "Dettaglio ricetta",
@@ -21,6 +24,7 @@ export const it: Record<MessageKey, string> = {
     "Seleziona una ricetta dalla libreria per leggere tutti i parametri della fotocamera e la procedura di configurazione passo passo.",
   "detail.copyJson": "Copia come JSON",
   "detail.copyJson.copied": "Copiato",
+  "detail.downloadJson": "Scarica .json",
   "detail.setupWalkthrough": "Configura sulla fotocamera",
   "detail.setupWalkthrough.intro":
     "Segui questi passaggi per inserire la ricetta in uno slot personalizzato della fotocamera.",

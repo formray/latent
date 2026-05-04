@@ -1,9 +1,10 @@
 import clsx from "clsx";
-import { useMemo, type ChangeEvent, type JSX } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type JSX } from "react";
 import { useRecipesStore, type FilmSimulationValue } from "../stores/recipes";
 import { useT } from "../i18n";
 import { RecipeCard } from "./RecipeCard";
 import { humanFilmSim } from "./format";
+import { parseRecipeJson } from "../lib/recipe-json";
 
 const FILM_SIM_OPTIONS: FilmSimulationValue[] = [
   "ProviaStandard",
@@ -36,11 +37,14 @@ export function RecipeLibrary(): JSX.Element {
   const setSearchQuery = useRecipesStore((s) => s.setSearchQuery);
   const setFilmSimFilter = useRecipesStore((s) => s.setFilmSimFilter);
   const toggleFavoritesOnly = useRecipesStore((s) => s.toggleFavoritesOnly);
+  const importRecipes = useRecipesStore((s) => s.importRecipes);
   const selected = useRecipesStore((s) => s.selectedRecipeId);
   const selectRecipe = useRecipesStore((s) => s.selectRecipe);
   const recipes = useRecipesStore((s) => s.recipes);
   const favorites = useRecipesStore((s) => s.favorites);
   const loaded = useRecipesStore((s) => s.loaded);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
 
   // Compute filtered recipes from primitive selectors so the array reference
   // is stable across re-renders that don't change inputs.
@@ -67,6 +71,19 @@ export function RecipeLibrary(): JSX.Element {
   const handleFilm = (e: ChangeEvent<HTMLSelectElement>): void => {
     const value = e.target.value;
     setFilmSimFilter(value === "" ? null : (value as FilmSimulationValue));
+  };
+
+  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const imported = parseRecipeJson(await file.text());
+      importRecipes(imported);
+      setImportStatus(t("library.import.success", { n: imported.length }));
+    } catch {
+      setImportStatus(t("library.import.error"));
+    }
   };
 
   const count = filtered.length;
@@ -125,6 +142,28 @@ export function RecipeLibrary(): JSX.Element {
           <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-zinc-600">
             {countLabel}
           </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="rounded-sm border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-700"
+          >
+            {t("library.importJson")}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => void handleImportFile(e)}
+            aria-label={t("library.importJson")}
+          />
+          {importStatus && (
+            <span className="min-w-0 truncate text-right text-xs text-zinc-500">
+              {importStatus}
+            </span>
+          )}
         </div>
       </div>
 

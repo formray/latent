@@ -103,6 +103,7 @@ export interface RecipesState {
   loadSeedRecipes: () => Promise<void>;
   setRecipes: (recipes: RecipeType[]) => void;
   importRecipe: (recipe: RecipeType) => void;
+  importRecipes: (recipes: RecipeType[]) => void;
   setSearchQuery: (q: string) => void;
   setFilmSimFilter: (sim: FilmSimulationValue | null) => void;
   toggleFavoritesOnly: () => void;
@@ -142,10 +143,15 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
   },
 
   importRecipe(recipe) {
-    const parsed = Recipe.parse(recipe);
+    get().importRecipes([recipe]);
+  },
+
+  importRecipes(recipes) {
+    const parsedRecipes = recipes.map((recipe) => Recipe.parse(recipe));
+    if (parsedRecipes.length === 0) return;
     const inMemoryImports = get().recipes.filter((candidate) => recipeCameraImportKey(candidate));
-    const imported = upsertImportedRecipe(
-      parsed,
+    const imported = parsedRecipes.reduce(
+      (acc, recipe) => upsertImportedRecipe(recipe, acc),
       mergeRecipes(inMemoryImports, loadImportedRecipes()),
     );
     const selected = imported[0]!;
@@ -155,6 +161,7 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
         imported,
         get().recipes.filter((candidate) => !recipeCameraImportKey(candidate)),
       ),
+      loaded: true,
       loadError: null,
       selectedRecipeId: selected.id,
     });

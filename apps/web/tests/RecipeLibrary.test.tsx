@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { RecipeLibrary } from "../src/components/RecipeLibrary";
 import { useRecipesStore } from "../src/stores/recipes";
 import type { RecipeType } from "@latent/recipe-schema/browser";
@@ -106,5 +106,31 @@ describe("<RecipeLibrary />", () => {
       name: /remove from favourites/i,
     });
     expect(removeButton).toBeInTheDocument();
+  });
+
+  it("imports recipes from a JSON file", async () => {
+    const imported = recipe(
+      "44444444-4444-4444-8444-444444444444",
+      "Imported Chrome",
+      "ClassicChrome",
+      ["camera-import"],
+    );
+    const file = new File([JSON.stringify(imported)], "recipe.json", {
+      type: "application/json",
+    });
+    Object.defineProperty(file, "text", {
+      value: async () => JSON.stringify(imported),
+    });
+
+    render(<RecipeLibrary />);
+    fireEvent.change(screen.getByLabelText(/import json/i), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Imported Chrome")).toBeInTheDocument();
+    });
+    expect(screen.getByText("1 imported")).toBeInTheDocument();
+    expect(useRecipesStore.getState().selectedRecipeId).toBe(imported.id);
   });
 });
