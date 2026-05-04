@@ -1,5 +1,6 @@
 import { useRef, type ChangeEvent, type JSX } from "react";
 import { useCameraStore } from "../../stores/camera";
+import { useRecipesStore } from "../../stores/recipes";
 
 export function RawPreviewPanel(): JSX.Element | null {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -7,14 +8,17 @@ export function RawPreviewPanel(): JSX.Element | null {
   const preview = useCameraStore((s) => s.rawPreviewStatus);
   const renderRawPreview = useCameraStore((s) => s.renderRawPreview);
   const clearRawPreview = useCameraStore((s) => s.clearRawPreview);
+  const recipes = useRecipesStore((s) => s.recipes);
+  const selectedRecipeId = useRecipesStore((s) => s.selectedRecipeId);
   const connected = state.kind === "connected" || state.kind === "degraded";
+  const selectedRecipe = recipes.find((recipe) => recipe.id === selectedRecipeId) ?? null;
 
   if (!connected && preview.kind === "idle") return null;
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const file = event.currentTarget.files?.[0];
     if (!file) return;
-    void renderRawPreview(file);
+    void renderRawPreview(file, selectedRecipe);
     event.currentTarget.value = "";
   };
 
@@ -32,8 +36,11 @@ export function RawPreviewPanel(): JSX.Element | null {
             RAF preview
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-500">
-            Load a local RAF file, send it to the connected camera, and display the JPEG rendered by
-            the camera processor.
+            Load a local RAF file, apply the selected recipe if one is active, and display the JPEG
+            rendered by the camera processor.
+          </p>
+          <p className="mt-2 font-mono text-[11px] uppercase tracking-wider text-zinc-600">
+            {selectedRecipe ? `Recipe ${selectedRecipe.name}` : "Base RAF profile"}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <input
@@ -63,7 +70,8 @@ export function RawPreviewPanel(): JSX.Element | null {
           </div>
           {preview.kind === "rendering" && (
             <p className="mt-3 font-mono text-xs text-zinc-500">
-              Rendering {preview.fileName} on camera...
+              Rendering {preview.fileName}
+              {selectedRecipe ? ` with ${selectedRecipe.name}` : ""} on camera...
             </p>
           )}
           {preview.kind === "error" && (
@@ -84,6 +92,7 @@ export function RawPreviewPanel(): JSX.Element | null {
               <figcaption className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900 px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500">
                 <span>{preview.fileName}</span>
                 <span>
+                  {preview.recipeName ? `${preview.recipeName} · ` : ""}
                   JPEG {formatBytes(preview.jpegBytes)} · D185 {formatBytes(preview.baseProfileBytes)}
                 </span>
               </figcaption>

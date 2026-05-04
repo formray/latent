@@ -15,6 +15,8 @@ export type { LatentErrorCategory } from "./errors.js";
 export type { PtpTransport, TransportOptions } from "./transport/transport.js";
 export { translatePresetToUI } from "./profile/preset-translate.js";
 export type { PresetUIValues, RawProp } from "./profile/preset-translate.js";
+export { patchProfile } from "./profile/d185.js";
+export type { ConversionParams } from "./profile/d185.js";
 export {
   ColorChromeFxBlueLabels,
   ColorChromeLabels,
