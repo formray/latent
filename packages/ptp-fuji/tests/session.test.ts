@@ -37,14 +37,16 @@ function deviceInfoPayload(): Uint8Array {
     ...le16(100),
     ...le32(6),
     ...le16(0x100),
-    ...ptpString("FUJIFILM"),
-    ...ptpString("1.10"),
+    ...ptpString("FUJI PTP"),
+    ...le16(0),
     ...array16([0x1001, 0x1002, 0x1003, 0x1015, 0x1016]),
     ...array16([]),
     ...array16([]),
     ...array16([]),
     ...array16([]),
+    ...ptpString("FUJIFILM"),
     ...ptpString("X-S20"),
+    ...ptpString("1.10"),
     ...ptpString("ABC123"),
   ]);
 }
@@ -171,6 +173,24 @@ describe("FujiCameraSession", () => {
 
   it("getDeviceInfo rejects when called before open", async () => {
     const s = new FujiCameraSession(new FakeTransport());
+    await expect(s.getDeviceInfo()).rejects.toMatchObject({
+      category: "PtpStall",
+    });
+  });
+
+  it("getDeviceInfo wraps malformed payloads as PtpStall instead of RangeError", async () => {
+    const t = new FakeTransport();
+    t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x01, 0x20, 1, 0, 0, 0]));
+    t.enqueue(packContainer({
+      type: ContainerType.Data,
+      code: 0x1001,
+      transactionId: 2,
+      params: [],
+      data: new Uint8Array([0x64, 0x00, 0x06]),
+    }));
+    t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x01, 0x20, 2, 0, 0, 0]));
+    const s = new FujiCameraSession(t);
+    await s.open();
     await expect(s.getDeviceInfo()).rejects.toMatchObject({
       category: "PtpStall",
     });
