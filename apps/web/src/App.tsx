@@ -3,6 +3,7 @@ import { useRecipesStore } from "./stores/recipes";
 import { RecipeLibrary } from "./components/RecipeLibrary";
 import { RecipeDetail } from "./components/RecipeDetail";
 import { CameraConnect } from "./components/CameraConnect";
+import { CameraRecipesPanel } from "./components/camera/CameraRecipesPanel";
 import { useT } from "./i18n";
 
 export function App(): JSX.Element {
@@ -22,14 +23,14 @@ export function App(): JSX.Element {
       <header className="border-b border-zinc-900 bg-zinc-950/95 px-6 py-4 backdrop-blur">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-baseline gap-3">
-            <h1 className="font-semibold tracking-tight text-zinc-50 text-lg">
-              Latent
-            </h1>
+            <h1 className="font-semibold tracking-tight text-zinc-50 text-lg">Latent</h1>
             <span className="text-xs text-zinc-500">{t("app.tagline")}</span>
           </div>
           <CameraConnect />
         </div>
       </header>
+
+      <CameraRecipesPanel />
 
       <main className="flex flex-1 overflow-hidden">
         <section
@@ -38,10 +39,7 @@ export function App(): JSX.Element {
         >
           <RecipeLibrary />
         </section>
-        <section
-          aria-label={t("detail.title")}
-          className="flex-1 overflow-y-auto"
-        >
+        <section aria-label={t("detail.title")} className="flex-1 overflow-y-auto">
           {selected ? (
             <RecipeDetail recipe={selected} />
           ) : (
@@ -63,9 +61,7 @@ export function App(): JSX.Element {
 function EmptyDetail({ message }: { message: string }): JSX.Element {
   return (
     <div className="flex h-full items-center justify-center p-12">
-      <p className="max-w-md text-center text-sm leading-relaxed text-zinc-500">
-        {message}
-      </p>
+      <p className="max-w-md text-center text-sm leading-relaxed text-zinc-500">{message}</p>
     </div>
   );
 }

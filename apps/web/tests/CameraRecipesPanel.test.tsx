@@ -1,0 +1,105 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import type { ConnectionState, RawPreset } from "@latent/camera-connection";
+import { CameraRecipesPanel } from "../src/components/camera/CameraRecipesPanel";
+import { resetCameraManagerForTests, useCameraStore } from "../src/stores/camera";
+
+function connectedState(): ConnectionState {
+  return {
+    kind: "connected",
+    port: {
+      getDeviceInfo: async () => ({
+        model: "X-M5",
+        firmwareVersion: "1.00",
+        supportedOps: [],
+      }),
+      getDevicePropValue: async () => ({ kind: "uint16", value: 0 }),
+      setDevicePropValue: async () => undefined,
+      getPreset: async (slot: number) => preset(slot),
+      isOpen: () => true,
+    },
+    cameraModel: "X-M5",
+    firmwareVersion: "1.00",
+  };
+}
+
+function preset(slot: number, overrides: Partial<RawPreset> = {}): RawPreset {
+  return {
+    slot,
+    name: slot === 1 ? "ETERNAL BLACK" : "KODAK ULTRAMAX 400",
+    properties: {
+      "0xd190": { value: slot === 1 ? 100 : -1 },
+      "0xd192": { value: slot === 1 ? 14 : 11 },
+    },
+    decoded: {
+      filmSimulation:
+        slot === 1 ? { value: 14, label: "Acros + Red" } : { value: 11, label: "Classic Chrome" },
+      dynamicRange: slot === 1 ? { value: 1, label: "DR 100%" } : { value: -1, label: "DR Auto" },
+      whiteBalance: { value: 2, label: "Auto" },
+      wbShift: slot === 1 ? { r: -8, b: -8 } : { r: 1, b: -5 },
+      highlightTone: 1,
+      shadowTone: slot === 1 ? 3.5 : 1,
+      color: slot === 1 ? 0 : 4,
+      sharpness: slot === 1 ? 1 : 0,
+      noiseReduction: -4,
+      clarity: slot === 1 ? 0 : 3,
+      grainEffect: {
+        value: 259,
+        label: "Strong Large",
+        strength: "Strong",
+        size: "Large",
+      },
+      colorChromeEffect: slot === 1 ? { value: 2, label: "Strong" } : { value: 1, label: "Weak" },
+      colorChromeEffectBlue:
+        slot === 1 ? { value: 2, label: "Strong" } : { value: 0, label: "Off" },
+      smoothSkinEffect: { value: 0, label: "Off" },
+    },
+    ...overrides,
+  };
+}
+
+describe("<CameraRecipesPanel />", () => {
+  beforeEach(() => {
+    resetCameraManagerForTests();
+    useCameraStore.setState({
+      state: { kind: "idle" },
+      presets: [],
+      macosBetaAcknowledged: false,
+      macosSetupAcknowledged: false,
+      macosPersistentDisableConfigured: false,
+      macosWizardOpen: false,
+      macosShowAdvanced: false,
+    });
+  });
+
+  it("does not render before a camera is connected or presets are cached", () => {
+    const { container } = render(<CameraRecipesPanel />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders camera preset cards and inspector from decoded presets", () => {
+    useCameraStore.setState({
+      state: connectedState(),
+      presets: [preset(1), preset(2)],
+    });
+    render(<CameraRecipesPanel />);
+    expect(screen.getByRole("region", { name: /camera recipes/i })).toHaveTextContent(
+      "X-M5 · FW 1.00",
+    );
+    expect(screen.getByRole("button", { name: /ETERNAL BLACK/i })).toHaveTextContent("Acros + Red");
+    expect(screen.getAllByText("DR 100%").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Strong Large").length).toBeGreaterThan(0);
+  });
+
+  it("switches the inspector when another slot is selected", () => {
+    useCameraStore.setState({
+      state: connectedState(),
+      presets: [preset(1), preset(2)],
+    });
+    render(<CameraRecipesPanel />);
+    fireEvent.click(screen.getByRole("button", { name: /KODAK ULTRAMAX 400/i }));
+    expect(screen.getByRole("complementary")).toHaveTextContent("Classic Chrome");
+    expect(screen.getByRole("complementary")).toHaveTextContent("DR Auto");
+    expect(screen.getByRole("complementary")).toHaveTextContent("+4");
+  });
+});
