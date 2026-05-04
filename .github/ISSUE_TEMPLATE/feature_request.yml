@@ -1,0 +1,53 @@
+name: Feature request
+description: Propose something new or different
+title: "[feat] "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Latent has a deliberately narrow roadmap (`ROADMAP.md`). Off-roadmap
+        ideas are welcome but get declined more often than not — read the
+        roadmap first to set expectations.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem you're trying to solve
+      description: What can't you do today? What's the friction?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Your proposal
+      description: How you'd solve it. Sketch or mock welcome but not required.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Anything else you tried or thought about.
+
+  - type: dropdown
+    id: roadmap
+    attributes:
+      label: Roadmap fit
+      description: Have you checked `ROADMAP.md`?
+      options:
+        - On the roadmap (point to phase)
+        - Adjacent to roadmap (small extension)
+        - Off-roadmap (might still be useful)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and didn't find a duplicate
+          required: true
