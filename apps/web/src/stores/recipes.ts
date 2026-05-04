@@ -88,6 +88,11 @@ function upsertImportedRecipe(recipe: RecipeType, imported: RecipeType[]): Recip
   return [nextRecipe, ...imported.filter((candidate) => recipeCameraImportKey(candidate) !== key)];
 }
 
+function dropBundledImports(imported: RecipeType[], seeds: RecipeType[]): RecipeType[] {
+  const seedIds = new Set(seeds.map((recipe) => recipe.id));
+  return imported.filter((recipe) => !seedIds.has(recipe.id));
+}
+
 export type FilmSimulationValue = z.infer<typeof FilmSimulation>;
 
 export interface RecipesState {
@@ -131,7 +136,10 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
         default: unknown;
       };
       const validated = SeedFile.parse(mod.default);
-      set({ recipes: mergeRecipes(loadImportedRecipes(), validated), loaded: true, loadError: null });
+      const imported = loadImportedRecipes();
+      const userImports = dropBundledImports(imported, validated);
+      if (userImports.length !== imported.length) persistImportedRecipes(userImports);
+      set({ recipes: mergeRecipes(userImports, validated), loaded: true, loadError: null });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       set({ loaded: true, loadError: message, recipes: [] });
@@ -147,7 +155,14 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
   },
 
   importRecipes(recipes) {
-    const parsedRecipes = recipes.map((recipe) => Recipe.parse(recipe));
+    const bundledSeedIds = new Set(
+      get()
+        .recipes.filter((recipe) => recipe.tags.includes("latent-default"))
+        .map((recipe) => recipe.id),
+    );
+    const parsedRecipes = recipes
+      .map((recipe) => Recipe.parse(recipe))
+      .filter((recipe) => !bundledSeedIds.has(recipe.id));
     if (parsedRecipes.length === 0) return;
     const inMemoryImports = get().recipes.filter((candidate) => recipeCameraImportKey(candidate));
     const imported = parsedRecipes.reduce(
