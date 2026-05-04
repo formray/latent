@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FilmForkError } from "@filmfork/ptp-fuji";
+import { LatentError } from "@latent/ptp-fuji";
 import {
   getAlreadyPairedFujiCameras,
   requestFujiCamera,
@@ -159,7 +159,7 @@ describe("requestFujiCamera", () => {
       },
     });
     try {
-      await expect(requestFujiCamera()).rejects.toBeInstanceOf(FilmForkError);
+      await expect(requestFujiCamera()).rejects.toBeInstanceOf(LatentError);
     } finally {
       restore();
     }

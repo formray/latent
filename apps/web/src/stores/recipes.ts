@@ -3,10 +3,10 @@ import {
   Recipe,
   type RecipeType,
   type FilmSimulation,
-} from "@filmfork/recipe-schema/browser";
+} from "@latent/recipe-schema/browser";
 import { z } from "zod";
 
-const FAVORITES_KEY = "filmfork-favorites-v1";
+const FAVORITES_KEY = "latent-favorites-v1";
 
 function loadFavorites(): Set<string> {
   try {

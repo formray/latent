@@ -63,7 +63,7 @@ export const en = {
     "The browser permission dialog was dismissed. Try again and pick the camera in the picker.",
   "error.WebUSBUnsupported.title": "Browser not supported",
   "error.WebUSBUnsupported.body":
-    "FilmFork uses WebUSB to talk to the camera. Open this app in a Chromium-based browser (Chrome, Edge, or Arc) to connect.",
+    "Latent uses WebUSB to talk to the camera. Open this app in a Chromium-based browser (Chrome, Edge, or Arc) to connect.",
   "error.WebUSBSecureContextRequired.title": "Secure context required",
   "error.WebUSBSecureContextRequired.body":
     "WebUSB requires HTTPS or localhost. Reload the app over a secure URL.",

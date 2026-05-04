@@ -10,7 +10,7 @@
  * open/select/claim sequence and endpoint discovery.
  */
 
-import { FilmForkError } from "@filmfork/ptp-fuji";
+import { LatentError } from "@latent/ptp-fuji";
 import {
   WebUsbPtpTransport,
   type WebUsbPtpTransportOptions,
@@ -39,7 +39,7 @@ export interface RequestFujiCameraOptions extends WebUsbPtpTransportOptions {
  * Prompt the browser device picker for a Fujifilm camera, open it, claim
  * the PTP interface, resolve bulk endpoints, and return a live transport.
  *
- * Throws `FilmForkError` with one of:
+ * Throws `LatentError` with one of:
  *   - `WebUSBSecureContextRequired` — `navigator.usb` is undefined (HTTP page)
  *   - `WebUSBUnsupported` — non-Chromium browser
  *   - `UsbPermissionDenied` — user cancelled the picker (`NotFoundError`)
@@ -106,7 +106,7 @@ async function claimAndBuildTransport(
       await device.selectConfiguration(configValue);
     }
   } catch (err) {
-    throw new FilmForkError(
+    throw new LatentError(
       "UsbDisconnect",
       `failed to open/select configuration on Fujifilm device: ${stringifyError(err)}`,
       err,
@@ -117,7 +117,7 @@ async function claimAndBuildTransport(
   try {
     await device.claimInterface(ifaceInfo.interfaceNumber);
   } catch (err) {
-    throw new FilmForkError(
+    throw new LatentError(
       "UsbDisconnect",
       `failed to claim PTP interface (another app may hold it): ${stringifyError(err)}`,
       err,
@@ -157,7 +157,7 @@ interface PtpInterfaceInfo {
 function pickPtpInterface(device: USBDevice): PtpInterfaceInfo {
   const config = device.configuration;
   if (!config) {
-    throw new FilmForkError(
+    throw new LatentError(
       "UsbDisconnect",
       "device has no active USB configuration",
     );
@@ -190,7 +190,7 @@ function pickPtpInterface(device: USBDevice): PtpInterfaceInfo {
     }
   }
 
-  throw new FilmForkError(
+  throw new LatentError(
     "UsbDisconnect",
     "no PTP interface with bulk IN/OUT endpoints found",
   );
@@ -198,7 +198,7 @@ function pickPtpInterface(device: USBDevice): PtpInterfaceInfo {
 
 function assertWebUsbAvailable(): void {
   if (typeof navigator === "undefined") {
-    throw new FilmForkError(
+    throw new LatentError(
       "WebUSBUnsupported",
       "WebUSB is not available in this environment (no `navigator`)",
     );
@@ -208,24 +208,24 @@ function assertWebUsbAvailable(): void {
     // Chromium-based browsers. We can't distinguish here, so surface the
     // most actionable category — secure context — and let the caller hint
     // about browser support in copy.
-    throw new FilmForkError(
+    throw new LatentError(
       "WebUSBSecureContextRequired",
       "navigator.usb is undefined: WebUSB requires a secure context (HTTPS or localhost) on a Chromium-based browser",
     );
   }
 }
 
-function mapRequestDeviceError(err: unknown): FilmForkError {
+function mapRequestDeviceError(err: unknown): LatentError {
   if (typeof DOMException !== "undefined" && err instanceof DOMException) {
     if (err.name === "NotFoundError") {
-      return new FilmForkError(
+      return new LatentError(
         "UsbPermissionDenied",
         "user cancelled the WebUSB device picker",
         err,
       );
     }
     if (err.name === "SecurityError") {
-      return new FilmForkError(
+      return new LatentError(
         "WebUSBSecureContextRequired",
         "WebUSB blocked: page must be served over HTTPS or localhost",
         err,
@@ -235,20 +235,20 @@ function mapRequestDeviceError(err: unknown): FilmForkError {
   // DOMException-like duck-type check (some test environments stub it):
   const e = err as { name?: string; message?: string } | null;
   if (e && e.name === "NotFoundError") {
-    return new FilmForkError(
+    return new LatentError(
       "UsbPermissionDenied",
       e.message ?? "user cancelled the WebUSB device picker",
       err,
     );
   }
   if (e && e.name === "SecurityError") {
-    return new FilmForkError(
+    return new LatentError(
       "WebUSBSecureContextRequired",
       e.message ?? "WebUSB blocked by secure-context policy",
       err,
     );
   }
-  return new FilmForkError(
+  return new LatentError(
     "UsbDisconnect",
     `WebUSB requestDevice failed: ${stringifyError(err)}`,
     err,

@@ -11,7 +11,7 @@
  */
 
 import type { PtpTransport } from "../transport/transport.js";
-import { FilmForkError } from "../errors.js";
+import { LatentError } from "../errors.js";
 
 export type SessionState = "closed" | "opening" | "open" | "degraded";
 
@@ -45,7 +45,7 @@ export class FujiCameraSession {
   /** Open a PTP session. Sends OpenSession (0x1002) with a session ID. */
   async open(signal?: AbortSignal): Promise<void> {
     if (this._state === "open" || this._state === "opening") {
-      throw new FilmForkError("PtpSessionAlreadyOpen", "session is already open");
+      throw new LatentError("PtpSessionAlreadyOpen", "session is already open");
     }
     this._state = "opening";
     const txid = this.nextTxid++;
@@ -109,27 +109,27 @@ function packCommand(opcode: number, txid: number, params: number[]): Uint8Array
 
 /**
  * Validate a RESPONSE container against an expected txid.
- * Throws `FilmForkError` with an appropriate category on any failure.
+ * Throws `LatentError` with an appropriate category on any failure.
  */
 function assertResponseOK(resp: Uint8Array, expectedTxid: number): void {
   if (resp.length < 12) {
-    throw new FilmForkError("PtpStall", "response too short");
+    throw new LatentError("PtpStall", "response too short");
   }
   const dv = new DataView(resp.buffer, resp.byteOffset, resp.byteLength);
   const type = dv.getUint16(4, true);
   const code = dv.getUint16(6, true);
   const txid = dv.getUint32(8, true);
   if (type !== PTP_TYPE_RESPONSE) {
-    throw new FilmForkError("PtpStall", `expected RESPONSE container, got type=${type}`);
+    throw new LatentError("PtpStall", `expected RESPONSE container, got type=${type}`);
   }
   if (txid !== expectedTxid) {
-    throw new FilmForkError(
+    throw new LatentError(
       "PtpStall",
       `txid mismatch: expected ${expectedTxid}, got ${txid}`,
     );
   }
   if (code !== PTP_RESP_OK) {
-    throw new FilmForkError(
+    throw new LatentError(
       "PtpUnsupportedOperation",
       `PTP response code 0x${code.toString(16)}`,
     );

@@ -6,7 +6,7 @@
  *
  * This module replaces filmkit's `USBTransport` class. The WebUSB-specific
  * connect/disconnect/endpoint-discovery code now lives in
- * @filmfork/ptp-fuji-webusb (Phase 2).
+ * @latent/ptp-fuji-webusb (Phase 2).
  */
 
 import { PTPOp } from './constants.js'

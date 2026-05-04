@@ -1,7 +1,7 @@
 /**
- * @filmfork/ptp-fuji-webusb — WebUSB-backed PtpTransport for Fujifilm cameras.
+ * @latent/ptp-fuji-webusb — WebUSB-backed PtpTransport for Fujifilm cameras.
  *
- * Browser-only package. Pairs with `@filmfork/ptp-fuji` (transport-agnostic
+ * Browser-only package. Pairs with `@latent/ptp-fuji` (transport-agnostic
  * core) to drive a Fujifilm X-S20 over WebUSB from a Chromium-based browser.
  *
  * Public surface:

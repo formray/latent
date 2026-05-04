@@ -1,8 +1,9 @@
 {
-  "name": "filmfork-app",
+  "name": "latent",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0",
+  "description": "Open-source camera-backed look lab for Fujifilm photographers",
   "type": "module",
   "engines": {
     "node": ">=22.0.0"

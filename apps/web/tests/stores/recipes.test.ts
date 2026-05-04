@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useRecipesStore } from "../../src/stores/recipes";
-import type { RecipeType } from "@filmfork/recipe-schema/browser";
+import type { RecipeType } from "@latent/recipe-schema/browser";
 
 const sampleRecipe = (overrides: Partial<RecipeType> = {}): RecipeType => ({
   id: "11111111-1111-4111-8111-111111111111",
   schemaVersion: 1,
   name: "Sample warm chrome",
   description: "Test recipe",
-  author: "FilmFork",
+  author: "Latent",
   tags: ["test", "warm"],
   createdAt: "2026-05-04T10:00:00.000Z",
   capabilitySetId: "x-s20-fw1.10",
@@ -81,7 +81,7 @@ describe("useRecipesStore", () => {
     useRecipesStore.getState().setRecipes([r]);
     useRecipesStore.getState().toggleFavorite(r.id);
     expect(useRecipesStore.getState().favorites.has(r.id)).toBe(true);
-    const stored = localStorage.getItem("filmfork-favorites-v1");
+    const stored = localStorage.getItem("latent-favorites-v1");
     expect(stored).toBeTruthy();
     expect(JSON.parse(stored ?? "[]")).toContain(r.id);
 

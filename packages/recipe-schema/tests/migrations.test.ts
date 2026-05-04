@@ -9,7 +9,7 @@ describe("Schema migrations", () => {
 
   it("rejects an unknown future schema version", () => {
     const input = { schemaVersion: 99 };
-    expect(() => migrateRecipe(input)).toThrow(/update FilmFork/i);
+    expect(() => migrateRecipe(input)).toThrow(/update Latent/i);
   });
 
   it("rejects payload with no schemaVersion", () => {

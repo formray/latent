@@ -2,7 +2,7 @@
  * Browser-safe entry point — exports schemas, types, and the diff helpers
  * but excludes the capability loader (which depends on `node:fs/promises`).
  *
- * Web bundlers should import from `@filmfork/recipe-schema/browser` to keep
+ * Web bundlers should import from `@latent/recipe-schema/browser` to keep
  * Node-only modules out of the client bundle.
  */
 

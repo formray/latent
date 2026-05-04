@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { RecipeDetail } from "../src/components/RecipeDetail";
 import { useRecipesStore } from "../src/stores/recipes";
-import type { RecipeType } from "@filmfork/recipe-schema/browser";
+import type { RecipeType } from "@latent/recipe-schema/browser";
 
 const sample: RecipeType = {
   id: "44444444-4444-4444-8444-444444444444",
   schemaVersion: 1,
   name: "Editorial Negative",
   description: "A neutral classic-negative recipe used in tests.",
-  author: "FilmFork",
+  author: "Latent",
   tags: ["editorial", "neutral"],
   createdAt: "2026-05-04T08:00:00.000Z",
   capabilitySetId: "x-s20-fw1.10",
@@ -55,7 +55,7 @@ describe("<RecipeDetail />", () => {
 
   it("shows author and tag metadata", () => {
     render(<RecipeDetail recipe={sample} />);
-    expect(screen.getByText("FilmFork")).toBeInTheDocument();
+    expect(screen.getByText("Latent")).toBeInTheDocument();
     expect(screen.getByText("editorial, neutral")).toBeInTheDocument();
   });
 

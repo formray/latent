@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import type { JSX } from "react";
-import type { RecipeType } from "@filmfork/recipe-schema/browser";
+import type { RecipeType } from "@latent/recipe-schema/browser";
 import { useRecipesStore } from "../stores/recipes";
 import { useT } from "../i18n";
 import { humanFilmSim } from "./format";

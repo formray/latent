@@ -1,7 +1,7 @@
-export const PACKAGE_NAME = "@filmfork/ptp-fuji";
+export const PACKAGE_NAME = "@latent/ptp-fuji";
 
 export { FujiCameraSession } from "./ptp/session.js";
 export type { SessionOptions, SessionState } from "./ptp/session.js";
-export { FilmForkError } from "./errors.js";
-export type { FilmForkErrorCategory } from "./errors.js";
+export { LatentError } from "./errors.js";
+export type { LatentErrorCategory } from "./errors.js";
 export type { PtpTransport, TransportOptions } from "./transport/transport.js";

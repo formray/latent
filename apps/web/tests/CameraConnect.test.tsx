@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CameraConnect } from "../src/components/CameraConnect";
 import { useCameraStore } from "../src/stores/camera";
-import { FilmForkError } from "@filmfork/ptp-fuji";
+import { LatentError } from "@latent/ptp-fuji";
 
 describe("<CameraConnect />", () => {
   beforeEach(() => {
@@ -52,7 +52,7 @@ describe("<CameraConnect />", () => {
     const connectImpl = vi
       .fn()
       .mockRejectedValue(
-        new FilmForkError(
+        new LatentError(
           "UsbPermissionDenied",
           "User cancelled the picker.",
         ),

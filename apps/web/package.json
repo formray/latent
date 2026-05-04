@@ -1,5 +1,5 @@
 {
-  "name": "@filmfork/web",
+  "name": "@latent/web",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0",
@@ -13,9 +13,9 @@
     "lint": "eslint --no-error-on-unmatched-pattern src tests"
   },
   "dependencies": {
-    "@filmfork/recipe-schema": "0.0.0",
-    "@filmfork/ptp-fuji": "0.0.0",
-    "@filmfork/ptp-fuji-webusb": "0.0.0",
+    "@latent/recipe-schema": "0.0.0",
+    "@latent/ptp-fuji": "0.0.0",
+    "@latent/ptp-fuji-webusb": "0.0.0",
     "clsx": "^2",
     "react": "^19",
     "react-dom": "^19",

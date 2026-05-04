@@ -5,7 +5,7 @@
 import type {
   RecipeType,
   FilmSimulation,
-} from "@filmfork/recipe-schema/browser";
+} from "@latent/recipe-schema/browser";
 import type { z } from "zod";
 
 type FilmSim = z.infer<typeof FilmSimulation>;
