@@ -32,6 +32,13 @@ export const it: Record<MessageKey, string> = {
   "detail.delete": "Elimina",
   "detail.delete.hideDefault": "Nascondi",
   "detail.delete.confirm": "Rimuovere questa ricetta dalla libreria?",
+  "detail.previewRaf": "Preview su RAF",
+  "detail.previewRaf.rendering": "Rendering",
+  "detail.previewRaf.title":
+    "Scegli un RAF e renderizzalo con questa ricetta sulla fotocamera collegata.",
+  "detail.previewRaf.file": "File RAF per preview ricetta",
+  "detail.previewRaf.disconnected":
+    "Collega una fotocamera per vedere questa ricetta su un file RAF.",
   "detail.cameraWrite.section": "Scrivi su fotocamera",
   "detail.cameraWrite.slot": "Scrivi C{slot}",
   "detail.cameraWrite.writing": "Scrittura",

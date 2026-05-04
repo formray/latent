@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { RecipeDetail } from "../src/components/RecipeDetail";
 import { useRecipesStore } from "../src/stores/recipes";
+import { useCameraStore } from "../src/stores/camera";
 import type { RecipeType } from "@latent/recipe-schema/browser";
+
+const originalRenderRawPreview = useCameraStore.getState().renderRawPreview;
 
 const sample: RecipeType = {
   id: "44444444-4444-4444-8444-444444444444",
@@ -41,6 +44,11 @@ describe("<RecipeDetail />", () => {
       filmSimFilter: null,
       favoritesOnly: false,
       selectedRecipeId: sample.id,
+    });
+    useCameraStore.setState({
+      state: { kind: "idle" },
+      rawPreviewStatus: { kind: "idle" },
+      renderRawPreview: originalRenderRawPreview,
     });
   });
 
@@ -104,6 +112,30 @@ describe("<RecipeDetail />", () => {
     expect(
       screen.getByText(/follow these steps/i),
     ).toBeInTheDocument();
+  });
+
+  it("starts a RAF preview for the current recipe from the detail action", () => {
+    const renderRawPreview = vi.fn();
+    useCameraStore.setState({
+      state: {
+        kind: "connected",
+        port: {} as never,
+        cameraModel: "X-S20",
+        firmwareVersion: "3.30",
+      },
+      renderRawPreview,
+    });
+
+    render(<RecipeDetail recipe={sample} />);
+    const file = new File([new Uint8Array([1, 2, 3])], "sample.raf", {
+      type: "image/x-fuji-raf",
+    });
+
+    fireEvent.change(screen.getByLabelText(/raf file for recipe preview/i), {
+      target: { files: [file] },
+    });
+
+    expect(renderRawPreview).toHaveBeenCalledWith(file, sample);
   });
 
   it("deletes the selected recipe after confirmation", () => {
