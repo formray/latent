@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { CameraSessionPort, DeviceValue, RawPreset } from "@latent/camera-connection";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import {
+  cameraPresetName,
+  PRESET_NAME_PROP,
   PRESET_SLOT_PROP,
   recipeToPresetWritePlan,
   writeRecipeToCameraSlot,
@@ -71,6 +73,7 @@ describe("recipeToPresetWritePlan", () => {
     const plan = recipeToPresetWritePlan(sampleRecipe(), 2);
     const prop = (code: number) => plan.properties.find((item) => item.code === code);
 
+    expect(ptpString(prop(PRESET_NAME_PROP)!.value)).toBe("Camera write sample");
     expect(bytes(prop(0xd190)!.value)).toEqual([0xff, 0xff]);
     expect(bytes(prop(0xd192)!.value)).toEqual([0x0b, 0x00]);
     expect(bytes(prop(0xd195)!.value)).toEqual([0x05, 0x00]);
@@ -111,6 +114,12 @@ describe("recipeToPresetWritePlan", () => {
       recipeToPresetWritePlan(sampleRecipe({ smoothSkinEffect: "Weak" }), 2, base),
     ).toThrow("Smooth skin effect is not supported by this camera slot.");
   });
+
+  it("normalizes camera preset names before writing to D18D", () => {
+    expect(cameraPresetName("  Cinéma  negative recipe with a very long name  ")).toBe(
+      "Cinema negative recipe with a v",
+    );
+  });
 });
 
 describe("writeRecipeToCameraSlot", () => {
@@ -119,6 +128,10 @@ describe("writeRecipeToCameraSlot", () => {
     const plan = recipeToPresetWritePlan(recipe, 2, preset());
     const verified = preset(2);
     for (const prop of plan.properties) {
+      if (prop.code === PRESET_NAME_PROP) {
+        verified.name = ptpString(prop.value);
+        continue;
+      }
       verified.properties[`0x${prop.code.toString(16)}`] = {
         id: prop.code,
         name: prop.label,
@@ -136,10 +149,16 @@ describe("writeRecipeToCameraSlot", () => {
       { kind: "bytes", value: new Uint8Array([2, 0]) },
       undefined,
     );
+    expect(port.setDevicePropValue).toHaveBeenCalledWith(
+      PRESET_NAME_PROP,
+      { kind: "bytes", value: recipeNameBytes("Camera write sample") },
+      undefined,
+    );
   });
 
   it("attempts to restore the backed-up preset when a write fails", async () => {
     const backup = preset(2);
+    backup.name = "Original C2";
     backup.properties["0xd18e"] = { id: 0xd18e, name: "size", value: 7, bytes: [7, 0] };
     const port = fakePort(backup);
     port.setDevicePropValue.mockImplementation(async (code: number) => {
@@ -151,9 +170,38 @@ describe("writeRecipeToCameraSlot", () => {
     );
 
     expect(port.setDevicePropValue).toHaveBeenCalledWith(
+      PRESET_NAME_PROP,
+      { kind: "bytes", value: recipeNameBytes("Original C2") },
+      undefined,
+    );
+    expect(port.setDevicePropValue).toHaveBeenCalledWith(
       0xd18e,
       { kind: "bytes", value: new Uint8Array([7, 0]) },
       undefined,
     );
   });
 });
+
+function ptpString(value: DeviceValue): string {
+  const data = bytes(value);
+  const length = data[0] ?? 0;
+  let result = "";
+  for (let offset = 1; offset < 1 + (length - 1) * 2; offset += 2) {
+    const code = data[offset]! | (data[offset + 1]! << 8);
+    if (code !== 0) result += String.fromCharCode(code);
+  }
+  return result;
+}
+
+function recipeNameBytes(value: string): Uint8Array {
+  const chars = Array.from(value);
+  const data = new Uint8Array(1 + chars.length * 2 + 2);
+  data[0] = chars.length + 1;
+  chars.forEach((char, index) => {
+    const offset = 1 + index * 2;
+    const code = char.charCodeAt(0);
+    data[offset] = code & 0xff;
+    data[offset + 1] = code >> 8;
+  });
+  return data;
+}
