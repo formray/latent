@@ -1,4 +1,4 @@
-import { useState, type JSX } from "react";
+import { useRef, useState, type ChangeEvent, type JSX } from "react";
 import clsx from "clsx";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import { useRecipesStore } from "../stores/recipes";
@@ -22,10 +22,13 @@ export interface RecipeDetailProps {
 export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const t = useT();
   const locale = detectLocale();
+  const rafInputRef = useRef<HTMLInputElement | null>(null);
   const isFavorite = useRecipesStore((s) => s.favorites.has(recipe.id));
   const toggleFavorite = useRecipesStore((s) => s.toggleFavorite);
   const deleteRecipe = useRecipesStore((s) => s.deleteRecipe);
   const cameraConnected = useCameraStore((s) => s.isConnected());
+  const rawPreviewStatus = useCameraStore((s) => s.rawPreviewStatus);
+  const renderRawPreview = useCameraStore((s) => s.renderRawPreview);
   const writeStatus = useCameraStore((s) => s.writeStatus);
   const writeRecipeToSlot = useCameraStore((s) => s.writeRecipeToSlot);
   const [copied, setCopied] = useState(false);
@@ -55,6 +58,17 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
     void writeRecipeToSlot(recipe, slot);
   };
 
+  const handlePreviewFile = (event: ChangeEvent<HTMLInputElement>): void => {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+    document.getElementById("raw-preview-panel")?.scrollIntoView({
+      block: "start",
+      behavior: "smooth",
+    });
+    void renderRawPreview(file, recipe);
+    event.currentTarget.value = "";
+  };
+
   return (
     <article className="flex flex-col gap-6 px-8 py-8">
       <header className="flex flex-col gap-2 border-b border-zinc-900 pb-6">
@@ -68,6 +82,34 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
             </h2>
           </div>
           <div className="flex flex-shrink-0 items-center gap-2">
+            <input
+              ref={rafInputRef}
+              type="file"
+              accept=".raf,.RAF,image/x-fuji-raf"
+              aria-label={t("detail.previewRaf.file")}
+              className="hidden"
+              onChange={handlePreviewFile}
+            />
+            <button
+              type="button"
+              disabled={!cameraConnected || rawPreviewStatus.kind === "rendering"}
+              onClick={() => rafInputRef.current?.click()}
+              title={
+                cameraConnected
+                  ? t("detail.previewRaf.title")
+                  : t("detail.previewRaf.disconnected")
+              }
+              className={clsx(
+                "rounded-sm border px-3 py-1.5 text-xs font-medium transition-colors",
+                cameraConnected && rawPreviewStatus.kind !== "rendering"
+                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15"
+                  : "cursor-not-allowed border-zinc-900 text-zinc-700",
+              )}
+            >
+              {rawPreviewStatus.kind === "rendering"
+                ? t("detail.previewRaf.rendering")
+                : t("detail.previewRaf")}
+            </button>
             <button
               type="button"
               onClick={() => toggleFavorite(recipe.id)}

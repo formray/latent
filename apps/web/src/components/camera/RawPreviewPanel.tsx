@@ -24,6 +24,7 @@ export function RawPreviewPanel(): JSX.Element | null {
 
   return (
     <section
+      id="raw-preview-panel"
       aria-label="RAF camera preview"
       className="border-b border-zinc-900 bg-[#060606] px-6 py-5"
     >
