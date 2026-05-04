@@ -154,7 +154,7 @@ function CameraSlotCard({
 
       <div className="mt-5 flex flex-wrap gap-1.5 font-mono text-[10px] uppercase tracking-wide">
         <Chip>{d?.dynamicRange.label ?? "--"}</Chip>
-        <Chip>{d?.whiteBalance.label ?? "--"}</Chip>
+        <Chip>{cameraWhiteBalanceLabel(d)}</Chip>
         <Chip>
           R {signed(d?.wbShift.r)} / B {signed(d?.wbShift.b)}
         </Chip>
@@ -240,7 +240,7 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
 
       <div className="mt-6 grid grid-cols-3 gap-px bg-zinc-900 font-mono text-xs sm:grid-cols-4">
         <QTile label={t("param.dynamicRange")} value={d.dynamicRange.label} strong />
-        <QTile label={t("param.whiteBalance")} value={d.whiteBalance.label} />
+        <QTile label={t("param.whiteBalance")} value={cameraWhiteBalanceLabel(d)} />
         <QTile
           label={t("param.whiteBalance.shift")}
           value={`R ${signed(d.wbShift.r)} · B ${signed(d.wbShift.b)}`}
@@ -436,4 +436,13 @@ function signed(value: number | undefined): string {
 
 function formatNumber(value: number): string {
   return value === 0 ? "0" : signed(value);
+}
+
+function cameraWhiteBalanceLabel(decoded: DecodedPresetValues | undefined): string {
+  if (!decoded) return "--";
+  if (decoded.whiteBalance.label !== "Color Temperature") return decoded.whiteBalance.label;
+  if (typeof decoded.whiteBalance.colorTemperatureK === "number") {
+    return `Color Temperature ${decoded.whiteBalance.colorTemperatureK}K`;
+  }
+  return "Color Temperature (K missing)";
 }
