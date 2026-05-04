@@ -190,9 +190,7 @@ export class ConnectionManager {
       });
     } catch (rawErr) {
       if (opId !== this.currentOpId || abort.signal.aborted) return;
-      if (rawErr instanceof LatentError) {
-        this.dispatch({ type: "OPERATION_FAILED", err: rawErr, opId });
-      }
+      this.dispatch({ type: "OPERATION_FAILED", err: toLatentError(rawErr), opId });
     }
   }
 
@@ -256,4 +254,23 @@ function abortState(state: ConnectionState): void {
   if (state.kind === "connecting" || state.kind === "reconnecting") {
     state.abort.abort();
   }
+}
+
+function toLatentError(err: unknown): LatentError {
+  if (err instanceof LatentError) return err;
+  const name = nameOf(err);
+  if (name === "NotFoundError" || name === "SecurityError") {
+    return new LatentError("UsbPermissionDenied", "Camera selection was not permitted", err);
+  }
+  return new LatentError("UsbDisconnect", "Camera connection failed", err, {
+    domException: name,
+  });
+}
+
+function nameOf(err: unknown): string | undefined {
+  if (typeof DOMException !== "undefined" && err instanceof DOMException) {
+    return err.name;
+  }
+  const maybe = err as { name?: unknown } | null;
+  return typeof maybe?.name === "string" ? maybe.name : undefined;
 }

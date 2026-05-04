@@ -2,6 +2,10 @@ import type { LatentError } from "@latent/ptp-fuji";
 import type { ErrorReason } from "./types.js";
 
 export function classifyDriverError(err: LatentError): ErrorReason {
+  if (err.category === "PtpTimeout") {
+    return "camera-off";
+  }
+
   switch (err.stage) {
     case "claim":
       if (err.domException === "NetworkError" && err.platform === "mac") {
@@ -20,7 +24,6 @@ export function classifyDriverError(err: LatentError): ErrorReason {
 
   switch (err.category) {
     case "PtpStall":
-    case "PtpTimeout":
       return "camera-off";
     case "UsbPermissionDenied":
       return "permission-denied";

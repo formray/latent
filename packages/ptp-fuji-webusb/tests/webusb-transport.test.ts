@@ -107,6 +107,27 @@ describe("WebUsbPtpTransport.send", () => {
       domException: "NetworkError",
     });
   });
+
+  it("times out a stalled transferOut", async () => {
+    vi.useFakeTimers();
+    const device = makeMockDevice({
+      transferOut: vi.fn(() => new Promise(() => undefined)),
+    });
+    const transport = new WebUsbPtpTransport(
+      device as unknown as USBDevice,
+      0x81,
+      0x02,
+      { defaultTimeoutMs: 25 },
+    );
+    const send = transport.send(new Uint8Array([1]));
+    const expectation = expect(send).rejects.toMatchObject({
+      category: "PtpTimeout",
+      stage: "transfer-out",
+    });
+    await vi.advanceTimersByTimeAsync(25);
+    await expectation;
+    vi.useRealTimers();
+  });
 });
 
 describe("WebUsbPtpTransport.receive", () => {
@@ -183,6 +204,27 @@ describe("WebUsbPtpTransport.receive", () => {
       stage: "transfer-in",
       domException: "NetworkError",
     });
+  });
+
+  it("times out a stalled transferIn", async () => {
+    vi.useFakeTimers();
+    const device = makeMockDevice({
+      transferIn: vi.fn(() => new Promise(() => undefined)),
+    });
+    const transport = new WebUsbPtpTransport(
+      device as unknown as USBDevice,
+      0x81,
+      0x02,
+      { defaultTimeoutMs: 25 },
+    );
+    const recv = transport.receive();
+    const expectation = expect(recv).rejects.toMatchObject({
+      category: "PtpTimeout",
+      stage: "transfer-in",
+    });
+    await vi.advanceTimersByTimeAsync(25);
+    await expectation;
+    vi.useRealTimers();
   });
 });
 
