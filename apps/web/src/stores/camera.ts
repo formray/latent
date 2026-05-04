@@ -11,10 +11,7 @@ import { LatentError, patchProfile } from "@latent/ptp-fuji";
 import type { ConversionParams } from "@latent/ptp-fuji";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import { writeRecipeToCameraSlot } from "../lib/recipe-to-camera-preset";
-import {
-  recipeToConversionParams,
-  withoutWhiteBalance,
-} from "../lib/recipe-to-conversion-params";
+import { recipeToConversionParams } from "../lib/recipe-to-conversion-params";
 
 const MACOS_BETA_ACK_KEY = "latent:macos-beta-ack-v1";
 const MACOS_SETUP_ACK_KEY = "latent:macos-setup-ack-v1";
@@ -88,7 +85,11 @@ export interface RawPreviewDiagnosticResult {
 export type RawPreviewDiagnosticVariantId =
   | "base"
   | "film"
-  | "without-white-balance"
+  | "film-dynamic-range"
+  | "film-tone"
+  | "film-color"
+  | "film-chrome"
+  | "film-texture"
   | "full";
 
 let manager: ConnectionManager | null = null;
@@ -516,7 +517,7 @@ function diagnosticVariants(full: ConversionParams): Array<{
   label: string;
   buildProfile?: (baseProfile: Uint8Array) => Uint8Array;
 }> {
-  const filmSimulation = full.filmSimulation;
+  const film = pickParams(full, ["filmSimulation"]);
   return [
     {
       id: "base",
@@ -525,15 +526,47 @@ function diagnosticVariants(full: ConversionParams): Array<{
     {
       id: "film",
       label: "Film simulation only",
-      buildProfile: (baseProfile) => {
-        if (filmSimulation === undefined) return baseProfile;
-        return patchProfile(baseProfile, { filmSimulation });
-      },
+      buildProfile: buildDiagnosticProfile(film),
     },
     {
-      id: "without-white-balance",
-      label: "Full recipe without WB",
-      buildProfile: (baseProfile) => patchProfile(baseProfile, withoutWhiteBalance(full)),
+      id: "film-dynamic-range",
+      label: "Film + DR",
+      buildProfile: buildDiagnosticProfile({
+        ...film,
+        ...pickParams(full, ["dynamicRange"]),
+      }),
+    },
+    {
+      id: "film-tone",
+      label: "Film + tone",
+      buildProfile: buildDiagnosticProfile({
+        ...film,
+        ...pickParams(full, ["highlightTone", "shadowTone"]),
+      }),
+    },
+    {
+      id: "film-color",
+      label: "Film + color",
+      buildProfile: buildDiagnosticProfile({
+        ...film,
+        ...pickParams(full, ["color", "sharpness"]),
+      }),
+    },
+    {
+      id: "film-chrome",
+      label: "Film + chrome",
+      buildProfile: buildDiagnosticProfile({
+        ...film,
+        ...pickParams(full, ["colorChromeEffect", "colorChromeFxBlue"]),
+      }),
+    },
+    {
+      id: "film-texture",
+      label: "Film + texture",
+      buildProfile: buildDiagnosticProfile({
+        ...film,
+        ...pickParams(full, ["grainEffect", "noiseReduction", "clarity"]),
+      }),
     },
     {
       id: "full",
@@ -541,6 +574,26 @@ function diagnosticVariants(full: ConversionParams): Array<{
       buildProfile: (baseProfile) => patchProfile(baseProfile, full),
     },
   ];
+}
+
+function pickParams<K extends keyof ConversionParams>(
+  params: ConversionParams,
+  keys: K[],
+): Partial<ConversionParams> {
+  const out: Partial<ConversionParams> = {};
+  for (const key of keys) {
+    const value = params[key];
+    if (value !== undefined) {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+function buildDiagnosticProfile(
+  params: ConversionParams,
+): (baseProfile: Uint8Array) => Uint8Array {
+  return (baseProfile) => patchProfile(baseProfile, params);
 }
 
 async function fileToBytes(file: File): Promise<Uint8Array> {
