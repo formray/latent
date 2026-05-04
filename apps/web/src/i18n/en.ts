@@ -55,7 +55,37 @@ export const en = {
   "camera.connecting": "Connecting",
   "camera.connected": "Connected",
   "camera.disconnect": "Disconnect",
+  "camera.degraded": "Camera responding intermittently",
   "camera.notSupported.short": "WebUSB unavailable",
+  "camera.error.macos-claim-collision.title": "macOS is holding the camera",
+  "camera.error.macos-claim-collision.body":
+    "Image Capture is claiming exclusive access. Open the macOS setup to release it.",
+  "camera.error.macos-claim-collision.action": "Open setup",
+  "camera.error.camera-off.title": "Camera not responding",
+  "camera.error.camera-off.body":
+    "Power-cycle the camera and check the cable, then click retry.",
+  "camera.error.camera-off.action": "Retry",
+  "camera.error.cable-unplugged.title": "Camera unplugged",
+  "camera.error.cable-unplugged.body":
+    "The USB cable was disconnected. Reconnect it and Latent will reconnect automatically.",
+  "camera.error.permission-denied.title": "Permission needed",
+  "camera.error.permission-denied.body":
+    "Click Connect and allow access to the camera in the picker.",
+  "camera.error.permission-denied.action": "Connect",
+  "camera.error.secure-context.title": "Insecure context",
+  "camera.error.secure-context.body":
+    "Latent needs HTTPS or localhost to access USB devices.",
+  "camera.error.webusb-unsupported.title": "Browser not supported",
+  "camera.error.webusb-unsupported.body":
+    "Latent needs a Chromium browser such as Chrome, Edge, Brave, or Arc.",
+  "camera.error.session-stale.title": "Camera in stale state",
+  "camera.error.session-stale.body":
+    "The previous session did not close cleanly, or another app is holding the camera. Close other camera apps if any, then power-cycle the camera and retry.",
+  "camera.error.session-stale.action": "Retry",
+  "camera.error.unknown.title": "Connection failed",
+  "camera.error.unknown.body":
+    "An unexpected error happened while talking to the camera.",
+  "camera.error.unknown.action": "Retry",
 
   // Errors
   "error.UsbPermissionDenied.title": "No camera selected",

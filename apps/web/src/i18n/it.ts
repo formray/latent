@@ -58,7 +58,37 @@ export const it: Record<MessageKey, string> = {
   "camera.connecting": "Connessione in corso",
   "camera.connected": "Collegata",
   "camera.disconnect": "Disconnetti",
+  "camera.degraded": "La fotocamera risponde a intermittenza",
   "camera.notSupported.short": "WebUSB non disponibile",
+  "camera.error.macos-claim-collision.title": "macOS sta usando la fotocamera",
+  "camera.error.macos-claim-collision.body":
+    "Acquisizione Immagine sta richiedendo accesso esclusivo. Apri la configurazione macOS per liberarla.",
+  "camera.error.macos-claim-collision.action": "Apri configurazione",
+  "camera.error.camera-off.title": "La fotocamera non risponde",
+  "camera.error.camera-off.body":
+    "Spegni e riaccendi la fotocamera, controlla il cavo e poi riprova.",
+  "camera.error.camera-off.action": "Riprova",
+  "camera.error.cable-unplugged.title": "Fotocamera scollegata dal cavo",
+  "camera.error.cable-unplugged.body":
+    "Il cavo USB è stato scollegato. Ricollegalo e Latent proverà a riconnettersi automaticamente.",
+  "camera.error.permission-denied.title": "Permesso richiesto",
+  "camera.error.permission-denied.body":
+    "Fai clic su Collega e consenti l'accesso alla fotocamera nel selettore.",
+  "camera.error.permission-denied.action": "Collega",
+  "camera.error.secure-context.title": "Contesto non sicuro",
+  "camera.error.secure-context.body":
+    "Latent richiede HTTPS o localhost per accedere ai dispositivi USB.",
+  "camera.error.webusb-unsupported.title": "Browser non supportato",
+  "camera.error.webusb-unsupported.body":
+    "Latent richiede un browser Chromium come Chrome, Edge, Brave o Arc.",
+  "camera.error.session-stale.title": "Fotocamera in stato bloccato",
+  "camera.error.session-stale.body":
+    "La sessione precedente non si è chiusa correttamente, oppure un'altra app sta usando la fotocamera. Chiudi eventuali app fotografiche, spegni e riaccendi la fotocamera e riprova.",
+  "camera.error.session-stale.action": "Riprova",
+  "camera.error.unknown.title": "Connessione non riuscita",
+  "camera.error.unknown.body":
+    "Si è verificato un errore imprevisto mentre la fotocamera era in comunicazione.",
+  "camera.error.unknown.action": "Riprova",
 
   // Errors
   "error.UsbPermissionDenied.title": "Nessuna fotocamera selezionata",
