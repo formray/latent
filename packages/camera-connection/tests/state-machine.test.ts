@@ -113,6 +113,7 @@ describe("connection reducer transitions", () => {
     ["connected USB_DEVICE_DISCONNECTED enters reconnecting", connectedState(), { type: "USB_DEVICE_DISCONNECTED" } as ConnectionEvent, "reconnecting"],
     ["connected PAGE_HIDING stays connected", connectedState(), { type: "PAGE_HIDING" } as ConnectionEvent, "connected"],
     ["error RETRY_REQUESTED enters connecting", errorState("session-stale"), { type: "RETRY_REQUESTED" } as ConnectionEvent, "connecting"],
+    ["error CONNECT_REQUESTED enters connecting", errorState("permission-denied"), { type: "CONNECT_REQUESTED" } as ConnectionEvent, "connecting"],
     ["error USB_DEVICE_CONNECTED enters connecting for cable-unplugged", errorState("cable-unplugged"), { type: "USB_DEVICE_CONNECTED" } as ConnectionEvent, "connecting"],
     ["disconnected CONNECT_REQUESTED enters connecting", { kind: "disconnected" } as ConnectionState, { type: "CONNECT_REQUESTED" } as ConnectionEvent, "connecting"],
     ["disconnected USB_DEVICE_CONNECTED enters connecting", { kind: "disconnected" } as ConnectionState, { type: "USB_DEVICE_CONNECTED" } as ConnectionEvent, "connecting"],

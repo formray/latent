@@ -279,7 +279,9 @@ function reduceError(
   state: Extract<ConnectionState, { kind: "error" }>,
   event: ConnectionEvent,
 ): TransitionResult {
-  if (event.type === "RETRY_REQUESTED") return { state: connectingState(1), effects: [] };
+  if (event.type === "RETRY_REQUESTED" || event.type === "CONNECT_REQUESTED") {
+    return { state: connectingState(1), effects: [] };
+  }
   if (event.type === "MACOS_SETUP_ATTEMPTED") {
     return {
       state: connectingState(1, event.advanced ? "advanced" : "basic"),

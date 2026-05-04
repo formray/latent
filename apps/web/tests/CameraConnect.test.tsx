@@ -133,6 +133,15 @@ describe("<CameraConnect />", () => {
     expect(dispatch).toHaveBeenCalledWith({ type: "RETRY_REQUESTED" });
   });
 
+  it("permission-denied Connect action dispatches CONNECT_REQUESTED", () => {
+    const { manager, dispatch, emitState } = fakeManager();
+    wireCameraManager(manager);
+    emitState(errorConnectionState("permission-denied"));
+    render(<CameraConnect />);
+    fireEvent.click(screen.getByRole("button", { name: /connect/i }));
+    expect(dispatch).toHaveBeenCalledWith({ type: "CONNECT_REQUESTED" });
+  });
+
   it("state subscriber mirrors manager state", () => {
     const { manager, emitState } = fakeManager();
     wireCameraManager(manager);
