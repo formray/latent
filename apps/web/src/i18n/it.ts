@@ -32,6 +32,15 @@ export const it: Record<MessageKey, string> = {
   "detail.delete": "Elimina",
   "detail.delete.hideDefault": "Nascondi",
   "detail.delete.confirm": "Rimuovere questa ricetta dalla libreria?",
+  "detail.cameraWrite.section": "Scrivi su fotocamera",
+  "detail.cameraWrite.slot": "Scrivi C{slot}",
+  "detail.cameraWrite.writing": "Scrittura",
+  "detail.cameraWrite.confirm":
+    "Scrivere questa ricetta nello slot C{slot}? Latent farà backup dello slot attuale e verificherà dopo la scrittura.",
+  "detail.cameraWrite.success": "C{slot} scritto e {n} proprietà verificate.",
+  "detail.cameraWrite.error": "Scrittura non riuscita: {message}",
+  "detail.cameraWrite.disconnected":
+    "Collega una fotocamera per scrivere questa ricetta in uno slot custom.",
   "detail.setupWalkthrough": "Configura sulla fotocamera",
   "detail.setupWalkthrough.intro":
     "Segui questi passaggi per inserire la ricetta in uno slot personalizzato della fotocamera.",

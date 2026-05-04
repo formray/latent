@@ -2,6 +2,7 @@ import { useState, type JSX } from "react";
 import clsx from "clsx";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import { useRecipesStore } from "../stores/recipes";
+import { useCameraStore } from "../stores/camera";
 import { detectLocale, useT } from "../i18n";
 import {
   describeGrain,
@@ -22,6 +23,9 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const isFavorite = useRecipesStore((s) => s.favorites.has(recipe.id));
   const toggleFavorite = useRecipesStore((s) => s.toggleFavorite);
   const deleteRecipe = useRecipesStore((s) => s.deleteRecipe);
+  const cameraConnected = useCameraStore((s) => s.isConnected());
+  const writeStatus = useCameraStore((s) => s.writeStatus);
+  const writeRecipeToSlot = useCameraStore((s) => s.writeRecipeToSlot);
   const [copied, setCopied] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
 
@@ -42,6 +46,11 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const handleDelete = (): void => {
     if (!window.confirm(t("detail.delete.confirm"))) return;
     deleteRecipe(recipe.id);
+  };
+
+  const handleWrite = (slot: number): void => {
+    if (!window.confirm(t("detail.cameraWrite.confirm", { slot }))) return;
+    void writeRecipeToSlot(recipe, slot);
   };
 
   return (
@@ -196,6 +205,55 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
             value={recipe.tags?.length ? recipe.tags.join(", ") : "—"}
           />
         </dl>
+      </section>
+
+      <section aria-labelledby="camera-write-heading" className="flex flex-col gap-3">
+        <h3
+          id="camera-write-heading"
+          className="text-xs font-medium uppercase tracking-wider text-zinc-500"
+        >
+          {t("detail.cameraWrite.section")}
+        </h3>
+        <div className="flex flex-wrap items-center gap-2 border-t border-zinc-900 pt-4">
+          {[1, 2, 3, 4].map((slot) => {
+            const writing =
+              writeStatus.kind === "writing" &&
+              writeStatus.slot === slot &&
+              writeStatus.recipeName === recipe.name;
+            return (
+              <button
+                key={slot}
+                type="button"
+                disabled={!cameraConnected || writeStatus.kind === "writing"}
+                onClick={() => handleWrite(slot)}
+                className={clsx(
+                  "rounded-sm border px-3 py-1.5 font-mono text-xs transition-colors",
+                  cameraConnected
+                    ? "border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/20"
+                    : "cursor-not-allowed border-zinc-900 text-zinc-700",
+                )}
+              >
+                {writing ? t("detail.cameraWrite.writing") : t("detail.cameraWrite.slot", { slot })}
+              </button>
+            );
+          })}
+        </div>
+        {writeStatus.kind === "success" && writeStatus.recipeName === recipe.name && (
+          <p className="text-xs text-emerald-400">
+            {t("detail.cameraWrite.success", {
+              slot: writeStatus.slot,
+              n: writeStatus.propertiesWritten,
+            })}
+          </p>
+        )}
+        {writeStatus.kind === "error" && writeStatus.recipeName === recipe.name && (
+          <p className="text-xs text-red-300">
+            {t("detail.cameraWrite.error", { message: writeStatus.message })}
+          </p>
+        )}
+        {!cameraConnected && (
+          <p className="text-xs text-zinc-500">{t("detail.cameraWrite.disconnected")}</p>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">

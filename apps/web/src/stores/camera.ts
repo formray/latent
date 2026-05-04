@@ -8,6 +8,8 @@ import type {
   RawPreset,
 } from "@latent/camera-connection";
 import { LatentError } from "@latent/ptp-fuji";
+import type { RecipeType } from "@latent/recipe-schema/browser";
+import { writeRecipeToCameraSlot } from "../lib/recipe-to-camera-preset";
 
 const MACOS_BETA_ACK_KEY = "latent:macos-beta-ack-v1";
 const MACOS_SETUP_ACK_KEY = "latent:macos-setup-ack-v1";
@@ -16,6 +18,7 @@ const MACOS_PERSISTENT_DISABLE_KEY = "latent:macos-persistent-disable-v1";
 export interface CameraStore {
   state: ConnectionState;
   presets: RawPreset[];
+  writeStatus: CameraWriteStatus;
   macosBetaAcknowledged: boolean;
   macosSetupAcknowledged: boolean;
   macosPersistentDisableConfigured: boolean;
@@ -33,10 +36,17 @@ export interface CameraStore {
   closeMacosWizard: () => void;
   toggleMacosAdvanced: () => void;
   attemptMacosSetup: (advanced: boolean) => void;
+  writeRecipeToSlot: (recipe: RecipeType, slot: number) => Promise<void>;
   isConnected: () => boolean;
   isConnecting: () => boolean;
   errorReason: () => ErrorReason | null;
 }
+
+export type CameraWriteStatus =
+  | { kind: "idle" }
+  | { kind: "writing"; slot: number; recipeName: string }
+  | { kind: "success"; slot: number; recipeName: string; propertiesWritten: number }
+  | { kind: "error"; slot: number; recipeName: string; message: string };
 
 let manager: ConnectionManager | null = null;
 let unwireManager: Array<() => void> = [];
@@ -50,6 +60,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
   return {
     state: { kind: "idle" },
     presets: [],
+    writeStatus: { kind: "idle" },
     macosBetaAcknowledged: readFlag(MACOS_BETA_ACK_KEY),
     macosSetupAcknowledged: readFlag(MACOS_SETUP_ACK_KEY),
     macosPersistentDisableConfigured: readFlag(MACOS_PERSISTENT_DISABLE_KEY),
@@ -121,6 +132,44 @@ export const useCameraStore = create<CameraStore>((set, get) => {
 
     attemptMacosSetup(advanced: boolean) {
       manager?.dispatch({ type: "MACOS_SETUP_ATTEMPTED", advanced });
+    },
+
+    async writeRecipeToSlot(recipe: RecipeType, slot: number) {
+      const { state } = get();
+      if (state.kind !== "connected" && state.kind !== "degraded") {
+        update({
+          writeStatus: {
+            kind: "error",
+            slot,
+            recipeName: recipe.name,
+            message: "Camera is not connected.",
+          },
+        });
+        return;
+      }
+
+      update({ writeStatus: { kind: "writing", slot, recipeName: recipe.name } });
+      try {
+        const result = await writeRecipeToCameraSlot(state.port, recipe, slot);
+        update({
+          presets: upsertPreset(get().presets, result.verified),
+          writeStatus: {
+            kind: "success",
+            slot,
+            recipeName: recipe.name,
+            propertiesWritten: result.propertiesWritten,
+          },
+        });
+      } catch (err) {
+        update({
+          writeStatus: {
+            kind: "error",
+            slot,
+            recipeName: recipe.name,
+            message: err instanceof Error ? err.message : String(err),
+          },
+        });
+      }
     },
 
     isConnected() {
@@ -234,6 +283,7 @@ function publishCameraDiagnostics(state: CameraStore): void {
     state: state.state,
     presets: state.presets,
     decodedPresets: compactDecodedPresets(state.presets),
+    writeStatus: state.writeStatus,
     isConnected: state.isConnected(),
     isConnecting: state.isConnecting(),
     errorReason: state.errorReason(),
@@ -263,6 +313,12 @@ function compactDecodedPresets(presets: RawPreset[]): CameraPresetDiagnostics[] 
   }));
 }
 
+function upsertPreset(presets: RawPreset[], preset: RawPreset): RawPreset[] {
+  const existing = presets.findIndex((item) => item.slot === preset.slot);
+  if (existing === -1) return [...presets, preset].sort((a, b) => a.slot - b.slot);
+  return presets.map((item) => (item.slot === preset.slot ? preset : item));
+}
+
 interface CameraPresetDiagnostics {
   slot: number;
   name: string;
@@ -290,6 +346,7 @@ declare global {
       state: ConnectionState;
       presets: RawPreset[];
       decodedPresets: CameraPresetDiagnostics[];
+      writeStatus: CameraWriteStatus;
       isConnected: boolean;
       isConnecting: boolean;
       errorReason: ErrorReason | null;
