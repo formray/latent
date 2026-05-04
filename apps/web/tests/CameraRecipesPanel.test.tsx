@@ -23,8 +23,12 @@ function connectedState(): ConnectionState {
   };
 }
 
-function preset(slot: number, overrides: Partial<RawPreset> = {}): RawPreset {
-  return {
+type RawPresetOverrides = Omit<Partial<RawPreset>, "name"> & {
+  name?: string | undefined;
+};
+
+function preset(slot: number, overrides: RawPresetOverrides = {}): RawPreset {
+  const base: RawPreset = {
     slot,
     name: slot === 1 ? "ETERNAL BLACK" : "KODAK ULTRAMAX 400",
     properties: {
@@ -54,8 +58,15 @@ function preset(slot: number, overrides: Partial<RawPreset> = {}): RawPreset {
         slot === 1 ? { value: 2, label: "Strong" } : { value: 0, label: "Off" },
       smoothSkinEffect: { value: 0, label: "Off" },
     },
-    ...overrides,
   };
+  const { name, ...restOverrides } = overrides;
+  const next: RawPreset = { ...base, ...restOverrides };
+  if (name !== undefined) {
+    next.name = name;
+  } else if ("name" in overrides) {
+    delete next.name;
+  }
+  return next;
 }
 
 describe("<CameraRecipesPanel />", () => {
@@ -101,5 +112,33 @@ describe("<CameraRecipesPanel />", () => {
     expect(screen.getByRole("complementary")).toHaveTextContent("Classic Chrome");
     expect(screen.getByRole("complementary")).toHaveTextContent("DR Auto");
     expect(screen.getByRole("complementary")).toHaveTextContent("+4");
+  });
+
+  it("renders unnamed base slots as default custom slots", () => {
+    useCameraStore.setState({
+      state: connectedState(),
+      presets: [
+        preset(3, {
+          name: undefined,
+          decoded: {
+            ...preset(3).decoded!,
+            filmSimulation: { value: 1, label: "Provia (Standard)" },
+            dynamicRange: { value: 1, label: "DR 100%" },
+            wbShift: { r: 0, b: 0 },
+            highlightTone: 0,
+            shadowTone: 0,
+            color: 0,
+            sharpness: 0,
+            noiseReduction: 0,
+            clarity: 0,
+            grainEffect: { value: 0, label: "Off", strength: "Off", size: "Small" },
+            colorChromeEffect: { value: 0, label: "Off" },
+            colorChromeEffectBlue: { value: 0, label: "Off" },
+          },
+        }),
+      ],
+    });
+    render(<CameraRecipesPanel />);
+    expect(screen.getByRole("button", { name: /Default C3/i })).toHaveTextContent("default");
   });
 });
