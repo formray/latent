@@ -1,7 +1,53 @@
 import { describe, expect, it } from "vitest";
 import { LatentError } from "../src/errors.js";
+import { ContainerType } from "../src/ptp/constants.js";
+import { packContainer } from "../src/ptp/container.js";
 import { FujiCameraSession } from "../src/ptp/session.js";
 import { FakeTransport } from "./fake-transport.js";
+
+function le16(value: number): number[] {
+  return [value & 0xff, (value >> 8) & 0xff];
+}
+
+function le32(value: number): number[] {
+  return [
+    value & 0xff,
+    (value >> 8) & 0xff,
+    (value >> 16) & 0xff,
+    (value >> 24) & 0xff,
+  ];
+}
+
+function ptpString(value: string): number[] {
+  const chars = Array.from(value);
+  const out = [chars.length + 1];
+  for (const ch of chars) {
+    out.push(...le16(ch.charCodeAt(0)));
+  }
+  out.push(0, 0);
+  return out;
+}
+
+function array16(values: number[]): number[] {
+  return [...le32(values.length), ...values.flatMap(le16)];
+}
+
+function deviceInfoPayload(): Uint8Array {
+  return new Uint8Array([
+    ...le16(100),
+    ...le32(6),
+    ...le16(0x100),
+    ...ptpString("FUJIFILM"),
+    ...ptpString("1.10"),
+    ...array16([0x1001, 0x1002, 0x1003, 0x1015, 0x1016]),
+    ...array16([]),
+    ...array16([]),
+    ...array16([]),
+    ...array16([]),
+    ...ptpString("X-S20"),
+    ...ptpString("ABC123"),
+  ]);
+}
 
 describe("FujiCameraSession", () => {
   it("starts in 'closed' state", () => {
@@ -63,5 +109,51 @@ describe("FujiCameraSession", () => {
     expect(t.sent).toHaveLength(1);
     expect(t.sent[0]?.[6]).toBe(0x03);
     expect(t.sent[0]?.[7]).toBe(0x10);
+  });
+
+  it("getDeviceInfo sends GetDeviceInfo opcode 0x1001", async () => {
+    const t = new FakeTransport();
+    t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x01, 0x20, 1, 0, 0, 0]));
+    t.enqueue(packContainer({
+      type: ContainerType.Data,
+      code: 0x1001,
+      transactionId: 2,
+      params: [],
+      data: deviceInfoPayload(),
+    }));
+    t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x01, 0x20, 2, 0, 0, 0]));
+    const s = new FujiCameraSession(t);
+    await s.open();
+    await s.getDeviceInfo();
+    expect(t.sent[1]?.[6]).toBe(0x01);
+    expect(t.sent[1]?.[7]).toBe(0x10);
+  });
+
+  it("getDeviceInfo parses model, firmware, serial, and supported ops", async () => {
+    const t = new FakeTransport();
+    t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x01, 0x20, 1, 0, 0, 0]));
+    t.enqueue(packContainer({
+      type: ContainerType.Data,
+      code: 0x1001,
+      transactionId: 2,
+      params: [],
+      data: deviceInfoPayload(),
+    }));
+    t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x01, 0x20, 2, 0, 0, 0]));
+    const s = new FujiCameraSession(t);
+    await s.open();
+    await expect(s.getDeviceInfo()).resolves.toEqual({
+      model: "X-S20",
+      firmwareVersion: "1.10",
+      serialNumber: "ABC123",
+      supportedOps: [0x1001, 0x1002, 0x1003, 0x1015, 0x1016],
+    });
+  });
+
+  it("getDeviceInfo rejects when called before open", async () => {
+    const s = new FujiCameraSession(new FakeTransport());
+    await expect(s.getDeviceInfo()).rejects.toMatchObject({
+      category: "PtpStall",
+    });
   });
 });
