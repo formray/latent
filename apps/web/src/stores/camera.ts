@@ -22,6 +22,7 @@ export interface CameraStore {
   presets: RawPreset[];
   writeStatus: CameraWriteStatus;
   rawPreviewStatus: RawPreviewStatus;
+  rawPreviewFile: File | null;
   macosBetaAcknowledged: boolean;
   macosSetupAcknowledged: boolean;
   macosPersistentDisableConfigured: boolean;
@@ -40,6 +41,7 @@ export interface CameraStore {
   toggleMacosAdvanced: () => void;
   attemptMacosSetup: (advanced: boolean) => void;
   writeRecipeToSlot: (recipe: RecipeType, slot: number) => Promise<void>;
+  setRawPreviewFile: (file: File | null) => void;
   renderRawPreview: (file: File, recipe?: RecipeType | null) => Promise<void>;
   renderRawPreviewDiagnostics: (file: File, recipe: RecipeType) => Promise<void>;
   clearRawPreview: () => void;
@@ -108,6 +110,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
     presets: [],
     writeStatus: { kind: "idle" },
     rawPreviewStatus: { kind: "idle" },
+    rawPreviewFile: null,
     macosBetaAcknowledged: readFlag(MACOS_BETA_ACK_KEY),
     macosSetupAcknowledged: readFlag(MACOS_SETUP_ACK_KEY),
     macosPersistentDisableConfigured: readFlag(MACOS_PERSISTENT_DISABLE_KEY),
@@ -219,10 +222,15 @@ export const useCameraStore = create<CameraStore>((set, get) => {
       }
     },
 
+    setRawPreviewFile(file: File | null) {
+      update({ rawPreviewFile: file });
+    },
+
     async renderRawPreview(file: File, recipe?: RecipeType | null) {
       const { state } = get();
       if (state.kind !== "connected" && state.kind !== "degraded") {
         update({
+          rawPreviewFile: file,
           rawPreviewStatus: {
             kind: "error",
             fileName: file.name,
@@ -234,6 +242,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
       }
 
       update({
+        rawPreviewFile: file,
         rawPreviewStatus: {
           kind: "rendering",
           fileName: file.name,
@@ -244,11 +253,10 @@ export const useCameraStore = create<CameraStore>((set, get) => {
       try {
         const raf = await fileToBytes(file);
         const profileBuilder = recipe
-          ? (baseProfile: Uint8Array): Uint8Array => (
+          ? (baseProfile: Uint8Array): Uint8Array =>
               patchProfile(baseProfile, recipeToConversionParams(recipe), {
                 dynamicRangeEncoding: "enum",
               })
-            )
           : undefined;
         const result = await state.port.renderRawPreview(raf, profileBuilder);
         revokeRawPreviewUrl();
@@ -280,6 +288,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
       const { state } = get();
       if (state.kind !== "connected" && state.kind !== "degraded") {
         update({
+          rawPreviewFile: file,
           rawPreviewStatus: {
             kind: "error",
             fileName: file.name,
@@ -297,6 +306,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
 
       revokeRawPreviewUrl();
       update({
+        rawPreviewFile: file,
         rawPreviewStatus: {
           kind: "rendering",
           fileName: file.name,
@@ -427,6 +437,7 @@ export function resetCameraManagerForTests(): void {
   unwireManager = [];
   manager = null;
   revokeRawPreviewUrl();
+  useCameraStore.setState({ rawPreviewFile: null });
 }
 
 export function dispatchCameraEventForTests(event: ConnectionEvent): void {
@@ -473,6 +484,7 @@ function publishCameraDiagnostics(state: CameraStore): void {
     decodedPresets: compactDecodedPresets(state.presets),
     writeStatus: state.writeStatus,
     rawPreviewStatus: state.rawPreviewStatus,
+    rawPreviewFileName: state.rawPreviewFile?.name ?? null,
     isConnected: state.isConnected(),
     isConnecting: state.isConnecting(),
     errorReason: state.errorReason(),
@@ -534,10 +546,13 @@ function diagnosticVariants(full: ConversionParams): Array<{
     {
       id: "film-dynamic-range-enum",
       label: "Film + DR enum",
-      buildProfile: buildDiagnosticProfile({
-        ...film,
-        ...pickParams(full, ["dynamicRange"]),
-      }, { dynamicRangeEncoding: "enum" }),
+      buildProfile: buildDiagnosticProfile(
+        {
+          ...film,
+          ...pickParams(full, ["dynamicRange"]),
+        },
+        { dynamicRangeEncoding: "enum" },
+      ),
     },
     {
       id: "film-dynamic-range-raw",
@@ -664,6 +679,7 @@ declare global {
       decodedPresets: CameraPresetDiagnostics[];
       writeStatus: CameraWriteStatus;
       rawPreviewStatus: RawPreviewStatus;
+      rawPreviewFileName: string | null;
       isConnected: boolean;
       isConnecting: boolean;
       errorReason: ErrorReason | null;

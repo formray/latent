@@ -2,7 +2,7 @@ import { useRef, useState, type ChangeEvent, type JSX } from "react";
 import clsx from "clsx";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import { useRecipesStore } from "../stores/recipes";
-import { useCameraStore } from "../stores/camera";
+import { useCameraStore, type CameraWriteStatus, type RawPreviewStatus } from "../stores/camera";
 import { detectLocale, useT } from "../i18n";
 import {
   describeDynamicRange,
@@ -83,7 +83,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   return (
     <article className="mx-auto flex w-full max-w-6xl flex-col gap-7 px-4 py-5 sm:px-8 sm:py-8">
       <header className="flex flex-col gap-5 border-b border-zinc-900 pb-6">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,440px)] xl:items-start">
           <div className="min-w-0">
             <p className="font-mono text-xs uppercase tracking-wider text-zinc-500">
               {humanFilmSim(recipe.filmSimulation)}
@@ -97,90 +97,29 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
               </p>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-            <input
-              ref={rafInputRef}
-              type="file"
-              accept=".raf,.RAF,image/x-fuji-raf"
-              aria-label={t("detail.previewRaf.file")}
-              className="hidden"
-              onChange={handlePreviewFile}
-            />
-            <button
-              type="button"
-              disabled={!cameraConnected || rawPreviewStatus.kind === "rendering"}
-              onClick={() => openRafPicker("single")}
-              title={
-                cameraConnected ? t("detail.previewRaf.title") : t("detail.previewRaf.disconnected")
-              }
-              className={clsx(
-                "rounded-full border px-4 py-2 text-xs font-medium transition-colors",
-                cameraConnected && rawPreviewStatus.kind !== "rendering"
-                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15"
-                  : "cursor-not-allowed border-zinc-900 text-zinc-700",
-              )}
-            >
-              {rawPreviewStatus.kind === "rendering"
-                ? t("detail.previewRaf.rendering")
-                : t("detail.previewRaf")}
-            </button>
-            <button
-              type="button"
-              disabled={!cameraConnected || rawPreviewStatus.kind === "rendering"}
-              onClick={() => openRafPicker("diagnostic")}
-              title={
-                cameraConnected
-                  ? t("detail.previewRaf.diagnostic.title")
-                  : t("detail.previewRaf.disconnected")
-              }
-              className={clsx(
-                "rounded-full border px-4 py-2 text-xs font-medium transition-colors",
-                cameraConnected && rawPreviewStatus.kind !== "rendering"
-                  ? "border-sky-500/50 bg-sky-500/10 text-sky-300 hover:bg-sky-500/15"
-                  : "cursor-not-allowed border-zinc-900 text-zinc-700",
-              )}
-            >
-              {rawPreviewStatus.kind === "rendering"
-                ? t("detail.previewRaf.rendering")
-                : t("detail.previewRaf.diagnostic")}
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleFavorite(recipe.id)}
-              aria-pressed={isFavorite}
-              className={clsx(
-                "rounded-full border px-4 py-2 text-xs transition-colors",
-                isFavorite
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
-                  : "border-zinc-800 text-zinc-400 hover:border-zinc-700",
-              )}
-            >
-              {isFavorite ? t("detail.favourite.remove") : t("detail.favourite.add")}
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleCopy()}
-              className="rounded-full border border-zinc-800 px-4 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
-            >
-              {copied ? t("detail.copyJson.copied") : t("detail.copyJson")}
-            </button>
-            <button
-              type="button"
-              onClick={() => downloadRecipeJson(recipe)}
-              className="rounded-full border border-zinc-800 px-4 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
-            >
-              {t("detail.downloadJson")}
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="rounded-full border border-red-950/80 px-4 py-2 text-xs text-red-300 transition-colors hover:border-red-800 hover:bg-red-950/30"
-            >
-              {recipe.tags.includes("latent-default")
-                ? t("detail.delete.hideDefault")
-                : t("detail.delete")}
-            </button>
-          </div>
+          <input
+            ref={rafInputRef}
+            type="file"
+            accept=".raf,.RAF,image/x-fuji-raf"
+            aria-label={t("detail.previewRaf.file")}
+            className="hidden"
+            onChange={handlePreviewFile}
+          />
+          <RecipeCommandPanel
+            recipe={recipe}
+            copied={copied}
+            cameraConnected={cameraConnected}
+            rawPreviewStatus={rawPreviewStatus}
+            writeStatus={writeStatus}
+            isFavorite={isFavorite}
+            onPreview={() => openRafPicker("single")}
+            onDiagnose={() => openRafPicker("diagnostic")}
+            onToggleFavorite={() => toggleFavorite(recipe.id)}
+            onCopy={() => void handleCopy()}
+            onDownload={() => downloadRecipeJson(recipe)}
+            onDelete={handleDelete}
+            onWrite={handleWrite}
+          />
         </div>
       </header>
 
@@ -252,55 +191,6 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
         </dl>
       </section>
 
-      <section aria-labelledby="camera-write-heading" className="flex flex-col gap-3">
-        <h3
-          id="camera-write-heading"
-          className="text-xs font-medium uppercase tracking-wider text-zinc-500"
-        >
-          {t("detail.cameraWrite.section")}
-        </h3>
-        <div className="grid grid-cols-2 gap-2 border-t border-zinc-900 pt-4 sm:grid-cols-4">
-          {[1, 2, 3, 4].map((slot) => {
-            const writing =
-              writeStatus.kind === "writing" &&
-              writeStatus.slot === slot &&
-              writeStatus.recipeName === recipe.name;
-            return (
-              <button
-                key={slot}
-                type="button"
-                disabled={!cameraConnected || writeStatus.kind === "writing"}
-                onClick={() => handleWrite(slot)}
-                className={clsx(
-                  "rounded-full border px-4 py-3 font-mono text-xs transition-colors",
-                  cameraConnected
-                    ? "border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/20"
-                    : "cursor-not-allowed border-zinc-900 text-zinc-700",
-                )}
-              >
-                {writing ? t("detail.cameraWrite.writing") : t("detail.cameraWrite.slot", { slot })}
-              </button>
-            );
-          })}
-        </div>
-        {writeStatus.kind === "success" && writeStatus.recipeName === recipe.name && (
-          <p className="text-xs text-emerald-400">
-            {t("detail.cameraWrite.success", {
-              slot: writeStatus.slot,
-              n: writeStatus.propertiesWritten,
-            })}
-          </p>
-        )}
-        {writeStatus.kind === "error" && writeStatus.recipeName === recipe.name && (
-          <p className="text-xs text-red-300">
-            {t("detail.cameraWrite.error", { message: writeStatus.message })}
-          </p>
-        )}
-        {!cameraConnected && (
-          <p className="text-xs text-zinc-500">{t("detail.cameraWrite.disconnected")}</p>
-        )}
-      </section>
-
       <section className="flex flex-col gap-3">
         <button
           type="button"
@@ -322,6 +212,199 @@ function Param({ label, value }: { label: string; value: string }): JSX.Element 
       <dt className="text-xs text-zinc-500">{label}</dt>
       <dd className="font-mono text-sm tabular-nums text-zinc-200">{value}</dd>
     </div>
+  );
+}
+
+function RecipeCommandPanel({
+  recipe,
+  copied,
+  cameraConnected,
+  rawPreviewStatus,
+  writeStatus,
+  isFavorite,
+  onPreview,
+  onDiagnose,
+  onToggleFavorite,
+  onCopy,
+  onDownload,
+  onDelete,
+  onWrite,
+}: {
+  recipe: RecipeType;
+  copied: boolean;
+  cameraConnected: boolean;
+  rawPreviewStatus: RawPreviewStatus;
+  writeStatus: CameraWriteStatus;
+  isFavorite: boolean;
+  onPreview: () => void;
+  onDiagnose: () => void;
+  onToggleFavorite: () => void;
+  onCopy: () => void;
+  onDownload: () => void;
+  onDelete: () => void;
+  onWrite: (slot: number) => void;
+}): JSX.Element {
+  const t = useT();
+  const previewDisabled = !cameraConnected || rawPreviewStatus.kind === "rendering";
+  const writeDisabled = !cameraConnected || writeStatus.kind === "writing";
+
+  return (
+    <aside className="grid gap-px overflow-hidden rounded-lg border border-zinc-900 bg-zinc-900">
+      <div className="bg-zinc-950 p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-400">
+              {t("detail.action.preview.section")}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">
+              {cameraConnected
+                ? t("detail.action.preview.body")
+                : t("detail.previewRaf.disconnected")}
+            </p>
+          </div>
+          <span
+            className={clsx(
+              "rounded-md border px-2 py-1 font-mono text-[10px] uppercase tracking-wider",
+              cameraConnected
+                ? "border-emerald-500/30 text-emerald-300"
+                : "border-zinc-800 text-zinc-600",
+            )}
+          >
+            {cameraConnected ? "online" : "offline"}
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            disabled={previewDisabled}
+            onClick={onPreview}
+            title={
+              cameraConnected ? t("detail.previewRaf.title") : t("detail.previewRaf.disconnected")
+            }
+            className={clsx(
+              "rounded-md border px-4 py-3 text-sm font-medium transition-colors",
+              !previewDisabled
+                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15"
+                : "cursor-not-allowed border-zinc-900 text-zinc-700",
+            )}
+          >
+            {rawPreviewStatus.kind === "rendering"
+              ? t("detail.previewRaf.rendering")
+              : t("detail.previewRaf")}
+          </button>
+          <button
+            type="button"
+            disabled={previewDisabled}
+            onClick={onDiagnose}
+            title={
+              cameraConnected
+                ? t("detail.previewRaf.diagnostic.title")
+                : t("detail.previewRaf.disconnected")
+            }
+            className={clsx(
+              "rounded-md border px-4 py-3 text-sm font-medium transition-colors",
+              !previewDisabled
+                ? "border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                : "cursor-not-allowed border-zinc-900 text-zinc-700",
+            )}
+          >
+            {rawPreviewStatus.kind === "rendering"
+              ? t("detail.previewRaf.rendering")
+              : t("detail.previewRaf.diagnostic")}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-zinc-950 p-4">
+        <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">
+          {t("detail.cameraWrite.section")}
+        </p>
+        <p className="mt-1 text-xs leading-5 text-zinc-500">
+          {cameraConnected ? t("detail.action.write.body") : t("detail.cameraWrite.disconnected")}
+        </p>
+        <div className="mt-4 grid grid-cols-4 gap-2">
+          {[1, 2, 3, 4].map((slot) => {
+            const writing =
+              writeStatus.kind === "writing" &&
+              writeStatus.slot === slot &&
+              writeStatus.recipeName === recipe.name;
+            return (
+              <button
+                key={slot}
+                type="button"
+                disabled={writeDisabled}
+                onClick={() => onWrite(slot)}
+                className={clsx(
+                  "rounded-md border px-2 py-3 font-mono text-xs transition-colors",
+                  !writeDisabled
+                    ? "border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/20"
+                    : "cursor-not-allowed border-zinc-900 text-zinc-700",
+                )}
+              >
+                {writing ? t("detail.cameraWrite.writing") : t("detail.cameraWrite.slot", { slot })}
+              </button>
+            );
+          })}
+        </div>
+        {writeStatus.kind === "success" && writeStatus.recipeName === recipe.name && (
+          <p className="mt-3 text-xs text-emerald-400">
+            {t("detail.cameraWrite.success", {
+              slot: writeStatus.slot,
+              n: writeStatus.propertiesWritten,
+            })}
+          </p>
+        )}
+        {writeStatus.kind === "error" && writeStatus.recipeName === recipe.name && (
+          <p className="mt-3 text-xs text-red-300">
+            {t("detail.cameraWrite.error", { message: writeStatus.message })}
+          </p>
+        )}
+      </div>
+
+      <div className="bg-zinc-950 p-4">
+        <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">
+          {t("detail.action.file.section")}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onToggleFavorite}
+            aria-pressed={isFavorite}
+            className={clsx(
+              "rounded-md border px-3 py-2 text-xs transition-colors",
+              isFavorite
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                : "border-zinc-800 text-zinc-400 hover:border-zinc-700",
+            )}
+          >
+            {isFavorite ? t("detail.favourite.remove") : t("detail.favourite.add")}
+          </button>
+          <button
+            type="button"
+            onClick={onCopy}
+            className="rounded-md border border-zinc-800 px-3 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+          >
+            {copied ? t("detail.copyJson.copied") : t("detail.copyJson")}
+          </button>
+          <button
+            type="button"
+            onClick={onDownload}
+            className="rounded-md border border-zinc-800 px-3 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+          >
+            {t("detail.downloadJson")}
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="rounded-md border border-red-950/80 px-3 py-2 text-xs text-red-300 transition-colors hover:border-red-800 hover:bg-red-950/30"
+          >
+            {recipe.tags.includes("latent-default")
+              ? t("detail.delete.hideDefault")
+              : t("detail.delete")}
+          </button>
+        </div>
+      </div>
+    </aside>
   );
 }
 

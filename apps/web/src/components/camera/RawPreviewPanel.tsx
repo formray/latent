@@ -81,13 +81,14 @@ export function RawPreviewPanel(): JSX.Element | null {
   const lastQueuedSignatureRef = useRef<string>("");
   const state = useCameraStore((s) => s.state);
   const preview = useCameraStore((s) => s.rawPreviewStatus);
+  const loadedFile = useCameraStore((s) => s.rawPreviewFile);
+  const setRawPreviewFile = useCameraStore((s) => s.setRawPreviewFile);
   const renderRawPreview = useCameraStore((s) => s.renderRawPreview);
   const clearRawPreview = useCameraStore((s) => s.clearRawPreview);
   const recipes = useRecipesStore((s) => s.recipes);
   const selectedRecipeId = useRecipesStore((s) => s.selectedRecipeId);
   const connected = state.kind === "connected" || state.kind === "degraded";
   const selectedRecipe = recipes.find((recipe) => recipe.id === selectedRecipeId) ?? null;
-  const [loadedFile, setLoadedFile] = useState<File | null>(null);
   const [draftRecipe, setDraftRecipe] = useState<RecipeType | null>(selectedRecipe);
   const [autoRender, setAutoRender] = useState(true);
 
@@ -131,7 +132,7 @@ export function RawPreviewPanel(): JSX.Element | null {
   const onFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const file = event.currentTarget.files?.[0];
     if (!file) return;
-    setLoadedFile(file);
+    setRawPreviewFile(file);
     const signature = makeRenderSignature(file, draftSignature);
     queueRender(file, activeRecipe, signature);
     event.currentTarget.value = "";

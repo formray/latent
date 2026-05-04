@@ -14,6 +14,7 @@ describe("camera store raw preview", () => {
       presets: [],
       writeStatus: { kind: "idle" },
       rawPreviewStatus: { kind: "idle" },
+      rawPreviewFile: null,
       macosBetaAcknowledged: false,
       macosSetupAcknowledged: false,
       macosPersistentDisableConfigured: false,
@@ -23,13 +24,15 @@ describe("camera store raw preview", () => {
   });
 
   it("reports an error when rendering without a connected camera", async () => {
-    await useCameraStore.getState().renderRawPreview(file());
+    const raf = file();
+    await useCameraStore.getState().renderRawPreview(raf);
 
     expect(useCameraStore.getState().rawPreviewStatus).toMatchObject({
       kind: "error",
       fileName: "sample.raf",
       message: "Camera is not connected.",
     });
+    expect(useCameraStore.getState().rawPreviewFile).toBe(raf);
   });
 
   it("renders a RAF through the connected camera port and stores the JPEG object URL", async () => {
@@ -43,7 +46,8 @@ describe("camera store raw preview", () => {
       },
     });
 
-    await useCameraStore.getState().renderRawPreview(file());
+    const raf = file();
+    await useCameraStore.getState().renderRawPreview(raf);
 
     expect(useCameraStore.getState().rawPreviewStatus).toEqual({
       kind: "success",
@@ -52,6 +56,7 @@ describe("camera store raw preview", () => {
       jpegBytes: 4,
       baseProfileBytes: 4,
     });
+    expect(useCameraStore.getState().rawPreviewFile).toBe(raf);
     expect(port.renderRawPreview).toHaveBeenCalledWith(new Uint8Array([1, 2, 3, 4]), undefined);
   });
 
@@ -93,7 +98,11 @@ describe("camera store raw preview", () => {
     await useCameraStore.getState().renderRawPreviewDiagnostics(file(), recipe);
 
     expect(port.renderRawPreview).toHaveBeenCalledTimes(9);
-    expect(port.renderRawPreview).toHaveBeenNthCalledWith(1, new Uint8Array([1, 2, 3, 4]), undefined);
+    expect(port.renderRawPreview).toHaveBeenNthCalledWith(
+      1,
+      new Uint8Array([1, 2, 3, 4]),
+      undefined,
+    );
     expect(vi.mocked(port.renderRawPreview).mock.calls[1]?.[1]).toBeTypeOf("function");
     expect(useCameraStore.getState().rawPreviewStatus).toMatchObject({
       kind: "success",
