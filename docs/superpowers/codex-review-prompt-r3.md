@@ -25,9 +25,9 @@ These are settled. If you still disagree, mention briefly under "Challenged lock
 
 # Files to read
 
-1. **R3 spec (current):** `the repo root/docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` (964 lines, 17 sections, includes §17 changelog R2→R3)
-2. **R2 review output (your prior R2 output):** `the repo root/docs/superpowers/codex-review-output-r2.md`
-3. **R2 review prompt (for context):** `the repo root/docs/superpowers/codex-review-prompt-r2.md`
+1. **R3 spec (current):** `docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` (964 lines, 17 sections, includes §17 changelog R2→R3)
+2. **R2 review output (your prior R2 output):** `docs/superpowers/codex-review-output-r2.md`
+3. **R2 review prompt (for context):** `docs/superpowers/codex-review-prompt-r2.md`
 4. **R1 artifacts (for full lineage):** `codex-review-prompt-r1.md` + `codex-review-output-r1.md` in same folder
 5. **Formray engineering guidelines:** `Formray engineering guidelines (private reference at the time)` (12, 13, 15, 16 most relevant)
 

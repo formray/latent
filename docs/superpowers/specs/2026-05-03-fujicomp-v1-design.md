@@ -97,7 +97,7 @@ Why **not** Rust for V1 (decision unchanged from R1):
 ## 4. Repository & monorepo structure
 
 ```
-~/fuji-comp/
+the repo root/
 ├── filmkit/                       # cloned reference, read-only, gitignored
 ├── docs/
 │   └── superpowers/

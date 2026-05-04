@@ -25,8 +25,8 @@ This is a convergence pass, not an open-ended adversarial review. Be terse.
 
 # Files to read
 
-1. **R4 spec (current):** `the repo root/docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` (995 lines, 18 sections, includes §17 R2→R3 changelog + §18 R3→R4 changelog + convergence statement)
-2. **R3 review output (your prior R3 output):** `the repo root/docs/superpowers/codex-review-output-r3.md`
+1. **R4 spec (current):** `docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` (995 lines, 18 sections, includes §17 R2→R3 changelog + §18 R3→R4 changelog + convergence statement)
+2. **R3 review output (your prior R3 output):** `docs/superpowers/codex-review-output-r3.md`
 3. **Other lineage** (if needed): R1/R2 prompts and outputs in same folder
 
 # Tasks

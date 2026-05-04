@@ -70,6 +70,6 @@ apps/web/
   tsconfig.json
 ```
 
-Seed recipes live in `~/fuji-comp/filmfork-app/data/seed-recipes.json`
+Seed recipes live in `the repo root/data/seed-recipes.json`
 and are loaded at startup, validated against the Recipe schema from
 `@filmfork/recipe-schema`.

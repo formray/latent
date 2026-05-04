@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the monorepo foundation at `~/fuji-comp/filmfork-app/` with two production-ready core packages (`@filmfork/recipe-schema` including R5 Local Taste Profile + recipe diff, `@filmfork/ptp-fuji` core fork) plus stubs for `ptp-fuji-webusb` and `ai-agent`. Output is testable in pure Node — no browser, no hardware required. Schema↔translator lockstep CI gate enforced (Codex risk #1).
+**Goal:** Build the monorepo foundation at `the repo root/` with two production-ready core packages (`@filmfork/recipe-schema` including R5 Local Taste Profile + recipe diff, `@filmfork/ptp-fuji` core fork) plus stubs for `ptp-fuji-webusb` and `ai-agent`. Output is testable in pure Node — no browser, no hardware required. Schema↔translator lockstep CI gate enforced (Codex risk #1).
 
 **Architecture:** npm workspaces monorepo. Two functional packages in Phase 1: `recipe-schema` (Zod schemas + Local Taste Profile + capability matrix + camera-property translator + recipe diff rule tables + migration scaffolding) and `ptp-fuji` (pure-protocol fork of filmkit with PtpTransport DI, typed errors, AbortSignal). Two stub packages: `ptp-fuji-webusb`, `ai-agent`. All packages MIT licensed; only `ptp-fuji` ships a NOTICE for filmkit attribution.
 
@@ -34,7 +34,7 @@ After Phase 1 ships and is reviewed, the user requests the Phase 2 plan via a fr
 ## File structure created by Phase 1
 
 ```
-~/fuji-comp/
+the repo root/
 ├── filmfork-app/                            (NEW)
 │   ├── .nvmrc                               (NEW — node 22)
 │   ├── .gitignore                           (NEW)
@@ -119,11 +119,11 @@ After Phase 1 ships and is reviewed, the user requests the Phase 2 plan via a fr
 
 ## Setup conventions used by all tasks
 
-- All commands run from `~/fuji-comp/filmfork-app/` unless noted otherwise
+- All commands run from `the repo root/` unless noted otherwise
 - Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`
 - Every commit ends with `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
 - TDD discipline: every code task starts with a failing test, then implementation, then test passes, then commit
-- File paths in Edit operations are **always absolute** under `~/fuji-comp/filmfork-app/`
+- File paths in Edit operations are **always absolute** under `the repo root/`
 
 ---
 
@@ -132,13 +132,13 @@ After Phase 1 ships and is reviewed, the user requests the Phase 2 plan via a fr
 ### Task 1: Bootstrap monorepo workspace
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/package.json`
-- Create: `~/fuji-comp/filmfork-app/.nvmrc`
-- Create: `~/fuji-comp/filmfork-app/.gitignore`
-- Create: `~/fuji-comp/filmfork-app/.editorconfig`
-- Create: `~/fuji-comp/filmfork-app/LICENSE`
+- Create: `the repo root/package.json`
+- Create: `the repo root/.nvmrc`
+- Create: `the repo root/.gitignore`
+- Create: `the repo root/.editorconfig`
+- Create: `the repo root/LICENSE`
 
-- [ ] **Step 1.1: Create `~/fuji-comp/filmfork-app/` and write package.json**
+- [ ] **Step 1.1: Create `the repo root/` and write package.json**
 
 ```json
 {
@@ -220,13 +220,13 @@ Use the standard GNU AGPL-3.0 text from `https://www.gnu.org/licenses/agpl-3.0.t
 
 - [ ] **Step 1.6: Install root dependencies**
 
-Run: `cd ~/fuji-comp/filmfork-app && npm install`
+Run: `cd the repo root/filmfork-app && npm install`
 Expected: `added N packages` with no errors. `node_modules/` and `package-lock.json` created.
 
 - [ ] **Step 1.7: Initial commit**
 
 ```bash
-cd ~/fuji-comp/filmfork-app
+cd the repo root/filmfork-app
 git add -A
 git commit -m "chore: bootstrap filmfork-app monorepo workspace
 
@@ -241,8 +241,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 2: Configure shared TypeScript
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/tsconfig.base.json`
-- Create: `~/fuji-comp/filmfork-app/tsconfig.json`
+- Create: `the repo root/tsconfig.base.json`
+- Create: `the repo root/tsconfig.json`
 
 - [ ] **Step 2.1: Write `tsconfig.base.json`**
 
@@ -285,7 +285,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 2.3: Verify `tsc -b` runs without error (no packages yet, should be a no-op)**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx tsc -b`
+Run: `cd the repo root/filmfork-app && npx tsc -b`
 Expected: no output, exit 0.
 
 - [ ] **Step 2.4: Commit**
@@ -305,9 +305,9 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 3: Configure ESLint + Prettier
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/.eslintrc.cjs`
-- Create: `~/fuji-comp/filmfork-app/.prettierrc`
-- Create: `~/fuji-comp/filmfork-app/.prettierignore`
+- Create: `the repo root/.eslintrc.cjs`
+- Create: `the repo root/.prettierrc`
+- Create: `the repo root/.prettierignore`
 
 - [ ] **Step 3.1: Write `.eslintrc.cjs`**
 
@@ -363,7 +363,7 @@ package-lock.json
 
 - [ ] **Step 3.4: Verify lint runs without error (no packages yet, output empty)**
 
-Run: `cd ~/fuji-comp/filmfork-app && npm run lint`
+Run: `cd the repo root/filmfork-app && npm run lint`
 Expected: exit 0 (may print warnings about no files matched; OK).
 
 - [ ] **Step 3.5: Commit**
@@ -380,7 +380,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 4: Configure Vitest at root
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/vitest.config.ts`
+- Create: `the repo root/vitest.config.ts`
 
 - [ ] **Step 4.1: Write `vitest.config.ts`**
 
@@ -403,7 +403,7 @@ export default defineConfig({
 
 - [ ] **Step 4.2: Verify vitest discovers no tests yet (and exits cleanly)**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx vitest run`
+Run: `cd the repo root/filmfork-app && npx vitest run`
 Expected: "No test files found" message OR exit 0 with empty results.
 
 - [ ] **Step 4.3: Commit**
@@ -420,10 +420,10 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 5: Initialize `@filmfork/recipe-schema` package
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/package.json`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/tsconfig.json`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/LICENSE`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/index.ts`
+- Create: `the repo root/packages/recipe-schema/package.json`
+- Create: `the repo root/packages/recipe-schema/tsconfig.json`
+- Create: `the repo root/packages/recipe-schema/LICENSE`
+- Create: `the repo root/packages/recipe-schema/src/index.ts`
 
 - [ ] **Step 5.1: Write `packages/recipe-schema/package.json`**
 
@@ -479,12 +479,12 @@ export const PACKAGE_NAME = "@filmfork/recipe-schema";
 
 - [ ] **Step 5.5: Install zod**
 
-Run: `cd ~/fuji-comp/filmfork-app && npm install --workspace=@filmfork/recipe-schema zod`
+Run: `cd the repo root/filmfork-app && npm install --workspace=@filmfork/recipe-schema zod`
 Expected: zod added to `packages/recipe-schema/package.json` dependencies.
 
 - [ ] **Step 5.6: Verify package builds**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx tsc -b packages/recipe-schema`
+Run: `cd the repo root/filmfork-app && npx tsc -b packages/recipe-schema`
 Expected: `dist/index.js` and `dist/index.d.ts` created.
 
 - [ ] **Step 5.7: Commit**
@@ -504,8 +504,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 6: Recipe Zod schema — identity, provenance, capability targeting (TDD)
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/recipe.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/tests/recipe.test.ts`
+- Create: `the repo root/packages/recipe-schema/src/recipe.ts`
+- Create: `the repo root/packages/recipe-schema/tests/recipe.test.ts`
 
 - [ ] **Step 6.1: Write failing test `tests/recipe.test.ts`**
 
@@ -579,7 +579,7 @@ describe("Recipe identity & provenance", () => {
 
 - [ ] **Step 6.2: Run the test, expect failure**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx vitest run packages/recipe-schema/tests/recipe.test.ts`
+Run: `cd the repo root/filmfork-app && npx vitest run packages/recipe-schema/tests/recipe.test.ts`
 Expected: FAIL with "Cannot find module '../src/recipe'".
 
 - [ ] **Step 6.3: Write `packages/recipe-schema/src/recipe.ts`**
@@ -595,7 +595,7 @@ export type { Recipe as RecipeType } from "./recipe";
 
 - [ ] **Step 6.5: Run the test, expect pass**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx vitest run packages/recipe-schema/tests/recipe.test.ts`
+Run: `cd the repo root/filmfork-app && npx vitest run packages/recipe-schema/tests/recipe.test.ts`
 Expected: 5 PASS.
 
 - [ ] **Step 6.6: Commit**
@@ -616,8 +616,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 7: Recipe Zod schema — structured reasoning (R5)
 
 **Files:**
-- Modify: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/recipe.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/tests/reasoning.test.ts`
+- Modify: `the repo root/packages/recipe-schema/src/recipe.ts`
+- Create: `the repo root/packages/recipe-schema/tests/reasoning.test.ts`
 
 - [ ] **Step 7.1: Write failing test `tests/reasoning.test.ts`**
 
@@ -699,7 +699,7 @@ describe("Recipe.reasoning structured fields (R5)", () => {
 
 - [ ] **Step 7.2: Run test, expect failure**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx vitest run packages/recipe-schema/tests/reasoning.test.ts`
+Run: `cd the repo root/filmfork-app && npx vitest run packages/recipe-schema/tests/reasoning.test.ts`
 Expected: FAIL — reasoning field doesn't have visualEffect/reason/risk yet (R4 had flat `explanation`).
 
 - [ ] **Step 7.3: Update `recipe.ts` reasoning field per spec §5 R5**
@@ -718,7 +718,7 @@ reasoning: z.array(z.object({
 
 - [ ] **Step 7.4: Run test, expect pass**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx vitest run packages/recipe-schema/tests/reasoning.test.ts`
+Run: `cd the repo root/filmfork-app && npx vitest run packages/recipe-schema/tests/reasoning.test.ts`
 Expected: 5 PASS.
 
 - [ ] **Step 7.5: Commit**
@@ -739,9 +739,9 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 8: Local Taste Profile schema (R5, TDD)
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/taste-profile.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/tests/taste-profile.test.ts`
-- Modify: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/index.ts`
+- Create: `the repo root/packages/recipe-schema/src/taste-profile.ts`
+- Create: `the repo root/packages/recipe-schema/tests/taste-profile.test.ts`
+- Modify: `the repo root/packages/recipe-schema/src/index.ts`
 
 - [ ] **Step 8.1: Write failing test `tests/taste-profile.test.ts`**
 
@@ -843,9 +843,9 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 9: Capability matrix loader + camera-models.json X-S20 entry
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/capability.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/tests/capability.test.ts`
-- Create: `~/fuji-comp/filmfork-app/data/camera-models.json`
+- Create: `the repo root/packages/recipe-schema/src/capability.ts`
+- Create: `the repo root/packages/recipe-schema/tests/capability.test.ts`
+- Create: `the repo root/data/camera-models.json`
 
 - [ ] **Step 9.1: Write `data/camera-models.json` with X-S20 entry per spec §9**
 
@@ -1049,9 +1049,9 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 10: Recipe ↔ camera property bytes translator (TDD)
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/translate/index.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/translate/d18e-d1a5.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/tests/translate.test.ts`
+- Create: `the repo root/packages/recipe-schema/src/translate/index.ts`
+- Create: `the repo root/packages/recipe-schema/src/translate/d18e-d1a5.ts`
+- Create: `the repo root/packages/recipe-schema/tests/translate.test.ts`
 
 - [ ] **Step 10.1: Write failing test `tests/translate.test.ts`**
 
@@ -1258,7 +1258,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 11: AmbiencePriority codec round-trip test (NL1 R3)
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/tests/ambience-priority-codec.test.ts`
+- Create: `the repo root/packages/recipe-schema/tests/ambience-priority-codec.test.ts`
 
 - [ ] **Step 11.1: Write test**
 
@@ -1322,8 +1322,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 12: Schema migration scaffolding
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/migrations/index.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/tests/migrations.test.ts`
+- Create: `the repo root/packages/recipe-schema/src/migrations/index.ts`
+- Create: `the repo root/packages/recipe-schema/tests/migrations.test.ts`
 
 - [ ] **Step 12.1: Write failing test**
 
@@ -1392,8 +1392,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 13: Recipe diff rule tables (R5, en + it)
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/diff/rules-en.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/diff/rules-it.ts`
+- Create: `the repo root/packages/recipe-schema/src/diff/rules-en.ts`
+- Create: `the repo root/packages/recipe-schema/src/diff/rules-it.ts`
 
 - [ ] **Step 13.1: Write `src/diff/rules-en.ts`**
 
@@ -1510,8 +1510,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 14: `diffRecipes()` implementation + tests (R5)
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/src/diff/index.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/recipe-schema/tests/diff.test.ts`
+- Create: `the repo root/packages/recipe-schema/src/diff/index.ts`
+- Create: `the repo root/packages/recipe-schema/tests/diff.test.ts`
 
 - [ ] **Step 14.1: Write failing test**
 
@@ -1730,13 +1730,13 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 15: Initialize `@filmfork/ptp-fuji` package
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/package.json`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/tsconfig.json`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/LICENSE`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/NOTICE`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/UPSTREAM`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/index.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/docs/protocol.md`
+- Create: `the repo root/packages/ptp-fuji/package.json`
+- Create: `the repo root/packages/ptp-fuji/tsconfig.json`
+- Create: `the repo root/packages/ptp-fuji/LICENSE`
+- Create: `the repo root/packages/ptp-fuji/NOTICE`
+- Create: `the repo root/packages/ptp-fuji/UPSTREAM`
+- Create: `the repo root/packages/ptp-fuji/src/index.ts`
+- Create: `the repo root/packages/ptp-fuji/docs/protocol.md`
 
 - [ ] **Step 15.1: Write `packages/ptp-fuji/package.json`**
 
@@ -1813,7 +1813,7 @@ boundary, the typed error taxonomy, and the integration with FilmFork.
 
 - [ ] **Step 15.4: Write `UPSTREAM`**
 
-The pinned filmkit commit SHA is the HEAD of the cloned filmkit repo at `~/fuji-comp/filmkit/`. Run `cd ~/fuji-comp/filmkit && git rev-parse HEAD` to get it. Write that SHA into `UPSTREAM`, single line, no trailing whitespace beyond newline.
+The pinned filmkit commit SHA is the HEAD of the cloned filmkit repo at `the repo root/filmkit/`. Run `cd the repo root/filmkit && git rev-parse HEAD` to get it. Write that SHA into `UPSTREAM`, single line, no trailing whitespace beyond newline.
 
 - [ ] **Step 15.5: Write placeholder `src/index.ts`**
 
@@ -1853,7 +1853,7 @@ to be ported into this doc as the codec stabilizes.)
 
 - [ ] **Step 15.7: Build, verify**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx tsc -b packages/ptp-fuji`
+Run: `cd the repo root/filmfork-app && npx tsc -b packages/ptp-fuji`
 Expected: `dist/index.js` created, exit 0.
 
 - [ ] **Step 15.8: Commit**
@@ -1873,24 +1873,24 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 16: Copy filmkit source into ptp-fuji + adapt entry points
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/ptp/container.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/ptp/constants.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/ptp/transport.ts` (filmkit's, not yet our DI version)
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/profile/d185.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/profile/enums.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/profile/preset-translate.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/util/binary.ts`
+- Create: `the repo root/packages/ptp-fuji/src/ptp/container.ts`
+- Create: `the repo root/packages/ptp-fuji/src/ptp/constants.ts`
+- Create: `the repo root/packages/ptp-fuji/src/ptp/transport.ts` (filmkit's, not yet our DI version)
+- Create: `the repo root/packages/ptp-fuji/src/profile/d185.ts`
+- Create: `the repo root/packages/ptp-fuji/src/profile/enums.ts`
+- Create: `the repo root/packages/ptp-fuji/src/profile/preset-translate.ts`
+- Create: `the repo root/packages/ptp-fuji/src/util/binary.ts`
 
 - [ ] **Step 16.1: Copy filmkit source verbatim**
 
 ```bash
-cp ~/fuji-comp/filmkit/src/ptp/container.ts ~/fuji-comp/filmfork-app/packages/ptp-fuji/src/ptp/container.ts
-cp ~/fuji-comp/filmkit/src/ptp/constants.ts ~/fuji-comp/filmfork-app/packages/ptp-fuji/src/ptp/constants.ts
-cp ~/fuji-comp/filmkit/src/ptp/transport.ts ~/fuji-comp/filmfork-app/packages/ptp-fuji/src/ptp/transport.ts
-cp ~/fuji-comp/filmkit/src/profile/d185.ts ~/fuji-comp/filmfork-app/packages/ptp-fuji/src/profile/d185.ts
-cp ~/fuji-comp/filmkit/src/profile/enums.ts ~/fuji-comp/filmfork-app/packages/ptp-fuji/src/profile/enums.ts
-cp ~/fuji-comp/filmkit/src/profile/preset-translate.ts ~/fuji-comp/filmfork-app/packages/ptp-fuji/src/profile/preset-translate.ts
-cp ~/fuji-comp/filmkit/src/util/binary.ts ~/fuji-comp/filmfork-app/packages/ptp-fuji/src/util/binary.ts
+cp the repo root/filmkit/src/ptp/container.ts the repo root/packages/ptp-fuji/src/ptp/container.ts
+cp the repo root/filmkit/src/ptp/constants.ts the repo root/packages/ptp-fuji/src/ptp/constants.ts
+cp the repo root/filmkit/src/ptp/transport.ts the repo root/packages/ptp-fuji/src/ptp/transport.ts
+cp the repo root/filmkit/src/profile/d185.ts the repo root/packages/ptp-fuji/src/profile/d185.ts
+cp the repo root/filmkit/src/profile/enums.ts the repo root/packages/ptp-fuji/src/profile/enums.ts
+cp the repo root/filmkit/src/profile/preset-translate.ts the repo root/packages/ptp-fuji/src/profile/preset-translate.ts
+cp the repo root/filmkit/src/util/binary.ts the repo root/packages/ptp-fuji/src/util/binary.ts
 ```
 
 - [ ] **Step 16.2: Inspect each copied file. Remove any direct WebUSB references**
@@ -1899,7 +1899,7 @@ Open each file in `packages/ptp-fuji/src/`. If a file directly references `navig
 
 - [ ] **Step 16.3: Run typecheck — expected to fail until Task 17 wires in PtpTransport**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx tsc -b packages/ptp-fuji`
+Run: `cd the repo root/filmfork-app && npx tsc -b packages/ptp-fuji`
 Expected: type errors about `USBDevice` etc. Those are the FIXME points. Note them.
 
 - [ ] **Step 16.4: Commit copy as a clean baseline**
@@ -1919,11 +1919,11 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 17: Define `PtpTransport` interface + typed errors + refactor copied source
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/transport/transport.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/errors.ts`
+- Create: `the repo root/packages/ptp-fuji/src/transport/transport.ts`
+- Create: `the repo root/packages/ptp-fuji/src/errors.ts`
 - Modify: copied filmkit files where they directly reference WebUSB
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/tests/fake-transport.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/tests/errors.test.ts`
+- Create: `the repo root/packages/ptp-fuji/tests/fake-transport.ts`
+- Create: `the repo root/packages/ptp-fuji/tests/errors.test.ts`
 
 - [ ] **Step 17.1: Write `src/transport/transport.ts`** per spec §8 transport contract
 
@@ -2048,10 +2048,10 @@ describe("FilmForkError", () => {
 
 - [ ] **Step 17.6: Run tests**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx vitest run packages/ptp-fuji/tests/errors.test.ts`
+Run: `cd the repo root/filmfork-app && npx vitest run packages/ptp-fuji/tests/errors.test.ts`
 Expected: 3 PASS.
 
-Run: `cd ~/fuji-comp/filmfork-app && npx tsc -b packages/ptp-fuji`
+Run: `cd the repo root/filmfork-app && npx tsc -b packages/ptp-fuji`
 Expected: clean build (FIXMEs resolved).
 
 - [ ] **Step 17.7: Commit**
@@ -2072,9 +2072,9 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 18: `FujiCameraSession` class wraps filmkit logic (TDD)
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/ptp/session.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/tests/session.test.ts`
-- Modify: `~/fuji-comp/filmfork-app/packages/ptp-fuji/src/index.ts`
+- Create: `the repo root/packages/ptp-fuji/src/ptp/session.ts`
+- Create: `the repo root/packages/ptp-fuji/tests/session.test.ts`
+- Modify: `the repo root/packages/ptp-fuji/src/index.ts`
 
 - [ ] **Step 18.1: Write failing test `tests/session.test.ts`**
 
@@ -2244,8 +2244,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 19: Container codec tests + AbortSignal propagation
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/tests/container.test.ts`
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji/tests/abort.test.ts`
+- Create: `the repo root/packages/ptp-fuji/tests/container.test.ts`
+- Create: `the repo root/packages/ptp-fuji/tests/abort.test.ts`
 
 - [ ] **Step 19.1: Write `tests/container.test.ts`**
 
@@ -2310,7 +2310,7 @@ describe("AbortSignal propagation", () => {
 
 - [ ] **Step 19.3: Run all ptp-fuji tests**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx vitest run packages/ptp-fuji`
+Run: `cd the repo root/filmfork-app && npx vitest run packages/ptp-fuji`
 Expected: all PASS.
 
 - [ ] **Step 19.4: Commit**
@@ -2327,8 +2327,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 20: Stub packages `ptp-fuji-webusb` and `ai-agent`
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/packages/ptp-fuji-webusb/{package.json,tsconfig.json,LICENSE,src/index.ts,tests/stub.test.ts}`
-- Create: `~/fuji-comp/filmfork-app/packages/ai-agent/{package.json,tsconfig.json,LICENSE,src/index.ts,tests/stub.test.ts}`
+- Create: `the repo root/packages/ptp-fuji-webusb/{package.json,tsconfig.json,LICENSE,src/index.ts,tests/stub.test.ts}`
+- Create: `the repo root/packages/ai-agent/{package.json,tsconfig.json,LICENSE,src/index.ts,tests/stub.test.ts}`
 
 - [ ] **Step 20.1: Create `ptp-fuji-webusb` stub**
 
@@ -2384,12 +2384,12 @@ Same shape. `STUB_NOTICE = "ai-agent: real implementation lands in Phase 5"`. No
 
 - [ ] **Step 20.3: Install workspace links**
 
-Run: `cd ~/fuji-comp/filmfork-app && npm install`
+Run: `cd the repo root/filmfork-app && npm install`
 Expected: workspace links established for `@filmfork/*`.
 
 - [ ] **Step 20.4: Run all package tests**
 
-Run: `cd ~/fuji-comp/filmfork-app && npm test`
+Run: `cd the repo root/filmfork-app && npm test`
 Expected: all PASS across all packages.
 
 - [ ] **Step 20.5: Commit**
@@ -2409,7 +2409,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 21: CI workflow
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/.github/workflows/ci.yml`
+- Create: `the repo root/.github/workflows/ci.yml`
 
 - [ ] **Step 21.1: Write `.github/workflows/ci.yml`**
 
@@ -2452,7 +2452,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 22: Schema↔translator lockstep CI gate (Codex risk #1)
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/scripts/check-schema-translator-lockstep.ts`
+- Create: `the repo root/scripts/check-schema-translator-lockstep.ts`
 
 - [ ] **Step 22.1: Write the script**
 
@@ -2531,7 +2531,7 @@ await main();
 
 - [ ] **Step 22.2: Run the gate locally**
 
-Run: `cd ~/fuji-comp/filmfork-app && npm run lockstep-check`
+Run: `cd the repo root/filmfork-app && npm run lockstep-check`
 Expected: `Schema↔translator lockstep OK across 1 capability set(s)`.
 
 - [ ] **Step 22.3: Verify the gate fails when a field is added to writableSlotProperties without a schema field**
@@ -2560,12 +2560,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 23: Initial documentation
 
 **Files:**
-- Create: `~/fuji-comp/filmfork-app/README.md`
-- Create: `~/fuji-comp/filmfork-app/README.it.md`
-- Create: `~/fuji-comp/filmfork-app/ROADMAP.md`
-- Create: `~/fuji-comp/filmfork-app/CHANGELOG.md`
-- Create: `~/fuji-comp/filmfork-app/PROGRESS.md`
-- Create: `~/fuji-comp/filmfork-app/local agent notes`
+- Create: `the repo root/README.md`
+- Create: `the repo root/README.it.md`
+- Create: `the repo root/ROADMAP.md`
+- Create: `the repo root/CHANGELOG.md`
+- Create: `the repo root/PROGRESS.md`
+- Create: `the repo root/local agent notes`
 
 - [ ] **Step 23.1: Write README.md (English)**
 
@@ -2645,7 +2645,7 @@ Scaffolded monorepo. Initialized recipe-schema and ptp-fuji packages. CI gates g
 Conventions for working in this repo with Claude Code.
 
 ## Working directory
-All work in `~/fuji-comp/filmfork-app/`. Reference repo `~/fuji-comp/filmkit/` is read-only.
+All work in `the repo root/`. Reference repo `the repo root/filmkit/` is read-only.
 
 ## Commits
 Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`. End every commit with `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`.
@@ -2660,7 +2660,7 @@ AGPL-3.0 for `apps/*`, MIT for `packages/*`. NOTICE only in `packages/ptp-fuji` 
 Adding a recipe field requires synchronized changes in `packages/recipe-schema/src/recipe.ts`, `data/camera-models.json` writableSlotProperties, the translator, and a round-trip test. The `npm run lockstep-check` CI gate enforces this.
 
 ## Phase tracking
-Current phase: see ROADMAP.md. Phase plans live in `~/fuji-comp/docs/superpowers/plans/`.
+Current phase: see ROADMAP.md. Phase plans live in `the repo root/docs/superpowers/plans/`.
 ```
 
 - [ ] **Step 23.7: Commit**
@@ -2678,12 +2678,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 24.1: Run full validate**
 
-Run: `cd ~/fuji-comp/filmfork-app && npm run validate`
+Run: `cd the repo root/filmfork-app && npm run validate`
 Expected: lint, typecheck, all tests, license-check, lockstep-check all PASS.
 
 - [ ] **Step 24.2: Verify all packages build clean**
 
-Run: `cd ~/fuji-comp/filmfork-app && npx tsc -b`
+Run: `cd the repo root/filmfork-app && npx tsc -b`
 Expected: clean build, all four packages emit `dist/`.
 
 - [ ] **Step 24.3: Update PROGRESS.md with Phase 1 completion entry**
@@ -2693,7 +2693,7 @@ Append to `PROGRESS.md`:
 ```markdown
 ## 2026-05-04 — Phase 1 complete
 
-- Monorepo bootstrapped at ~/fuji-comp/filmfork-app/
+- Monorepo bootstrapped at the repo root/
 - @filmfork/recipe-schema: Recipe + TasteProfile (R5) + capability matrix loader + recipe diff (R5, en+it) + schema migrations + AmbiencePriority codec test (NL1 R3)
 - @filmfork/ptp-fuji: forked filmkit at pinned commit, PtpTransport DI, FujiCameraSession with state machine, typed error taxonomy (§6.9), AbortSignal propagation, FakeTransport test helper
 - @filmfork/ptp-fuji-webusb + @filmfork/ai-agent: stub packages locked

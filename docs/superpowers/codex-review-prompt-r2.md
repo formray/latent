@@ -24,9 +24,9 @@ The author chose specific paths through some R1 questions and is committed to th
 
 # Files to read
 
-1. **Revised spec (R2):** `the repo root/docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` (864 lines, 17 sections, includes §17 changelog R1→R2)
-2. **R1 review prompt:** `the repo root/docs/superpowers/codex-review-prompt-r1.md`
-3. **R1 review output (your prior output):** `the repo root/docs/superpowers/codex-review-output-r1.md`
+1. **Revised spec (R2):** `docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` (864 lines, 17 sections, includes §17 changelog R1→R2)
+2. **R1 review prompt:** `docs/superpowers/codex-review-prompt-r1.md`
+3. **R1 review output (your prior output):** `docs/superpowers/codex-review-output-r1.md`
 4. **Formray engineering guidelines:** `Formray engineering guidelines (private reference at the time)` (modules 12, 13, 15, 16 most relevant)
 5. **Formray root context:** `Formray root context (private reference at the time)` and `formray-foundation/local agent notes`
 
