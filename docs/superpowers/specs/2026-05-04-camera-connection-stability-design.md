@@ -1,6 +1,6 @@
 # Camera connection stability — design
 
-**Status**: Draft, awaiting user review (revision 5 — incorporates Codex review round 4 minor edits)
+**Status**: Approved 2026-05-04 (revision 5 — Codex review rounds 1–4 closed, round 5 confirmation pass returned "Approve as-is")
 **Date**: 2026-05-04
 **Owner**: Giuseppe Albrizio
 **Related**:
