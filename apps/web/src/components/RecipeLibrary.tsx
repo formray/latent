@@ -55,12 +55,7 @@ export function RecipeLibrary(): JSX.Element {
       if (favoritesOnly && !favorites.has(r.id)) return false;
       if (filmSim && r.filmSimulation !== filmSim) return false;
       if (q) {
-        const haystack = [
-          r.name,
-          r.description ?? "",
-          r.filmSimulation,
-          ...(r.tags ?? []),
-        ]
+        const haystack = [r.name, r.description ?? "", r.filmSimulation, ...(r.tags ?? [])]
           .join(" ")
           .toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -94,17 +89,24 @@ export function RecipeLibrary(): JSX.Element {
   };
 
   const count = filtered.length;
-  const countLabel =
-    count === 1
-      ? t("library.count.one")
-      : t("library.count.other", { n: count });
+  const countLabel = count === 1 ? t("library.count.one") : t("library.count.other", { n: count });
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-col gap-3 border-b border-zinc-900 bg-zinc-950 px-5 py-4">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-          {t("library.title")}
-        </h2>
+      <div className="sticky top-0 z-20 flex flex-col gap-4 border-b border-zinc-900 bg-zinc-950/95 px-4 py-4 backdrop-blur sm:px-5">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-400">
+              look library
+            </p>
+            <h2 className="mt-1 text-lg font-semibold tracking-tight text-zinc-50">
+              {t("library.title")}
+            </h2>
+          </div>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-600">
+            {countLabel}
+          </span>
+        </div>
         <input
           type="search"
           value={searchQuery}
@@ -112,18 +114,18 @@ export function RecipeLibrary(): JSX.Element {
           placeholder={t("library.search.placeholder")}
           aria-label={t("library.search.placeholder")}
           className={clsx(
-            "w-full rounded-sm border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm",
-            "placeholder:text-zinc-600 focus:border-zinc-600 focus:outline-none",
+            "w-full rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm",
+            "placeholder:text-zinc-600 focus:border-emerald-500/50 focus:outline-none",
           )}
         />
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
           <select
             value={filmSim ?? ""}
             onChange={handleFilm}
             aria-label={t("library.filter.allFilms")}
             className={clsx(
-              "rounded-sm border border-zinc-800 bg-zinc-900 px-2 py-1.5 text-xs",
-              "text-zinc-300 focus:border-zinc-600 focus:outline-none",
+              "min-w-0 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs",
+              "text-zinc-300 focus:border-emerald-500/50 focus:outline-none",
             )}
           >
             <option value="">{t("library.filter.allFilms")}</option>
@@ -138,7 +140,7 @@ export function RecipeLibrary(): JSX.Element {
             onClick={toggleFavoritesOnly}
             aria-pressed={favoritesOnly}
             className={clsx(
-              "rounded-sm border px-2.5 py-1.5 text-xs transition-colors",
+              "rounded-full border px-3 py-2 text-xs transition-colors",
               favoritesOnly
                 ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
                 : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700",
@@ -146,15 +148,12 @@ export function RecipeLibrary(): JSX.Element {
           >
             {t("library.filter.favoritesOnly")}
           </button>
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-zinc-600">
-            {countLabel}
-          </span>
         </div>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="rounded-sm border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-700"
+            className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700"
           >
             {t("library.importJson")}
           </button>
@@ -169,7 +168,7 @@ export function RecipeLibrary(): JSX.Element {
           <button
             type="button"
             onClick={() => void handleResetLibrary()}
-            className="rounded-sm border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200"
+            className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200"
           >
             {t("library.reset")}
           </button>
@@ -182,25 +181,15 @@ export function RecipeLibrary(): JSX.Element {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {!loaded && (
-          <p className="px-5 py-8 text-sm text-zinc-500">
-            {t("library.empty.loading")}
-          </p>
-        )}
+        {!loaded && <p className="px-5 py-8 text-sm text-zinc-500">{t("library.empty.loading")}</p>}
         {loaded && filtered.length === 0 && (
-          <p className="px-5 py-8 text-sm text-zinc-500">
-            {t("library.empty.noResults")}
-          </p>
+          <p className="px-5 py-8 text-sm text-zinc-500">{t("library.empty.noResults")}</p>
         )}
         {filtered.length > 0 && (
-          <ul className="grid grid-cols-1 gap-px bg-zinc-900 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-px bg-zinc-900">
             {filtered.map((r) => (
               <li key={r.id}>
-                <RecipeCard
-                  recipe={r}
-                  selected={r.id === selected}
-                  onSelect={selectRecipe}
-                />
+                <RecipeCard recipe={r} selected={r.id === selected} onSelect={selectRecipe} />
               </li>
             ))}
           </ul>

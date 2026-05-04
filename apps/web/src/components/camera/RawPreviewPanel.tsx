@@ -157,8 +157,8 @@ export function RawPreviewPanel(): JSX.Element | null {
       aria-label="RAF camera preview"
       className="border-b border-zinc-900 bg-[#060606]"
     >
-      <div className="grid min-h-[560px] lg:grid-cols-[280px_minmax(0,1fr)_320px]">
-        <aside className="border-b border-zinc-900 px-6 py-5 lg:border-b-0 lg:border-r">
+      <div className="grid min-h-[560px] xl:grid-cols-[260px_minmax(0,1fr)_360px]">
+        <aside className="border-b border-zinc-900 px-5 py-5 xl:border-b-0 xl:border-r">
           <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-emerald-400">
             camera render loop
           </p>
@@ -181,7 +181,7 @@ export function RawPreviewPanel(): JSX.Element | null {
               type="button"
               disabled={!connected || preview.kind === "rendering"}
               onClick={() => inputRef.current?.click()}
-              className="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-500/15 disabled:border-zinc-800 disabled:bg-transparent disabled:text-zinc-600"
+              className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-500/15 disabled:border-zinc-800 disabled:bg-transparent disabled:text-zinc-600"
             >
               {preview.kind === "rendering" ? "Rendering" : loadedFile ? "Change RAF" : "Open RAF"}
             </button>
@@ -189,7 +189,7 @@ export function RawPreviewPanel(): JSX.Element | null {
               type="button"
               disabled={!loadedFile || preview.kind === "rendering"}
               onClick={renderNow}
-              className="rounded-sm border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:border-zinc-700 hover:text-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-700"
+              className="rounded-full border border-zinc-800 px-4 py-2.5 text-xs font-medium text-zinc-300 transition-colors hover:border-zinc-700 hover:text-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-700"
             >
               Render now
             </button>
@@ -197,7 +197,7 @@ export function RawPreviewPanel(): JSX.Element | null {
               <button
                 type="button"
                 onClick={clearRawPreview}
-                className="rounded-sm border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200"
+                className="rounded-full border border-zinc-800 px-4 py-2.5 text-xs font-medium text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200"
               >
                 Clear output
               </button>
@@ -272,7 +272,7 @@ export function RawPreviewPanel(): JSX.Element | null {
           )}
         </div>
 
-        <aside className="border-t border-zinc-900 px-5 py-5 lg:border-l lg:border-t-0">
+        <aside className="border-t border-zinc-900 px-5 py-5 xl:border-l xl:border-t-0">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">
@@ -286,7 +286,7 @@ export function RawPreviewPanel(): JSX.Element | null {
               type="button"
               disabled={!selectedRecipe}
               onClick={resetDraft}
-              className="rounded-sm border border-zinc-800 px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:text-zinc-700"
+              className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:text-zinc-700"
             >
               Reset
             </button>
@@ -553,7 +553,7 @@ function SelectControl({
         aria-label={label}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
-        className="w-full rounded-sm border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none transition-colors focus:border-emerald-600"
+        className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none transition-colors focus:border-emerald-600"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
