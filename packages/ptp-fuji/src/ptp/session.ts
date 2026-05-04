@@ -96,7 +96,12 @@ export class FujiCameraSession {
       );
     }
     const result = await this.framing.sendCommand(PTPOp.GetDeviceInfo, [], signal);
-    return parseDeviceInfo(result.data);
+    try {
+      return parseDeviceInfo(result.data);
+    } catch (err) {
+      if (err instanceof LatentError) throw err;
+      throw new LatentError("PtpStall", "malformed GetDeviceInfo payload", err);
+    }
   }
 }
 
@@ -104,19 +109,31 @@ function parseDeviceInfo(data: Uint8Array): FujiDeviceInfo {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   let offset = 0;
 
+  const requireBytes = (count: number, label: string): void => {
+    if (offset + count > data.byteLength) {
+      throw new LatentError(
+        "PtpStall",
+        `malformed GetDeviceInfo payload while reading ${label}`,
+      );
+    }
+  };
   const readU16 = (): number => {
+    requireBytes(2, "uint16");
     const value = view.getUint16(offset, true);
     offset += 2;
     return value;
   };
   const readU32 = (): number => {
+    requireBytes(4, "uint32");
     const value = view.getUint32(offset, true);
     offset += 4;
     return value;
   };
   const readString = (): string => {
+    requireBytes(1, "string length");
     const length = data[offset++] ?? 0;
     if (length === 0) return "";
+    requireBytes(length * 2, "string data");
     const chars: number[] = [];
     for (let i = 0; i < length - 1; i++) {
       chars.push(readU16());
@@ -136,14 +153,16 @@ function parseDeviceInfo(data: Uint8Array): FujiDeviceInfo {
   readU16();
   readU32();
   readU16();
-  readString();
-  const firmwareVersion = readString();
+  readString(); // VendorExtensionDesc
+  readU16(); // FunctionalMode
   const supportedOps = readArray16();
   readArray16();
   readArray16();
   readArray16();
   readArray16();
+  readString(); // Manufacturer
   const model = readString();
+  const firmwareVersion = readString();
   const serialNumber = readString();
 
   return {
