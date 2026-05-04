@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CameraSessionPort, DeviceValue, RawPreset } from "@latent/camera-connection";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import { useCameraStore } from "../../src/stores/camera";
-import { recipeToPresetWritePlan } from "../../src/lib/recipe-to-camera-preset";
+import {
+  PRESET_NAME_PROP,
+  recipeToPresetWritePlan,
+} from "../../src/lib/recipe-to-camera-preset";
 
 const recipe: RecipeType = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -90,6 +93,10 @@ function verifiedPreset(source: RecipeType, slot: number): RawPreset {
   const plan = recipeToPresetWritePlan(source, slot, emptyPreset(slot));
   const preset = emptyPreset(slot);
   for (const prop of plan.properties) {
+    if (prop.code === PRESET_NAME_PROP) {
+      preset.name = valueString(prop.value);
+      continue;
+    }
     preset.properties[`0x${prop.code.toString(16)}`] = {
       id: prop.code,
       name: prop.label,
@@ -116,4 +123,15 @@ function emptyPreset(slot: number): RawPreset {
 function valueBytes(value: DeviceValue): number[] {
   if (value.kind !== "bytes") throw new Error("expected bytes");
   return Array.from(value.value);
+}
+
+function valueString(value: DeviceValue): string {
+  const data = valueBytes(value);
+  const length = data[0] ?? 0;
+  let result = "";
+  for (let offset = 1; offset < 1 + (length - 1) * 2; offset += 2) {
+    const code = data[offset]! | (data[offset + 1]! << 8);
+    if (code !== 0) result += String.fromCharCode(code);
+  }
+  return result;
 }

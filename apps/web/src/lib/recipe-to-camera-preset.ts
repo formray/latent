@@ -2,6 +2,7 @@ import type { RecipeType } from "@latent/recipe-schema/browser";
 import type { CameraSessionPort, DeviceValue, RawPreset } from "@latent/camera-connection";
 
 export const PRESET_SLOT_PROP = 0xd18c;
+export const PRESET_NAME_PROP = 0xd18d;
 
 export interface PresetWriteProperty {
   code: number;
@@ -128,6 +129,11 @@ export function recipeToPresetWritePlan(
     props.push({ code, label, value: bytesValue(i16(value)) });
   };
 
+  props.push({
+    code: PRESET_NAME_PROP,
+    label: "Preset name",
+    value: bytesValue(ptpString(cameraPresetName(recipe.name))),
+  });
   raw(0xd18e, "Image size");
   raw(0xd18f, "Image quality");
   raw(0xd190, "Dynamic range", DR[recipe.dynamicRange]);
@@ -192,6 +198,9 @@ export async function restorePreset(
 ): Promise<void> {
   assertSlot(slot);
   await port.setDevicePropValue(PRESET_SLOT_PROP, bytesValue(u16(slot)), signal);
+  if (preset.name) {
+    await port.setDevicePropValue(PRESET_NAME_PROP, bytesValue(ptpString(preset.name)), signal);
+  }
   for (const code of presetPropertyCodes(preset)) {
     const bytes = propertyBytes(preset, code);
     if (bytes) await port.setDevicePropValue(code, bytesValue(bytes), signal);
@@ -230,6 +239,13 @@ async function writeProperty(
 
 function verifyPlan(plan: PresetWritePlan, preset: RawPreset): void {
   for (const prop of plan.properties) {
+    if (prop.code === PRESET_NAME_PROP) {
+      const expected = parsePtpString(valueBytes(prop.value));
+      if ((preset.name ?? "") !== expected) {
+        throw new Error(`Verification failed for 0x${prop.code.toString(16)} ${prop.label}`);
+      }
+      continue;
+    }
     const actual = propertyBytes(preset, prop.code);
     if (prop.value.kind !== "bytes" || !actual || !bytesEqual(actual, prop.value.value)) {
       throw new Error(`Verification failed for 0x${prop.code.toString(16)}`);
@@ -268,6 +284,11 @@ function bytesValue(value: Uint8Array): DeviceValue {
   return { kind: "bytes", value };
 }
 
+function valueBytes(value: DeviceValue): Uint8Array {
+  if (value.kind !== "bytes") throw new Error("expected bytes value");
+  return value.value;
+}
+
 function u16(value: number): Uint8Array {
   const bytes = new Uint8Array(2);
   new DataView(bytes.buffer).setUint16(0, value & 0xffff, true);
@@ -278,6 +299,45 @@ function i16(value: number): Uint8Array {
   const bytes = new Uint8Array(2);
   new DataView(bytes.buffer).setInt16(0, value, true);
   return bytes;
+}
+
+export function cameraPresetName(name: string): string {
+  const clean = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7e]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return Array.from(clean || "Latent Recipe").slice(0, 31).join("");
+}
+
+function ptpString(value: string): Uint8Array {
+  const chars = Array.from(value).slice(0, 31);
+  const bytes = new Uint8Array(1 + chars.length * 2 + 2);
+  const view = new DataView(bytes.buffer);
+  bytes[0] = chars.length + 1;
+  let offset = 1;
+  for (const char of chars) {
+    view.setUint16(offset, char.charCodeAt(0), true);
+    offset += 2;
+  }
+  view.setUint16(offset, 0, true);
+  return bytes;
+}
+
+function parsePtpString(bytes: Uint8Array): string {
+  if (bytes.length === 0) return "";
+  const length = bytes[0] ?? 0;
+  if (length === 0) return "";
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let result = "";
+  let offset = 1;
+  for (let index = 0; index < length - 1 && offset + 1 < bytes.length; index += 1) {
+    const code = view.getUint16(offset, true);
+    if (code !== 0) result += String.fromCharCode(code);
+    offset += 2;
+  }
+  return result;
 }
 
 function tri(value: "Off" | "Weak" | "Strong"): number {
