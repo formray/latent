@@ -24,3 +24,4 @@ export {
   type ConnectionEvent,
   type TransitionResult,
 } from "./state-machine.js";
+export { WebUsbCameraDriver, WebUsbSessionPort } from "./drivers/webusb.js";

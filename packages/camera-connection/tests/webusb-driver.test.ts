@@ -1,0 +1,321 @@
+import { describe, expect, it, vi } from "vitest";
+import { LatentError } from "@latent/ptp-fuji";
+import {
+  WebUsbCameraDriver,
+  WebUsbSessionPort,
+  claimWithReset,
+  openSessionWithStaging,
+} from "../src/drivers/webusb.js";
+import { FakeUSBDevice, FakeUsb } from "./fakes.js";
+
+function session(overrides: Partial<FakeSession> = {}): FakeSession {
+  return {
+    state: "open",
+    open: vi.fn(async () => undefined),
+    close: vi.fn(async () => undefined),
+    fireCloseSession: vi.fn(() => undefined),
+    getDeviceInfo: vi.fn(async () => ({
+      model: "X-S20",
+      firmwareVersion: "1.10",
+      serialNumber: "PTP-123",
+      supportedOps: [0x1001],
+    })),
+    ...overrides,
+  };
+}
+
+interface FakeSession {
+  state: "closed" | "opening" | "open" | "degraded";
+  open: (signal?: AbortSignal) => Promise<void>;
+  close: () => Promise<void>;
+  fireCloseSession: () => void;
+  getDeviceInfo: (signal?: AbortSignal) => Promise<{
+    model: string;
+    firmwareVersion: string;
+    serialNumber?: string;
+    supportedOps: number[];
+  }>;
+}
+
+function driverWith(
+  usb = new FakeUsb(),
+  fakeSession = session(),
+): WebUsbCameraDriver {
+  return new WebUsbCameraDriver({
+    usb: usb as unknown as USB,
+    sessionFactory: () => fakeSession,
+    transportFactory: () => ({
+      send: vi.fn(async () => undefined),
+      receive: vi.fn(async () => new Uint8Array(0)),
+      close: vi.fn(async () => undefined),
+    }),
+  });
+}
+
+describe("WebUsbCameraDriver connect", () => {
+  it("uses paired device when autoSelectPaired is true", async () => {
+    const device = new FakeUSBDevice();
+    const usb = new FakeUsb([device]);
+    await driverWith(usb).connect({ autoSelectPaired: true });
+    expect(usb.getDevices).toHaveBeenCalled();
+    expect(usb.requestDevice).not.toHaveBeenCalled();
+  });
+
+  it("falls back to picker when no paired device exists", async () => {
+    const device = new FakeUSBDevice();
+    const usb = new FakeUsb([device]);
+    usb.getDevices.mockResolvedValueOnce([]);
+    await driverWith(usb).connect({ autoSelectPaired: true });
+    expect(usb.requestDevice).toHaveBeenCalledWith({
+      filters: [{ vendorId: 0x04cb }],
+    });
+  });
+
+  it("aborts before claim", async () => {
+    const ac = new AbortController();
+    ac.abort();
+    await expect(driverWith().connect({ signal: ac.signal })).rejects.toMatchObject({
+      name: "AbortError",
+    });
+  });
+
+  it("aborts during OpenSession", async () => {
+    const fakeSession = session({
+      open: vi.fn(async () => {
+        throw new DOMException("aborted", "AbortError");
+      }),
+    });
+    await expect(driverWith(new FakeUsb(), fakeSession).connect()).rejects.toMatchObject({
+      name: "AbortError",
+    });
+  });
+
+  it("returns deviceInfo and usbSerialNumber", async () => {
+    const result = await driverWith().connect();
+    expect(result.deviceInfo).toMatchObject({ model: "X-S20", firmwareVersion: "1.10" });
+    expect(result.usbSerialNumber).toBe("USB-123");
+  });
+
+  it("WebUsbSessionPort reports isOpen from FujiCameraSession state", () => {
+    expect(new WebUsbSessionPort(session()).isOpen()).toBe(true);
+    expect(new WebUsbSessionPort(session({ state: "closed" })).isOpen()).toBe(false);
+  });
+});
+
+describe("claimWithReset", () => {
+  it("succeeds first try without reset", async () => {
+    const device = new FakeUSBDevice();
+    await claimWithReset(device as unknown as USBDevice, 0);
+    expect(device.claimInterface).toHaveBeenCalledTimes(1);
+    expect(device.reset).not.toHaveBeenCalled();
+  });
+
+  it("does not reset when failure is not claim collision", async () => {
+    const device = new FakeUSBDevice();
+    device.claimInterface.mockRejectedValueOnce(new DOMException("missing", "NotFoundError"));
+    await expect(claimWithReset(device as unknown as USBDevice, 0)).rejects.toMatchObject({
+      stage: "claim",
+    });
+    expect(device.reset).not.toHaveBeenCalled();
+  });
+
+  it("wraps reset failure with stage reset", async () => {
+    const device = new FakeUSBDevice();
+    device.claimInterface.mockRejectedValueOnce(new DOMException("busy", "NetworkError"));
+    device.reset.mockRejectedValueOnce(new DOMException("no", "NetworkError"));
+    await expect(claimWithReset(device as unknown as USBDevice, 0)).rejects.toMatchObject({
+      stage: "reset",
+    });
+  });
+
+  it("wraps reconfiguration failure with stage setup-config", async () => {
+    const device = new FakeUSBDevice();
+    device.claimInterface.mockRejectedValueOnce(new DOMException("busy", "NetworkError"));
+    device.selectConfiguration.mockRejectedValueOnce(new DOMException("no", "NetworkError"));
+    await expect(claimWithReset(device as unknown as USBDevice, 0)).rejects.toMatchObject({
+      stage: "setup-config",
+    });
+  });
+
+  it("wraps endpoint discovery failure with stage endpoint-discovery", async () => {
+    const device = new FakeUSBDevice();
+    device.claimInterface.mockRejectedValueOnce(new DOMException("busy", "NetworkError"));
+    device.configuration = { configurationValue: 1, interfaces: [] } as unknown as USBConfiguration;
+    device.selectConfiguration.mockImplementationOnce(async () => undefined);
+    await expect(claimWithReset(device as unknown as USBDevice, 0)).rejects.toMatchObject({
+      stage: "endpoint-discovery",
+    });
+  });
+
+  it("wraps second claim failure with stage claim", async () => {
+    const device = new FakeUSBDevice();
+    device.claimInterface
+      .mockRejectedValueOnce(new DOMException("busy", "NetworkError"))
+      .mockRejectedValueOnce(new DOMException("busy", "NetworkError"));
+    await expect(claimWithReset(device as unknown as USBDevice, 0)).rejects.toMatchObject({
+      stage: "claim",
+    });
+  });
+
+  it("reclaims after reset and endpoint rediscovery", async () => {
+    const device = new FakeUSBDevice();
+    device.claimInterface.mockRejectedValueOnce(new DOMException("busy", "NetworkError"));
+    await claimWithReset(device as unknown as USBDevice, 0);
+    expect(device.reset).toHaveBeenCalledTimes(1);
+    expect(device.claimInterface).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("OpenSession staging and cleanup", () => {
+  it("rewraps LatentError as stage open", async () => {
+    const fakeSession = session({
+      open: vi.fn(async () => {
+        throw new LatentError("UsbDisconnect", "transfer", undefined, { stage: "transfer-in" });
+      }),
+    });
+    await expect(openSessionWithStaging(fakeSession)).rejects.toMatchObject({
+      stage: "open",
+    });
+  });
+
+  it("wraps non-LatentError as stage open", async () => {
+    const fakeSession = session({
+      open: vi.fn(async () => {
+        throw new Error("raw");
+      }),
+    });
+    await expect(openSessionWithStaging(fakeSession)).rejects.toMatchObject({
+      category: "UsbDisconnect",
+      stage: "open",
+    });
+  });
+
+  it("disconnect sends CloseSession before releasing interface", async () => {
+    const fakeSession = session();
+    const driver = driverWith(new FakeUsb(), fakeSession);
+    await driver.connect();
+    await driver.disconnect();
+    expect(fakeSession.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("disconnect is idempotent", async () => {
+    const fakeSession = session();
+    const driver = driverWith(new FakeUsb(), fakeSession);
+    await driver.connect();
+    await driver.disconnect();
+    await driver.disconnect();
+    expect(fakeSession.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("disconnect swallows close errors", async () => {
+    const fakeSession = session({
+      close: vi.fn(async () => {
+        throw new Error("close failed");
+      }),
+    });
+    const driver = driverWith(new FakeUsb(), fakeSession);
+    await driver.connect();
+    await expect(driver.disconnect()).resolves.toBeUndefined();
+  });
+
+  it("DriverConnectResult.dispose closes only its own port", async () => {
+    const firstSession = session();
+    const secondSession = session();
+    const usb = new FakeUsb([new FakeUSBDevice()]);
+    const driver = new WebUsbCameraDriver({
+      usb: usb as unknown as USB,
+      sessionFactory: vi.fn()
+        .mockReturnValueOnce(firstSession)
+        .mockReturnValueOnce(secondSession),
+      transportFactory: () => ({
+        send: vi.fn(async () => undefined),
+        receive: vi.fn(async () => new Uint8Array(0)),
+        close: vi.fn(async () => undefined),
+      }),
+    });
+    const first = await driver.connect();
+    const second = await driver.connect();
+    await first.dispose();
+    expect(firstSession.close).toHaveBeenCalledTimes(1);
+    expect(second.port.isOpen()).toBe(true);
+  });
+});
+
+describe("events, probe, and fireCloseSession", () => {
+  it.each([
+    ["vendor mismatch", { vendorId: 1, productId: 0x02de, serialNumber: "USB-123" }, false],
+    ["product mismatch", { vendorId: 0x04cb, productId: 1, serialNumber: "USB-123" }, false],
+    ["USB serial mismatch", { vendorId: 0x04cb, productId: 0x02de, serialNumber: "OTHER" }, false],
+    ["matching descriptor", { vendorId: 0x04cb, productId: 0x02de, serialNumber: "USB-123" }, true],
+  ] as const)("connect event filter handles %s", async (_name, patch, shouldFire) => {
+    const device = new FakeUSBDevice();
+    const usb = new FakeUsb([device]);
+    const driver = driverWith(usb);
+    await driver.connect();
+    const handler = vi.fn();
+    driver.subscribeConnectEvents(handler);
+    const eventDevice = Object.assign(new FakeUSBDevice(), patch);
+    usb.devices = shouldFire ? [eventDevice] : [device];
+    usb.emitConnect(eventDevice);
+    await Promise.resolve();
+    expect(handler).toHaveBeenCalledTimes(shouldFire ? 1 : 0);
+  });
+
+  it("connect event ignores permission revoked", async () => {
+    const usb = new FakeUsb([new FakeUSBDevice()]);
+    const driver = driverWith(usb);
+    await driver.connect();
+    const handler = vi.fn();
+    driver.subscribeConnectEvents(handler);
+    usb.devices = [];
+    usb.emitConnect(new FakeUSBDevice());
+    await Promise.resolve();
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("disconnect event fires for matching descriptor", async () => {
+    const device = new FakeUSBDevice();
+    const usb = new FakeUsb([device]);
+    const driver = driverWith(usb);
+    await driver.connect();
+    const handler = vi.fn();
+    driver.subscribeDisconnectEvents(handler);
+    usb.emitDisconnect(device);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("probe returns true when GetDeviceInfo succeeds", async () => {
+    const driver = driverWith();
+    await driver.connect();
+    await expect(driver.probe()).resolves.toBe(true);
+  });
+
+  it("probe returns false on timeout, stall, or closed port", async () => {
+    const fakeSession = session({
+      getDeviceInfo: vi.fn()
+        .mockResolvedValueOnce({
+          model: "X-S20",
+          firmwareVersion: "1.10",
+          serialNumber: "PTP-123",
+          supportedOps: [0x1001],
+        })
+        .mockRejectedValueOnce(new LatentError("PtpStall", "stall")),
+    });
+    const driver = driverWith(new FakeUsb(), fakeSession);
+    await driver.connect();
+    await expect(driver.probe()).resolves.toBe(false);
+    await driver.disconnect();
+    await expect(driver.probe()).resolves.toBe(false);
+  });
+
+  it("fireCloseSession returns synchronously and swallows send rejection", async () => {
+    const fakeSession = session({
+      fireCloseSession: vi.fn(() => {
+        throw new Error("send failed");
+      }),
+    });
+    const driver = driverWith(new FakeUsb(), fakeSession);
+    await driver.connect();
+    expect(() => driver.fireCloseSession()).not.toThrow();
+  });
+});
