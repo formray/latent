@@ -1,7 +1,8 @@
-# Funding configuration for github.com/giuseppe-albrizio/latent
+# Funding configuration for github.com/formray/latent
 #
 # Latent does not accept funding pre-launch (Phase 7). When sponsorship
-# opens, this file gets enabled with at minimum github_sponsors.
+# opens, this file gets enabled with at minimum github_sponsors pointing
+# at the maintainer.
 
-# github: [giuseppe-albrizio]
+# github: [giuseppealbrizio]
 # custom: ["https://latent.photo/sponsor"]

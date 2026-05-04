@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/giuseppe-albrizio/latent/blob/main/SECURITY.md
+    url: https://github.com/formray/latent/blob/main/SECURITY.md
     about: Don't open a public issue. Report privately per SECURITY.md.
   - name: Question or discussion
-    url: https://github.com/giuseppe-albrizio/latent/discussions
+    url: https://github.com/formray/latent/discussions
     about: For "how do I..." or design questions, prefer Discussions over Issues.

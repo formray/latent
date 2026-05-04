@@ -6,9 +6,10 @@ evolve.
 
 ## Maintainers
 
-- **Giuseppe Albrizio** ([@giuseppe-albrizio](https://github.com/giuseppe-albrizio))
+- **Giuseppe Albrizio** ([@giuseppealbrizio](https://github.com/giuseppealbrizio))
   — founder, sole maintainer at this stage. Final call on roadmap,
-  releases, and contributor disputes.
+  releases, and contributor disputes. Project lives in the
+  [Formray](https://github.com/formray) GitHub organization.
 
 When the project gains additional regular committers, this section grows
 and decision-making moves to the model below.
