@@ -31,6 +31,16 @@ const sample: RecipeType = {
   smoothSkinEffect: "Off",
 };
 
+const autoWhiteBalanceRecipe: RecipeType = {
+  ...sample,
+  id: "55555555-5555-4555-8555-555555555555",
+  whiteBalance: { mode: "Auto", shiftR: 0, shiftB: 0 },
+};
+
+function lastRenderCall(): [File, RecipeType | null | undefined] | undefined {
+  return renderRawPreview.mock.calls.at(-1) as [File, RecipeType | null | undefined] | undefined;
+}
+
 describe("<RawPreviewPanel />", () => {
   beforeEach(() => {
     renderRawPreview.mockClear();
@@ -74,13 +84,40 @@ describe("<RawPreviewPanel />", () => {
     await waitFor(() => {
       expect(renderRawPreview).toHaveBeenCalled();
     });
-    const lastCall = renderRawPreview.mock.calls.at(-1) as
-      | [File, RecipeType | null | undefined]
-      | undefined;
+    const lastCall = lastRenderCall();
     expect(lastCall?.[0]).toBe(file);
     expect(lastCall?.[1]).toMatchObject({
       name: "Neon Dreams",
       color: 1,
+    });
+  });
+
+  it("materializes the default Kelvin value when switching to color temperature WB", async () => {
+    useRecipesStore.setState({
+      recipes: [autoWhiteBalanceRecipe],
+      selectedRecipeId: autoWhiteBalanceRecipe.id,
+    });
+    render(<RawPreviewPanel />);
+
+    expect(screen.getByRole("option", { name: "Color Temperature" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("White Balance"), {
+      target: { value: "ColorTemperature" },
+    });
+    expect((screen.getByLabelText("Kelvin") as HTMLInputElement).value).toBe("6500");
+
+    const file = new File([new Uint8Array([1, 2, 3])], "sample.raf", {
+      type: "image/x-fuji-raf",
+    });
+    fireEvent.change(screen.getByLabelText("Open RAF file"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(renderRawPreview).toHaveBeenCalled();
+    });
+    expect(lastRenderCall()?.[1]?.whiteBalance).toMatchObject({
+      mode: "ColorTemperature",
+      colorTemperatureK: 6500,
     });
   });
 });

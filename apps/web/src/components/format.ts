@@ -2,10 +2,7 @@
  * Display-formatters for recipe parameters. Pure functions, no React or i18n.
  */
 
-import type {
-  RecipeType,
-  FilmSimulation,
-} from "@latent/recipe-schema/browser";
+import type { RecipeType, FilmSimulation } from "@latent/recipe-schema/browser";
 import type { z } from "zod";
 
 type FilmSim = z.infer<typeof FilmSimulation>;
@@ -53,8 +50,12 @@ export function describeWhiteBalance(wb: RecipeType["whiteBalance"]): string {
   if (wb.mode === "ColorTemperature" && typeof wb.colorTemperatureK === "number") {
     return `${wb.colorTemperatureK}K`;
   }
+  if (wb.mode === "ColorTemperature") return "Color Temperature";
   if (wb.mode === "AutoWhitePriority") return "White Priority";
   if (wb.mode === "AutoAmbiencePriority") return "Ambience Priority";
+  if (wb.mode === "Fluorescent1") return "Fluorescent 1";
+  if (wb.mode === "Fluorescent2") return "Fluorescent 2";
+  if (wb.mode === "Fluorescent3") return "Fluorescent 3";
   return wb.mode;
 }
 
