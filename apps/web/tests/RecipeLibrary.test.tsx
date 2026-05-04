@@ -123,7 +123,7 @@ describe("<RecipeLibrary />", () => {
     });
 
     render(<RecipeLibrary />);
-    fireEvent.change(screen.getByLabelText(/import json/i), {
+    fireEvent.change(screen.getByLabelText(/import file/i), {
       target: { files: [file] },
     });
 
@@ -132,5 +132,32 @@ describe("<RecipeLibrary />", () => {
     });
     expect(screen.getByText("1 imported")).toBeInTheDocument();
     expect(useRecipesStore.getState().selectedRecipeId).toBe(imported.id);
+  });
+
+  it("imports recipes from a Fujifilm Recipes HTML file", async () => {
+    const html = `<!DOCTYPE html><script>const RECIPES = [
+      {pack:"Film",name:"Kodachrome",sim:"Classic Chrome",settings:{
+        "Film Simulation":"Classic Chrome","Dynamic Range":"DR400","White Balance":"Auto",
+        "WB Shift":"R:+2  B:-5","Highlight Tone":"+1","Shadow Tone":"+2","Color":"0",
+        "Sharpness":"+2","Noise Reduction":"-4","Clarity":"0","Grain Effect":"Weak",
+        "Color Chrome Effect":"Strong","Color Chrome FX Blue":"Weak"
+      }}
+    ];</script>`;
+    const file = new File([html], "Fujifilm-Recipes.html", {
+      type: "text/html",
+    });
+    Object.defineProperty(file, "text", {
+      value: async () => html,
+    });
+
+    render(<RecipeLibrary />);
+    fireEvent.change(screen.getByLabelText(/import file/i), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Kodachrome")).toBeInTheDocument();
+    });
+    expect(useRecipesStore.getState().recipes[0]?.tags).toContain("fujifilm-recipes");
   });
 });

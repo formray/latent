@@ -1,5 +1,6 @@
 import { Recipe, type RecipeType } from "@latent/recipe-schema/browser";
 import { z } from "zod";
+import { parseFujifilmRecipesHtml } from "./fujifilm-html-recipes";
 
 const RecipeJsonFile = z.union([Recipe, z.array(Recipe)]);
 
@@ -10,6 +11,14 @@ export function serializeRecipeJson(recipe: RecipeType): string {
 export function parseRecipeJson(raw: string): RecipeType[] {
   const parsed = RecipeJsonFile.parse(JSON.parse(raw));
   return Array.isArray(parsed) ? parsed : [parsed];
+}
+
+export function parseRecipeImportText(raw: string): RecipeType[] {
+  const trimmed = raw.trimStart();
+  if (trimmed.startsWith("<!DOCTYPE html") || trimmed.startsWith("<html")) {
+    return parseFujifilmRecipesHtml(raw);
+  }
+  return parseRecipeJson(raw);
 }
 
 export function downloadRecipeJson(recipe: RecipeType): void {

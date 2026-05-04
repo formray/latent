@@ -4,7 +4,7 @@ import { useRecipesStore, type FilmSimulationValue } from "../stores/recipes";
 import { useT } from "../i18n";
 import { RecipeCard } from "./RecipeCard";
 import { humanFilmSim } from "./format";
-import { parseRecipeJson } from "../lib/recipe-json";
+import { parseRecipeImportText } from "../lib/recipe-json";
 
 const FILM_SIM_OPTIONS: FilmSimulationValue[] = [
   "ProviaStandard",
@@ -78,7 +78,7 @@ export function RecipeLibrary(): JSX.Element {
     e.target.value = "";
     if (!file) return;
     try {
-      const imported = parseRecipeJson(await file.text());
+      const imported = parseRecipeImportText(await file.text());
       importRecipes(imported);
       setImportStatus(t("library.import.success", { n: imported.length }));
     } catch {
@@ -154,7 +154,7 @@ export function RecipeLibrary(): JSX.Element {
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/json,.json"
+            accept="application/json,text/html,.json,.html"
             className="hidden"
             onChange={(e) => void handleImportFile(e)}
             aria-label={t("library.importJson")}
