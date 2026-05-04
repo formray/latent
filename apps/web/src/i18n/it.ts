@@ -14,7 +14,7 @@ export const it: Record<MessageKey, string> = {
   "library.empty.loading": "Caricamento ricette",
   "library.count.one": "1 ricetta",
   "library.count.other": "{n} ricette",
-  "library.importJson": "Importa JSON",
+  "library.importJson": "Importa file",
   "library.import.success": "{n} importate",
   "library.import.error": "JSON ricetta non valido",
 

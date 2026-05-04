@@ -12,7 +12,7 @@ export const en = {
   "library.empty.loading": "Loading recipes",
   "library.count.one": "1 recipe",
   "library.count.other": "{n} recipes",
-  "library.importJson": "Import JSON",
+  "library.importJson": "Import file",
   "library.import.success": "{n} imported",
   "library.import.error": "Invalid recipe JSON",
 
