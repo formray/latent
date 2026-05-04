@@ -29,6 +29,7 @@ describe("<App />", () => {
   it("renders the workspace navigation and persists the theme toggle", () => {
     const { container } = render(<App />);
 
+    expect(screen.getByText(/Camera-backed Fujifilm recipes/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Camera" })).toHaveAttribute(
       "href",
       "#camera-recipes-panel",

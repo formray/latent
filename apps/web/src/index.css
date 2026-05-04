@@ -34,6 +34,32 @@ html {
     linear-gradient(180deg, #f7f4ec 0%, #ede7dc 100%);
 }
 
+.studio-overview {
+  background:
+    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 88% 22%, rgb(16 185 129 / 0.18), transparent 26rem),
+    linear-gradient(135deg, #090909 0%, #050505 58%, #0b0f0d 100%);
+  background-size:
+    72px 72px,
+    72px 72px,
+    auto,
+    auto;
+}
+
+.theme-light .studio-overview {
+  background:
+    linear-gradient(rgb(23 19 16 / 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(23 19 16 / 0.055) 1px, transparent 1px),
+    radial-gradient(circle at 88% 22%, rgb(16 185 129 / 0.18), transparent 26rem),
+    linear-gradient(135deg, #f8f5ee 0%, #eee7db 62%, #e4ddce 100%);
+  background-size:
+    72px 72px,
+    72px 72px,
+    auto,
+    auto;
+}
+
 .studio-stage {
   border-inline: 1px solid rgb(39 39 42 / 0.72);
 }
