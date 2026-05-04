@@ -2,6 +2,11 @@ import clsx from "clsx";
 import { useEffect, useMemo, useState, type JSX, type ReactNode } from "react";
 import type { RawPreset } from "@latent/camera-connection";
 import { useCameraStore } from "../../stores/camera";
+import { useRecipesStore } from "../../stores/recipes";
+import {
+  cameraPresetToRecipe,
+  canImportCameraPreset,
+} from "../../lib/camera-preset-to-recipe";
 import { useT } from "../../i18n";
 
 const PARAMETER_COLUMNS = [
@@ -158,6 +163,8 @@ function CameraSlotCard({
 
 function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.Element {
   const t = useT();
+  const importRecipe = useRecipesStore((s) => s.importRecipe);
+  const state = useCameraStore((s) => s.state);
   const d = preset?.decoded;
   if (!preset || !d) {
     return (
@@ -166,6 +173,24 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
       </aside>
     );
   }
+
+  const cameraModel = state.kind === "connected" || state.kind === "degraded"
+    ? state.cameraModel
+    : "Fujifilm Camera";
+  const firmwareVersion = state.kind === "connected" || state.kind === "degraded"
+    ? state.firmwareVersion
+    : undefined;
+  const importCheck = canImportCameraPreset(preset);
+  const importDisabledReason = importCheck.reason ?? t("camera.recipes.importDisabled");
+  const handleImport = (): void => {
+    if (!importCheck.ok) return;
+    importRecipe(
+      cameraPresetToRecipe(preset, {
+        cameraModel,
+        ...(firmwareVersion ? { firmwareVersion } : {}),
+      }),
+    );
+  };
 
   return (
     <aside className="bg-zinc-950 p-6">
@@ -181,9 +206,15 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
         </div>
         <button
           type="button"
-          disabled
-          className="rounded-sm border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-500"
-          title={t("camera.recipes.importDisabled")}
+          disabled={!importCheck.ok}
+          onClick={handleImport}
+          className={clsx(
+            "rounded-sm border px-3 py-2 text-xs font-medium transition-colors",
+            importCheck.ok
+              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15"
+              : "border-zinc-800 text-zinc-500",
+          )}
+          title={importCheck.ok ? undefined : importDisabledReason}
         >
           {t("camera.recipes.import")}
         </button>
