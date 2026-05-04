@@ -1,13 +1,29 @@
 import {
+  ColorChromeFxBlueLabels,
+  ColorChromeLabels,
+  DynRangeLabels,
   FujiCameraSession,
+  FilmSimLabels,
+  GrainSizeLabels,
+  GrainStrengthLabels,
   LatentError,
+  SmoothSkinLabels,
+  translatePresetToUI,
   type FujiDeviceInfo,
   type PtpTransport,
   type FujiRawPreset,
+  WBModeLabels,
 } from "@latent/ptp-fuji";
 import { WebUsbPtpTransport } from "@latent/ptp-fuji-webusb";
 import type { CameraDriver, ConnectOptions, DriverConnectResult } from "../driver.js";
-import type { CameraSessionPort, DeviceInfo, DeviceValue } from "../session-port.js";
+import type {
+  CameraSessionPort,
+  DecodedPresetEnum,
+  DecodedPresetValues,
+  DeviceInfo,
+  DeviceValue,
+  RawPreset,
+} from "../session-port.js";
 
 const FUJI_VENDOR_ID = 0x04cb;
 const USB_CLASS_IMAGE = 0x06;
@@ -47,19 +63,11 @@ export class WebUsbSessionPort implements CameraSessionPort {
     return toDeviceValue(await this.session.getDevicePropValue(code, signal));
   }
 
-  async setDevicePropValue(
-    code: number,
-    value: DeviceValue,
-    signal?: AbortSignal,
-  ): Promise<void> {
+  async setDevicePropValue(code: number, value: DeviceValue, signal?: AbortSignal): Promise<void> {
     await this.session.setDevicePropValue(code, fromDeviceValue(value), signal);
   }
 
-  async getPreset(slot: number, signal?: AbortSignal): Promise<{
-    slot: number;
-    name?: string;
-    properties: Record<string, unknown>;
-  }> {
+  async getPreset(slot: number, signal?: AbortSignal): Promise<RawPreset> {
     return toRawPreset(await this.session.getPreset(slot, signal));
   }
 
@@ -68,7 +76,10 @@ export class WebUsbSessionPort implements CameraSessionPort {
   }
 }
 
-function toDeviceValue(value: { bytes: Uint8Array; value: number | string | Uint8Array }): DeviceValue {
+function toDeviceValue(value: {
+  bytes: Uint8Array;
+  value: number | string | Uint8Array;
+}): DeviceValue {
   if (typeof value.value === "string") return { kind: "string", value: value.value };
   if (typeof value.value !== "number") return { kind: "bytes", value: value.bytes };
   if (value.bytes.byteLength <= 1) return { kind: "uint8", value: value.value };
@@ -108,11 +119,7 @@ function encodePtpString(value: string): Uint8Array {
   return bytes;
 }
 
-function toRawPreset(preset: FujiRawPreset): {
-  slot: number;
-  name?: string;
-  properties: Record<string, unknown>;
-} {
+function toRawPreset(preset: FujiRawPreset): RawPreset {
   const properties: Record<string, unknown> = {};
   for (const setting of preset.settings) {
     properties[`0x${setting.id.toString(16)}`] = {
@@ -129,6 +136,50 @@ function toRawPreset(preset: FujiRawPreset): {
     slot: preset.slot,
     ...(preset.name ? { name: preset.name } : {}),
     properties,
+    decoded: decodeRawPreset(preset),
+  };
+}
+
+function decodeRawPreset(preset: FujiRawPreset): DecodedPresetValues {
+  const values = translatePresetToUI(preset.settings);
+  return {
+    filmSimulation: enumValue(values.filmSimulation, FilmSimLabels),
+    dynamicRange: enumValue(values.dynamicRange, DynRangeLabels),
+    whiteBalance: {
+      ...enumValue(values.whiteBalance, WBModeLabels),
+      ...(values.wbColorTemp ? { colorTemperatureK: values.wbColorTemp } : {}),
+    },
+    wbShift: { r: values.wbShiftR, b: values.wbShiftB },
+    highlightTone: values.highlightTone,
+    shadowTone: values.shadowTone,
+    color: values.color,
+    sharpness: values.sharpness,
+    noiseReduction: values.noiseReduction,
+    clarity: values.clarity,
+    grainEffect: decodeGrain(values.grainEffect),
+    colorChromeEffect: enumValue(values.colorChrome, ColorChromeLabels),
+    colorChromeEffectBlue: enumValue(values.colorChromeFxBlue, ColorChromeFxBlueLabels),
+    smoothSkinEffect: enumValue(values.smoothSkin, SmoothSkinLabels),
+    ...(values.monoWC !== 0 || values.monoMG !== 0
+      ? { monochromaticColor: { warmCool: values.monoWC, greenMagenta: values.monoMG } }
+      : {}),
+  };
+}
+
+function enumValue(value: number, labels: Record<number, string>): DecodedPresetEnum {
+  return { value, label: labels[value] ?? `Unknown (${value})` };
+}
+
+function decodeGrain(value: number): DecodedPresetValues["grainEffect"] {
+  const strengthValue = value & 0xff;
+  const sizeValue = (value >> 8) & 0xff;
+  const strength = GrainStrengthLabels[strengthValue] ?? `Unknown (${strengthValue})`;
+  const size = GrainSizeLabels[sizeValue] ?? `Unknown (${sizeValue})`;
+  return {
+    value,
+    label: strength === "Off" ? "Off" : `${strength} ${size}`,
+    strength,
+    size,
   };
 }
 
@@ -149,9 +200,12 @@ export class WebUsbCameraDriver implements CameraDriver {
     }
     this.usb = usb;
     this.configurationValue = options.configurationValue ?? 1;
-    this.sessionFactory = options.sessionFactory ?? ((transport) => new FujiCameraSession(transport));
-    this.transportFactory = options.transportFactory ?? ((device, endpointIn, endpointOut, opts) =>
-      new WebUsbPtpTransport(device, endpointIn, endpointOut, opts));
+    this.sessionFactory =
+      options.sessionFactory ?? ((transport) => new FujiCameraSession(transport));
+    this.transportFactory =
+      options.transportFactory ??
+      ((device, endpointIn, endpointOut, opts) =>
+        new WebUsbPtpTransport(device, endpointIn, endpointOut, opts));
   }
 
   async connect(opts: ConnectOptions = {}): Promise<DriverConnectResult> {
@@ -172,10 +226,7 @@ export class WebUsbCameraDriver implements CameraDriver {
       if (nameOf(err) === "AbortError") throw err;
       if (!(err instanceof LatentError) || err.stage !== "open") throw err;
       await disposeSessionTransport(session, transport);
-      iface = await recoverFromOpenSessionFailure(
-        device,
-        this.configurationValue,
-      );
+      iface = await recoverFromOpenSessionFailure(device, this.configurationValue);
       transport = this.transportFactory(device, iface.endpointIn, iface.endpointOut, {
         interfaceNumber: iface.interfaceNumber,
       });
@@ -233,9 +284,7 @@ export class WebUsbCameraDriver implements CameraDriver {
         const device = (event as USBConnectionEvent).device;
         if (!this.matchesActiveDevice(device, true)) return;
         const paired = await this.usb.getDevices();
-        const stillPaired = paired.some((candidate) =>
-          this.matchesActiveDevice(candidate, true),
-        );
+        const stillPaired = paired.some((candidate) => this.matchesActiveDevice(candidate, true));
         if (stillPaired) handler();
       })();
     };
@@ -339,11 +388,7 @@ export async function claimWithReset(
     try {
       await device.claimInterface(iface);
     } catch (secondClaimErr) {
-      throw stageError(
-        "claim",
-        "claimInterface failed after device.reset()",
-        secondClaimErr,
-      );
+      throw stageError("claim", "claimInterface failed after device.reset()", secondClaimErr);
     }
   }
 }
@@ -382,9 +427,7 @@ function pickPtpInterface(device: USBDevice): PtpInterfaceInfo {
     throw stageError("setup-config", "device has no active USB configuration");
   }
   const candidates = [
-    ...config.interfaces.filter(
-      (iface) => iface.alternate?.interfaceClass === USB_CLASS_IMAGE,
-    ),
+    ...config.interfaces.filter((iface) => iface.alternate?.interfaceClass === USB_CLASS_IMAGE),
     ...config.interfaces,
   ];
   for (const iface of candidates) {
@@ -430,11 +473,7 @@ async function recoverFromOpenSessionFailure(
   try {
     await device.claimInterface(iface.interfaceNumber);
   } catch (claimErr) {
-    throw stageError(
-      "claim",
-      "claimInterface failed after OpenSession recovery reset",
-      claimErr,
-    );
+    throw stageError("claim", "claimInterface failed after OpenSession recovery reset", claimErr);
   }
   return iface;
 }

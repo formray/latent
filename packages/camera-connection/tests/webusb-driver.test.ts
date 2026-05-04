@@ -46,12 +46,18 @@ interface FakeSession {
     serialNumber?: string;
     supportedOps: number[];
   }>;
-  getDevicePropValue: (code: number, signal?: AbortSignal) => Promise<{
+  getDevicePropValue: (
+    code: number,
+    signal?: AbortSignal,
+  ) => Promise<{
     bytes: Uint8Array;
     value: number | string | Uint8Array;
   }>;
   setDevicePropValue: (code: number, bytes: Uint8Array, signal?: AbortSignal) => Promise<void>;
-  getPreset: (slot: number, signal?: AbortSignal) => Promise<{
+  getPreset: (
+    slot: number,
+    signal?: AbortSignal,
+  ) => Promise<{
     slot: number;
     name?: string;
     settings: Array<{ id: number; name: string; bytes: Uint8Array; value: number | string }>;
@@ -59,10 +65,7 @@ interface FakeSession {
   }>;
 }
 
-function driverWith(
-  usb = new FakeUsb(),
-  fakeSession = session(),
-): WebUsbCameraDriver {
+function driverWith(usb = new FakeUsb(), fakeSession = session()): WebUsbCameraDriver {
   return new WebUsbCameraDriver({
     usb: usb as unknown as USB,
     sessionFactory: () => fakeSession,
@@ -131,9 +134,7 @@ describe("WebUsbCameraDriver connect", () => {
     const usb = new FakeUsb([device]);
     const driver = new WebUsbCameraDriver({
       usb: usb as unknown as USB,
-      sessionFactory: vi.fn()
-        .mockReturnValueOnce(firstSession)
-        .mockReturnValueOnce(secondSession),
+      sessionFactory: vi.fn().mockReturnValueOnce(firstSession).mockReturnValueOnce(secondSession),
       transportFactory: () => ({
         send: vi.fn(async () => undefined),
         receive: vi.fn(async () => new Uint8Array(0)),
@@ -178,12 +179,50 @@ describe("WebUsbCameraDriver connect", () => {
       getPreset: vi.fn(async () => ({
         slot: 2,
         name: "C2",
-        settings: [{
-          id: 0xd190,
-          name: "P:DynamicRange%",
-          bytes: new Uint8Array([0x64, 0x00]),
-          value: 100,
-        }],
+        settings: [
+          {
+            id: 0xd190,
+            name: "P:DynamicRange%",
+            bytes: new Uint8Array([0x64, 0x00]),
+            value: 100,
+          },
+          {
+            id: 0xd192,
+            name: "P:FilmSimulation",
+            bytes: new Uint8Array([0x0e, 0x00]),
+            value: 14,
+          },
+          {
+            id: 0xd195,
+            name: "P:GrainEffect",
+            bytes: new Uint8Array([0x05, 0x00]),
+            value: 5,
+          },
+          {
+            id: 0xd199,
+            name: "P:WhiteBalance",
+            bytes: new Uint8Array([0x02, 0x00]),
+            value: 2,
+          },
+          {
+            id: 0xd19a,
+            name: "P:WBShiftR",
+            bytes: new Uint8Array([0xf8, 0xff]),
+            value: -8,
+          },
+          {
+            id: 0xd19b,
+            name: "P:WBShiftB",
+            bytes: new Uint8Array([0xf8, 0xff]),
+            value: -8,
+          },
+          {
+            id: 0xd19d,
+            name: "P:HighlightTone×10",
+            bytes: new Uint8Array([0x0a, 0x00]),
+            value: 10,
+          },
+        ],
         missing: [],
       })),
     });
@@ -197,6 +236,17 @@ describe("WebUsbCameraDriver connect", () => {
       name: "C2",
       properties: {
         "0xd190": expect.objectContaining({ value: 100 }),
+      },
+      decoded: {
+        filmSimulation: { value: 14, label: "Acros + Red" },
+        dynamicRange: { value: 1, label: "DR 100%" },
+        whiteBalance: expect.objectContaining({ value: 2, label: "Auto" }),
+        wbShift: { r: -8, b: -8 },
+        highlightTone: 1,
+        grainEffect: expect.objectContaining({
+          value: 259,
+          label: "Strong Large",
+        }),
       },
     });
   });
@@ -324,9 +374,7 @@ describe("OpenSession staging and cleanup", () => {
     const usb = new FakeUsb([new FakeUSBDevice()]);
     const driver = new WebUsbCameraDriver({
       usb: usb as unknown as USB,
-      sessionFactory: vi.fn()
-        .mockReturnValueOnce(firstSession)
-        .mockReturnValueOnce(secondSession),
+      sessionFactory: vi.fn().mockReturnValueOnce(firstSession).mockReturnValueOnce(secondSession),
       transportFactory: () => ({
         send: vi.fn(async () => undefined),
         receive: vi.fn(async () => new Uint8Array(0)),
@@ -392,7 +440,8 @@ describe("events, probe, and fireCloseSession", () => {
 
   it("probe returns false on timeout, stall, or closed port", async () => {
     const fakeSession = session({
-      getDeviceInfo: vi.fn()
+      getDeviceInfo: vi
+        .fn()
         .mockResolvedValueOnce({
           model: "X-S20",
           firmwareVersion: "1.10",
