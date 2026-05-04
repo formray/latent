@@ -38,7 +38,8 @@ function loadImportedRecipes(): RecipeType[] {
     if (typeof localStorage === "undefined") return [];
     const raw = localStorage.getItem(IMPORTED_RECIPES_KEY);
     if (!raw) return [];
-    return RecipeFile.parse(JSON.parse(raw));
+    const recipes = RecipeFile.parse(JSON.parse(raw));
+    return dedupeImportedRecipes(recipes);
   } catch {
     return [];
   }
@@ -62,6 +63,41 @@ function mergeRecipes(primary: RecipeType[], secondary: RecipeType[]): RecipeTyp
     merged.push(recipe);
   }
   return merged;
+}
+
+function dedupeImportedRecipes(recipes: RecipeType[]): RecipeType[] {
+  const keyed = new Set<string>();
+  const result: RecipeType[] = [];
+  for (const recipe of recipes) {
+    const key = cameraImportKey(recipe) ?? `id:${recipe.id}`;
+    if (keyed.has(key)) continue;
+    keyed.add(key);
+    result.push(recipe);
+  }
+  return result;
+}
+
+function cameraImportKey(recipe: RecipeType): string | null {
+  if (recipe.author !== "Camera import") return null;
+  if (!recipe.tags.includes("camera-import")) return null;
+  const slot = recipe.tags.find((tag) => /^c\d+$/i.test(tag));
+  if (!slot) return null;
+  return [
+    recipe.cameraModel.trim().toLowerCase(),
+    recipe.capabilitySetId.trim().toLowerCase(),
+    slot.toLowerCase(),
+    recipe.name.trim().toLowerCase(),
+  ].join("|");
+}
+
+function upsertImportedRecipe(recipe: RecipeType, imported: RecipeType[]): RecipeType[] {
+  const key = cameraImportKey(recipe);
+  if (!key) return mergeRecipes([recipe], imported);
+  const existing = imported.find((candidate) => cameraImportKey(candidate) === key);
+  const nextRecipe = existing
+    ? { ...recipe, id: existing.id, createdAt: existing.createdAt }
+    : recipe;
+  return [nextRecipe, ...imported.filter((candidate) => cameraImportKey(candidate) !== key)];
 }
 
 export type FilmSimulationValue = z.infer<typeof FilmSimulation>;
@@ -119,12 +155,13 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
 
   importRecipe(recipe) {
     const parsed = Recipe.parse(recipe);
-    const imported = mergeRecipes([parsed], loadImportedRecipes());
+    const imported = upsertImportedRecipe(parsed, loadImportedRecipes());
+    const selected = imported[0]!;
     persistImportedRecipes(imported);
     set({
-      recipes: mergeRecipes([parsed], get().recipes),
+      recipes: mergeRecipes(imported, get().recipes.filter((candidate) => !cameraImportKey(candidate))),
       loadError: null,
-      selectedRecipeId: parsed.id,
+      selectedRecipeId: selected.id,
     });
   },
 

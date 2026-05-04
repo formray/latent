@@ -118,4 +118,59 @@ describe("useRecipesStore", () => {
     expect(stored).toBeTruthy();
     expect(JSON.parse(stored ?? "[]")[0]?.name).toBe("Camera C2");
   });
+
+  it("re-importing the same camera slot updates the existing imported recipe instead of duplicating it", () => {
+    const first = sampleRecipe({
+      id: "44444444-4444-4444-8444-444444444444",
+      name: "Camera C2",
+      author: "Camera import",
+      tags: ["camera-import", "x-m5", "c2"],
+      dynamicRange: "DRAuto",
+      cameraModel: "X-M5",
+      capabilitySetId: "x-m5-fw1.20",
+      color: 3,
+    });
+    const second = sampleRecipe({
+      ...first,
+      id: "55555555-5555-4555-8555-555555555555",
+      color: 4,
+    });
+
+    useRecipesStore.getState().setRecipes([sampleRecipe()]);
+    useRecipesStore.getState().importRecipe(first);
+    useRecipesStore.getState().importRecipe(second);
+
+    const imported = useRecipesStore
+      .getState()
+      .recipes.filter((recipe) => recipe.tags.includes("camera-import"));
+    expect(imported).toHaveLength(1);
+    expect(imported[0]?.id).toBe(first.id);
+    expect(imported[0]?.color).toBe(4);
+    expect(useRecipesStore.getState().selectedRecipeId).toBe(first.id);
+  });
+
+  it("deduplicates existing persisted camera imports on load", async () => {
+    const first = sampleRecipe({
+      id: "44444444-4444-4444-8444-444444444444",
+      name: "Camera C2",
+      author: "Camera import",
+      tags: ["camera-import", "x-m5", "c2"],
+      dynamicRange: "DRAuto",
+      cameraModel: "X-M5",
+      capabilitySetId: "x-m5-fw1.20",
+    });
+    const duplicate = sampleRecipe({
+      ...first,
+      id: "55555555-5555-4555-8555-555555555555",
+    });
+    localStorage.setItem("latent-imported-recipes-v1", JSON.stringify([first, duplicate]));
+
+    await useRecipesStore.getState().loadSeedRecipes();
+
+    const imported = useRecipesStore
+      .getState()
+      .recipes.filter((recipe) => recipe.tags.includes("camera-import"));
+    expect(imported).toHaveLength(1);
+    expect(imported[0]?.id).toBe(first.id);
+  });
 });
