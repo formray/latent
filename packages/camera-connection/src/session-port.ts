@@ -6,7 +6,14 @@ export interface CameraSessionPort {
     value: DeviceValue,
     signal?: AbortSignal,
   ): Promise<void>;
+  getPreset(slot: number, signal?: AbortSignal): Promise<RawPreset>;
   isOpen(): boolean;
+}
+
+export interface RawPreset {
+  slot: number;
+  name?: string;
+  properties: Record<string, unknown>;
 }
 
 export interface DeviceInfo {

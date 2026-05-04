@@ -12,7 +12,8 @@
 
 import type { PtpTransport } from "../transport/transport.js";
 import { LatentError } from "../errors.js";
-import { PTPOp } from "./constants.js";
+import { packU16, parsePTPStringRaw } from "../util/binary.js";
+import { FujiPropNames, PTPOp } from "./constants.js";
 import { PtpFraming } from "./transport.js";
 
 export type SessionState = "closed" | "opening" | "open" | "degraded";
@@ -28,7 +29,29 @@ export interface FujiDeviceInfo {
   supportedOps: number[];
 }
 
+export interface FujiDevicePropValue {
+  bytes: Uint8Array;
+  value: number | string | Uint8Array;
+}
+
+export interface FujiRawProp {
+  id: number;
+  name: string;
+  bytes: Uint8Array;
+  value: number | string;
+}
+
+export interface FujiRawPreset {
+  slot: number;
+  name?: string;
+  settings: FujiRawProp[];
+  missing: number[];
+}
+
 const DEFAULT_SESSION_ID = 0x00000001;
+const PRESET_SLOT_PROP = 0xd18c;
+const PRESET_NAME_PROP = 0xd18d;
+const PRESET_SETTING_PROPS = range(0xd18e, 0xd1a5);
 
 export class FujiCameraSession {
   private _state: SessionState = "closed";
@@ -103,6 +126,106 @@ export class FujiCameraSession {
       throw new LatentError("PtpStall", "malformed GetDeviceInfo payload", err);
     }
   }
+
+  async getDevicePropValue(
+    code: number,
+    signal?: AbortSignal,
+  ): Promise<FujiDevicePropValue> {
+    this.assertOpen("cannot read device property before session is open");
+    const result = await this.framing.sendCommand(
+      PTPOp.GetDevicePropValue,
+      [code],
+      signal,
+    );
+    const bytes = result.data;
+    return {
+      bytes,
+      value: decodePropValue(bytes),
+    };
+  }
+
+  async setDevicePropValue(
+    code: number,
+    bytes: Uint8Array,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    this.assertOpen("cannot write device property before session is open");
+    await this.framing.sendDataCommand(
+      PTPOp.SetDevicePropValue,
+      [code],
+      arrayBufferBytes(bytes),
+      signal,
+    );
+  }
+
+  async getPreset(slot: number, signal?: AbortSignal): Promise<FujiRawPreset> {
+    if (!Number.isInteger(slot) || slot < 1 || slot > 7) {
+      throw new LatentError("PtpUnsupportedOperation", `invalid custom slot C${slot}`);
+    }
+    this.assertOpen("cannot read preset before session is open");
+
+    let previousSlot: FujiDevicePropValue | undefined;
+    try {
+      previousSlot = await this.getDevicePropValue(PRESET_SLOT_PROP, signal);
+    } catch {
+      // Older bodies may reject the read before a slot is selected.
+    }
+
+    await this.setDevicePropValue(PRESET_SLOT_PROP, packU16(slot), signal);
+    const selectedSlot = await this.getDevicePropValue(PRESET_SLOT_PROP, signal);
+    if (typeof selectedSlot.value !== "number" || selectedSlot.value !== slot) {
+      throw new LatentError(
+        "BackupIncomplete",
+        `camera selected ${formatPropValue(selectedSlot.value)} instead of requested C${slot}`,
+      );
+    }
+
+    try {
+      const nameValue = await this.getDevicePropValue(PRESET_NAME_PROP, signal);
+      const settings: FujiRawProp[] = [];
+      const missing: number[] = [];
+      for (const prop of PRESET_SETTING_PROPS) {
+        try {
+          const value = await this.getDevicePropValue(prop, signal);
+          const decoded = decodeRawPropValue(value.bytes);
+          settings.push({
+            id: prop,
+            name: FujiPropNames[prop] ?? `0x${prop.toString(16)}`,
+            bytes: value.bytes,
+            value: decoded,
+          });
+        } catch (err) {
+          if (isOptionalPresetReadFailure(err)) {
+            missing.push(prop);
+            continue;
+          }
+          throw err;
+        }
+      }
+
+      const name = typeof nameValue.value === "string" ? nameValue.value : undefined;
+      return {
+        slot,
+        ...(name ? { name } : {}),
+        settings,
+        missing,
+      };
+    } finally {
+      if (previousSlot?.bytes) {
+        try {
+          await this.setDevicePropValue(PRESET_SLOT_PROP, previousSlot.bytes, signal);
+        } catch {
+          // Best-effort: reading presets must not hide the successful snapshot.
+        }
+      }
+    }
+  }
+
+  private assertOpen(message: string): void {
+    if (this._state !== "open") {
+      throw new LatentError("PtpStall", message);
+    }
+  }
 }
 
 function parseDeviceInfo(data: Uint8Array): FujiDeviceInfo {
@@ -171,4 +294,51 @@ function parseDeviceInfo(data: Uint8Array): FujiDeviceInfo {
     ...(serialNumber ? { serialNumber } : {}),
     supportedOps,
   };
+}
+
+function decodePropValue(bytes: Uint8Array): number | string | Uint8Array {
+  const decoded = decodeRawPropValue(bytes);
+  return decoded === "" && bytes.length > 0 ? bytes : decoded;
+}
+
+function decodeRawPropValue(bytes: Uint8Array): number | string {
+  if (looksLikePtpString(bytes)) {
+    return parsePTPStringRaw(bytes);
+  }
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.byteLength === 1) return view.getUint8(0);
+  if (bytes.byteLength === 2) return view.getInt16(0, true);
+  if (bytes.byteLength === 4) return view.getUint32(0, true);
+  return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function looksLikePtpString(bytes: Uint8Array): boolean {
+  if (bytes.byteLength < 1) return false;
+  const length = bytes[0] ?? 0;
+  return length > 0 && bytes.byteLength === 1 + length * 2;
+}
+
+function isOptionalPresetReadFailure(err: unknown): boolean {
+  return err instanceof LatentError && (
+    err.category === "PtpUnsupportedOperation" ||
+    err.category === "PtpStall"
+  );
+}
+
+function range(start: number, end: number): number[] {
+  const values: number[] = [];
+  for (let code = start; code <= end; code++) values.push(code);
+  return values;
+}
+
+function formatPropValue(value: number | string | Uint8Array): string {
+  if (typeof value === "number") return `C${value}`;
+  if (typeof value === "string") return value;
+  return `0x${Array.from(value).map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function arrayBufferBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy;
 }

@@ -14,6 +14,11 @@ export class FakeSessionPort implements CameraSessionPort {
   getDeviceInfo = vi.fn(async () => this.deviceInfo);
   getDevicePropValue = vi.fn(async (_code: number): Promise<DeviceValue> => ({ kind: "uint16", value: 1 }));
   setDevicePropValue = vi.fn(async () => undefined);
+  getPreset = vi.fn(async (slot: number) => ({
+    slot,
+    name: `C${slot}`,
+    properties: {},
+  }));
   isOpen = vi.fn(() => this.open);
 }
 

@@ -20,6 +20,17 @@ function session(overrides: Partial<FakeSession> = {}): FakeSession {
       serialNumber: "PTP-123",
       supportedOps: [0x1001],
     })),
+    getDevicePropValue: vi.fn(async () => ({
+      bytes: new Uint8Array([1, 0]),
+      value: 1,
+    })),
+    setDevicePropValue: vi.fn(async () => undefined),
+    getPreset: vi.fn(async (slot: number) => ({
+      slot,
+      name: `C${slot}`,
+      settings: [],
+      missing: [],
+    })),
     ...overrides,
   };
 }
@@ -34,6 +45,17 @@ interface FakeSession {
     firmwareVersion: string;
     serialNumber?: string;
     supportedOps: number[];
+  }>;
+  getDevicePropValue: (code: number, signal?: AbortSignal) => Promise<{
+    bytes: Uint8Array;
+    value: number | string | Uint8Array;
+  }>;
+  setDevicePropValue: (code: number, bytes: Uint8Array, signal?: AbortSignal) => Promise<void>;
+  getPreset: (slot: number, signal?: AbortSignal) => Promise<{
+    slot: number;
+    name?: string;
+    settings: Array<{ id: number; name: string; bytes: Uint8Array; value: number | string }>;
+    missing: number[];
   }>;
 }
 
@@ -145,6 +167,38 @@ describe("WebUsbCameraDriver connect", () => {
   it("WebUsbSessionPort reports isOpen from FujiCameraSession state", () => {
     expect(new WebUsbSessionPort(session()).isOpen()).toBe(true);
     expect(new WebUsbSessionPort(session({ state: "closed" })).isOpen()).toBe(false);
+  });
+
+  it("WebUsbSessionPort reads device properties and presets", async () => {
+    const fakeSession = session({
+      getDevicePropValue: vi.fn(async () => ({
+        bytes: new Uint8Array([0x64, 0x00]),
+        value: 100,
+      })),
+      getPreset: vi.fn(async () => ({
+        slot: 2,
+        name: "C2",
+        settings: [{
+          id: 0xd190,
+          name: "P:DynamicRange%",
+          bytes: new Uint8Array([0x64, 0x00]),
+          value: 100,
+        }],
+        missing: [],
+      })),
+    });
+    const port = new WebUsbSessionPort(fakeSession);
+    await expect(port.getDevicePropValue(0xd190)).resolves.toEqual({
+      kind: "uint16",
+      value: 100,
+    });
+    await expect(port.getPreset(2)).resolves.toMatchObject({
+      slot: 2,
+      name: "C2",
+      properties: {
+        "0xd190": expect.objectContaining({ value: 100 }),
+      },
+    });
   });
 });
 

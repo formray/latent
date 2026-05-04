@@ -16,6 +16,7 @@ const port: CameraSessionPort = {
   })),
   getDevicePropValue: vi.fn(async () => ({ kind: "uint16", value: 1 })),
   setDevicePropValue: vi.fn(async () => undefined),
+  getPreset: vi.fn(async (slot: number) => ({ slot, properties: {} })),
   isOpen: vi.fn(() => true),
 };
 

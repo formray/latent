@@ -1,5 +1,6 @@
 import { LatentError } from "@latent/ptp-fuji";
 import type { CameraDriver } from "./driver.js";
+import type { RawPreset } from "./session-port.js";
 import {
   backoffDelayMs,
   initialConnectionState,
@@ -9,12 +10,6 @@ import {
   type ConnectionEvent,
 } from "./state-machine.js";
 import type { ConnectionState } from "./types.js";
-
-export interface RawPreset {
-  slot: number;
-  name?: string;
-  properties: Record<string, unknown>;
-}
 
 export type ManagerNotifications = {
   "setup-confirmed": { advanced: boolean };
@@ -188,9 +183,25 @@ export class ConnectionManager {
         port: result.port,
         deviceInfo: result.deviceInfo,
       });
+      void this.readPresets(opId, result.port);
     } catch (rawErr) {
       if (opId !== this.currentOpId || abort.signal.aborted) return;
       this.dispatch({ type: "OPERATION_FAILED", err: toLatentError(rawErr), opId });
+    }
+  }
+
+  private async readPresets(opId: number, port: { getPreset: (slot: number, signal?: AbortSignal) => Promise<RawPreset> }): Promise<void> {
+    const presets: RawPreset[] = [];
+    for (let slot = 1; slot <= 7; slot++) {
+      if (opId !== this.currentOpId || !isAlive(this.state)) return;
+      try {
+        presets.push(await port.getPreset(slot));
+      } catch (err) {
+        if (!isOptionalPresetReadFailure(err)) return;
+      }
+    }
+    if (opId === this.currentOpId && isAlive(this.state)) {
+      this.emitNotification("presets-read", { presets });
     }
   }
 
@@ -273,4 +284,11 @@ function nameOf(err: unknown): string | undefined {
   }
   const maybe = err as { name?: unknown } | null;
   return typeof maybe?.name === "string" ? maybe.name : undefined;
+}
+
+function isOptionalPresetReadFailure(err: unknown): boolean {
+  return err instanceof LatentError && (
+    err.category === "PtpUnsupportedOperation" ||
+    err.category === "PtpStall"
+  );
 }
