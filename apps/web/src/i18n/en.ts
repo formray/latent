@@ -86,6 +86,19 @@ export const en = {
   "camera.error.unknown.body":
     "An unexpected error happened while talking to the camera.",
   "camera.error.unknown.action": "Retry",
+  "camera.macos.beta.title": "macOS camera support is beta",
+  "camera.macos.beta.body":
+    "macOS may auto-mount cameras for Image Capture or Photos. Start with the temporary release command; the persistent fix is advanced.",
+  "camera.macos.beta.ack": "I understand",
+  "camera.macos.setup.title": "Release the camera from macOS",
+  "camera.macos.basic.body": "Run this temporary command, then confirm.",
+  "camera.macos.ran": "I've run it",
+  "camera.macos.showAdvanced": "Show advanced option",
+  "camera.macos.advanced.title": "Advanced — disables Image Capture until re-enabled",
+  "camera.macos.advanced.enable": "Re-enable command:",
+  "camera.macos.done.title": "macOS setup confirmed",
+  "camera.macos.reset": "Reset macOS setup status",
+  "camera.macos.close": "Close",
 
   // Errors
   "error.UsbPermissionDenied.title": "No camera selected",

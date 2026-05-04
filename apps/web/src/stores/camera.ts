@@ -101,7 +101,7 @@ export const useCameraStore = create<CameraStore>((set, get) => ({
   },
 
   openMacosWizard() {
-    const startAdvanced = get().macosPersistentDisableConfigured;
+    const startAdvanced = get().macosShowAdvanced || get().macosPersistentDisableConfigured;
     set({ macosWizardOpen: true, macosShowAdvanced: startAdvanced });
   },
 
@@ -146,10 +146,15 @@ export function wireCameraManager(nextManager: ConnectionManager): void {
       }
       if (
         state.kind === "error" &&
-        state.reason === "macos-claim-collision" &&
-        useCameraStore.getState().macosPersistentDisableConfigured
+        state.reason === "macos-claim-collision"
       ) {
-        useCameraStore.getState().resetMacosSetupStatus();
+        const store = useCameraStore.getState();
+        if (store.macosPersistentDisableConfigured) {
+          store.resetMacosSetupStatus();
+          useCameraStore.setState({ macosWizardOpen: false, macosShowAdvanced: true });
+        } else if (!store.macosSetupAcknowledged) {
+          useCameraStore.setState({ macosWizardOpen: true });
+        }
       }
     }),
   );
@@ -160,7 +165,6 @@ export function wireCameraManager(nextManager: ConnectionManager): void {
       if (advanced) {
         useCameraStore.getState().markMacosPersistentDisable();
       }
-      useCameraStore.setState({ macosWizardOpen: false, macosShowAdvanced: false });
     }),
   );
 

@@ -89,6 +89,19 @@ export const it: Record<MessageKey, string> = {
   "camera.error.unknown.body":
     "Si è verificato un errore imprevisto mentre la fotocamera era in comunicazione.",
   "camera.error.unknown.action": "Riprova",
+  "camera.macos.beta.title": "Il supporto fotocamera su macOS è beta",
+  "camera.macos.beta.body":
+    "macOS può montare automaticamente le fotocamere per Acquisizione Immagine o Foto. Parti dal comando temporaneo; la correzione persistente è avanzata.",
+  "camera.macos.beta.ack": "Ho capito",
+  "camera.macos.setup.title": "Libera la fotocamera da macOS",
+  "camera.macos.basic.body": "Esegui questo comando temporaneo, poi conferma.",
+  "camera.macos.ran": "L'ho eseguito",
+  "camera.macos.showAdvanced": "Mostra opzione avanzata",
+  "camera.macos.advanced.title": "Avanzato — disabilita Acquisizione Immagine finché non la riattivi",
+  "camera.macos.advanced.enable": "Comando per riattivare:",
+  "camera.macos.done.title": "Configurazione macOS confermata",
+  "camera.macos.reset": "Reimposta stato configurazione macOS",
+  "camera.macos.close": "Chiudi",
 
   // Errors
   "error.UsbPermissionDenied.title": "Nessuna fotocamera selezionata",
