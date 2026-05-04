@@ -14,3 +14,13 @@ export {
   type ConnectionState,
   type ErrorReason,
 } from "./types.js";
+export { classifyDriverError } from "./classifier.js";
+export {
+  backoffDelayMs,
+  initialConnectionState,
+  transition,
+  type ConnectionContext,
+  type ConnectionEffect,
+  type ConnectionEvent,
+  type TransitionResult,
+} from "./state-machine.js";
