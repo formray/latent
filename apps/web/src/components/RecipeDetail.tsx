@@ -5,8 +5,10 @@ import { useRecipesStore } from "../stores/recipes";
 import { useCameraStore } from "../stores/camera";
 import { detectLocale, useT } from "../i18n";
 import {
+  describeDynamicRange,
   describeGrain,
   describeWhiteBalance,
+  describeWhiteBalanceShift,
   formatDate,
   humanFilmSim,
   signedNumber,
@@ -122,16 +124,14 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
         </h3>
         <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-t border-zinc-900 pt-4 sm:grid-cols-2">
           <Param label={t("param.filmSimulation")} value={humanFilmSim(recipe.filmSimulation)} />
-          <Param label={t("param.dynamicRange")} value={recipe.dynamicRange} />
+          <Param label={t("param.dynamicRange")} value={describeDynamicRange(recipe.dynamicRange)} />
           <Param
             label={t("param.whiteBalance")}
             value={describeWhiteBalance(recipe.whiteBalance)}
           />
           <Param
             label={t("param.whiteBalance.shift")}
-            value={`R ${signedNumber(recipe.whiteBalance.shiftR)} · B ${signedNumber(
-              recipe.whiteBalance.shiftB,
-            )}`}
+            value={describeWhiteBalanceShift(recipe.whiteBalance)}
           />
           <Param
             label={t("param.highlightTone")}

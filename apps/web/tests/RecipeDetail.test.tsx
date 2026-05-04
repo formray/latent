@@ -49,10 +49,10 @@ describe("<RecipeDetail />", () => {
     expect(screen.getByText("Editorial Negative")).toBeInTheDocument();
     // "Classic Negative" appears in the header pill and as a dl value
     expect(screen.getAllByText("Classic Negative").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("DR400")).toBeInTheDocument();
+    expect(screen.getByText("DR 400%")).toBeInTheDocument();
     expect(screen.getByText("Daylight")).toBeInTheDocument();
     expect(screen.getByText("R +1 · B -2")).toBeInTheDocument();
-    expect(screen.getByText("Weak · Large")).toBeInTheDocument();
+    expect(screen.getByText("Weak Large")).toBeInTheDocument();
   });
 
   it("shows author and tag metadata", () => {
