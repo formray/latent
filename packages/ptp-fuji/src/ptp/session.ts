@@ -21,6 +21,13 @@ export interface SessionOptions {
   onProgress?: (p: { stage: string; current: number; total: number }) => void;
 }
 
+export interface FujiDeviceInfo {
+  model: string;
+  firmwareVersion: string;
+  serialNumber?: string;
+  supportedOps: number[];
+}
+
 const DEFAULT_SESSION_ID = 0x00000001;
 
 export class FujiCameraSession {
@@ -76,4 +83,69 @@ export class FujiCameraSession {
   fireCloseSession(): void {
     this.framing.fireCloseSession();
   }
+
+  async getDeviceInfo(signal?: AbortSignal): Promise<FujiDeviceInfo> {
+    if (this._state !== "open") {
+      throw new LatentError(
+        "PtpStall",
+        "cannot read device info before session is open",
+      );
+    }
+    const result = await this.framing.sendCommand(PTPOp.GetDeviceInfo, [], signal);
+    return parseDeviceInfo(result.data);
+  }
+}
+
+function parseDeviceInfo(data: Uint8Array): FujiDeviceInfo {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  let offset = 0;
+
+  const readU16 = (): number => {
+    const value = view.getUint16(offset, true);
+    offset += 2;
+    return value;
+  };
+  const readU32 = (): number => {
+    const value = view.getUint32(offset, true);
+    offset += 4;
+    return value;
+  };
+  const readString = (): string => {
+    const length = data[offset++] ?? 0;
+    if (length === 0) return "";
+    const chars: number[] = [];
+    for (let i = 0; i < length - 1; i++) {
+      chars.push(readU16());
+    }
+    offset += 2;
+    return String.fromCharCode(...chars);
+  };
+  const readArray16 = (): number[] => {
+    const count = readU32();
+    const out: number[] = [];
+    for (let i = 0; i < count; i++) {
+      out.push(readU16());
+    }
+    return out;
+  };
+
+  readU16();
+  readU32();
+  readU16();
+  readString();
+  const firmwareVersion = readString();
+  const supportedOps = readArray16();
+  readArray16();
+  readArray16();
+  readArray16();
+  readArray16();
+  const model = readString();
+  const serialNumber = readString();
+
+  return {
+    model,
+    firmwareVersion,
+    ...(serialNumber ? { serialNumber } : {}),
+    supportedOps,
+  };
 }
