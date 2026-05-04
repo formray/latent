@@ -91,6 +91,26 @@ describe("recipeToPresetWritePlan", () => {
 
     expect(bytes(plan.properties.find((item) => item.code === 0xd18e)!.value)).toEqual([7, 0]);
   });
+
+  it("skips Smooth Skin Effect when the camera slot does not expose D198 and the recipe leaves it Off", () => {
+    const base = preset();
+    delete base.properties["0xd198"];
+    base.missing = ["0xd198"];
+
+    const plan = recipeToPresetWritePlan(sampleRecipe({ smoothSkinEffect: "Off" }), 2, base);
+
+    expect(plan.properties.some((item) => item.code === 0xd198)).toBe(false);
+  });
+
+  it("rejects non-Off Smooth Skin Effect before writing when the camera slot does not expose D198", () => {
+    const base = preset();
+    delete base.properties["0xd198"];
+    base.missing = ["0xd198"];
+
+    expect(() =>
+      recipeToPresetWritePlan(sampleRecipe({ smoothSkinEffect: "Weak" }), 2, base),
+    ).toThrow("Smooth skin effect is not supported by this camera slot.");
+  });
 });
 
 describe("writeRecipeToCameraSlot", () => {
@@ -127,7 +147,7 @@ describe("writeRecipeToCameraSlot", () => {
     });
 
     await expect(writeRecipeToCameraSlot(port, sampleRecipe(), 2)).rejects.toThrow(
-      "camera write failed",
+      "Writing 0xd190 Dynamic range failed: camera write failed",
     );
 
     expect(port.setDevicePropValue).toHaveBeenCalledWith(

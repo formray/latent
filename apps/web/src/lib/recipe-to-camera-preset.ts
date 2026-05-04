@@ -114,6 +114,16 @@ export function recipeToPresetWritePlan(
       value: bytesValue(value === undefined ? baseBytes(base, code) : u16(value)),
     });
   };
+  const optionalRaw = (code: number, label: string, value: number, defaultValue: number): void => {
+    const supported = base === undefined || propertyBytes(base, code) !== null;
+    if (supported) {
+      raw(code, label, value);
+      return;
+    }
+    if (value !== defaultValue) {
+      throw new Error(`${label} is not supported by this camera slot.`);
+    }
+  };
   const signed = (code: number, label: string, value: number): void => {
     props.push({ code, label, value: bytesValue(i16(value)) });
   };
@@ -134,7 +144,7 @@ export function recipeToPresetWritePlan(
   raw(0xd195, "Grain effect", grain(recipe.grainEffect));
   raw(0xd196, "Color chrome effect", tri(recipe.colorChromeEffect) + 1);
   raw(0xd197, "Color chrome blue", tri(recipe.colorChromeEffectBlue) + 1);
-  raw(0xd198, "Smooth skin effect", tri(recipe.smoothSkinEffect ?? "Off") + 1);
+  optionalRaw(0xd198, "Smooth skin effect", tri(recipe.smoothSkinEffect ?? "Off") + 1, 1);
   raw(0xd199, "White balance", WB[recipe.whiteBalance.mode]);
   if (recipe.whiteBalance.mode === "ColorTemperature") {
     raw(0xd19c, "White balance color temperature", recipe.whiteBalance.colorTemperatureK ?? 6500);
@@ -199,7 +209,22 @@ async function writePlan(
     throw new Error(`Camera did not select custom slot C${plan.slot}`);
   }
   for (const prop of plan.properties) {
+    await writeProperty(port, prop, signal);
+  }
+}
+
+async function writeProperty(
+  port: CameraSessionPort,
+  prop: PresetWriteProperty,
+  signal?: AbortSignal,
+): Promise<void> {
+  try {
     await port.setDevicePropValue(prop.code, prop.value, signal);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`Writing 0x${prop.code.toString(16)} ${prop.label} failed: ${reason}`, {
+      cause: err,
+    });
   }
 }
 
