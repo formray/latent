@@ -131,6 +131,12 @@ export const en = {
   "camera.recipes.properties": "Properties",
   "camera.recipes.missing": "Missing",
   "camera.recipes.mode": "Mode",
+  "camera.recipes.rawProperties": "Raw properties",
+  "camera.recipes.raw.code": "Code",
+  "camera.recipes.raw.name": "Name",
+  "camera.recipes.raw.value": "Value",
+  "camera.recipes.raw.bytes": "Bytes",
+  "camera.recipes.raw.missing": "Missing",
 
   // Errors
   "error.UsbPermissionDenied.title": "No camera selected",

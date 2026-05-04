@@ -253,6 +253,8 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
         <QTile label={t("camera.recipes.properties")} value={String(propertyCount(preset))} />
         <QTile label={t("camera.recipes.missing")} value={String(preset.missing?.length ?? 0)} />
       </div>
+
+      <RawPropertiesTable preset={preset} />
     </aside>
   );
 }
@@ -280,6 +282,68 @@ function QTile({
       </div>
     </div>
   );
+}
+
+function RawPropertiesTable({ preset }: { preset: RawPreset }): JSX.Element {
+  const t = useT();
+  const rows = rawPropertyRows(preset);
+  const missing = preset.missing ?? [];
+  return (
+    <section className="mt-6 border-t border-zinc-900 pt-5">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="font-mono text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+          {t("camera.recipes.rawProperties")}
+        </h4>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-600">
+          {rows.length} / {rows.length + missing.length}
+        </span>
+      </div>
+      <div className="mt-3 max-h-72 overflow-auto border border-zinc-900">
+        <table className="w-full border-collapse font-mono text-[11px]">
+          <thead className="sticky top-0 bg-zinc-950 text-zinc-600">
+            <tr className="border-b border-zinc-900">
+              <Th>{t("camera.recipes.raw.code")}</Th>
+              <Th>{t("camera.recipes.raw.name")}</Th>
+              <Th>{t("camera.recipes.raw.value")}</Th>
+              <Th>{t("camera.recipes.raw.bytes")}</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.code} className="border-b border-zinc-900/70 text-zinc-300">
+                <Td className="text-emerald-300">{row.code}</Td>
+                <Td>{row.name}</Td>
+                <Td>{row.value}</Td>
+                <Td className="text-zinc-500">{row.bytes}</Td>
+              </tr>
+            ))}
+            {missing.map((code) => (
+              <tr key={code} className="border-b border-zinc-900/70 text-red-300">
+                <Td>{code}</Td>
+                <Td>{t("camera.recipes.raw.missing")}</Td>
+                <Td>--</Td>
+                <Td>--</Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function Th({ children }: { children: ReactNode }): JSX.Element {
+  return <th className="px-3 py-2 text-left font-medium">{children}</th>;
+}
+
+function Td({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}): JSX.Element {
+  return <td className={clsx("max-w-56 truncate px-3 py-2 align-top", className)}>{children}</td>;
 }
 
 function isCameraAlive(kind: string): boolean {
@@ -312,6 +376,54 @@ function isDefaultPreset(preset: RawPreset): boolean {
 
 function propertyCount(preset: RawPreset): number {
   return Object.keys(preset.properties).filter((key) => key !== "_missing").length;
+}
+
+interface RawPropertyRow {
+  code: string;
+  name: string;
+  value: string;
+  bytes: string;
+}
+
+function rawPropertyRows(preset: RawPreset): RawPropertyRow[] {
+  return Object.entries(preset.properties)
+    .filter(([key]) => key !== "_missing")
+    .map(([code, value]) => ({
+      code,
+      name: rawPropertyName(value),
+      value: rawPropertyValue(value),
+      bytes: rawPropertyBytes(value),
+    }))
+    .sort((a, b) => Number.parseInt(a.code, 16) - Number.parseInt(b.code, 16));
+}
+
+function rawPropertyName(value: unknown): string {
+  if (isRawProperty(value) && typeof value.name === "string") return value.name;
+  return "--";
+}
+
+function rawPropertyValue(value: unknown): string {
+  if (!isRawProperty(value)) return String(value);
+  if (typeof value.value === "number" || typeof value.value === "string") return String(value.value);
+  return "--";
+}
+
+function rawPropertyBytes(value: unknown): string {
+  if (!isRawProperty(value) || !Array.isArray(value.bytes)) return "--";
+  return value.bytes.map((byte) => byteToHex(byte)).join(" ");
+}
+
+function isRawProperty(value: unknown): value is {
+  name?: unknown;
+  value?: unknown;
+  bytes?: unknown[];
+} {
+  return typeof value === "object" && value !== null;
+}
+
+function byteToHex(value: unknown): string {
+  if (!Number.isInteger(value)) return "??";
+  return (value as number).toString(16).padStart(2, "0");
 }
 
 function signed(value: number | undefined): string {

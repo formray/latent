@@ -33,8 +33,16 @@ function preset(slot: number, overrides: RawPresetOverrides = {}): RawPreset {
     slot,
     name: slot === 1 ? "ETERNAL BLACK" : "KODAK ULTRAMAX 400",
     properties: {
-      "0xd190": { value: slot === 1 ? 100 : -1 },
-      "0xd192": { value: slot === 1 ? 14 : 11 },
+      "0xd190": {
+        name: "P:DynamicRange%",
+        value: slot === 1 ? 100 : -1,
+        bytes: slot === 1 ? [100, 0] : [255, 255],
+      },
+      "0xd192": {
+        name: "P:FilmSimulation",
+        value: slot === 1 ? 14 : 11,
+        bytes: [slot === 1 ? 14 : 11, 0],
+      },
     },
     decoded: {
       filmSimulation:
@@ -113,6 +121,21 @@ describe("<CameraRecipesPanel />", () => {
     expect(screen.getByRole("button", { name: /ETERNAL BLACK/i })).toHaveTextContent("Acros + Red");
     expect(screen.getAllByText("DR 100%").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Strong Large").length).toBeGreaterThan(0);
+    expect(screen.getByRole("complementary")).toHaveTextContent("Raw properties");
+    expect(screen.getByRole("complementary")).toHaveTextContent("0xd190");
+    expect(screen.getByRole("complementary")).toHaveTextContent("P:DynamicRange%");
+    expect(screen.getByRole("complementary")).toHaveTextContent("64 00");
+  });
+
+  it("shows missing raw properties in the inspector", () => {
+    useCameraStore.setState({
+      state: connectedState(),
+      presets: [preset(1, { missing: ["0xd19c"] })],
+    });
+    render(<CameraRecipesPanel />);
+
+    expect(screen.getByRole("complementary")).toHaveTextContent("0xd19c");
+    expect(screen.getByRole("complementary")).toHaveTextContent("Missing");
   });
 
   it("switches the inspector when another slot is selected", () => {
