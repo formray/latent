@@ -130,6 +130,22 @@ export function recipeCameraImportKey(recipe: RecipeType): string | null {
   });
 }
 
+export function cameraPresetMatchesRecipe(
+  preset: RawPreset,
+  metadata: CameraPresetRecipeMetadata,
+  recipe: RecipeType,
+): boolean {
+  try {
+    const current = cameraPresetToRecipe(preset, metadata, {
+      id: recipe.id,
+      createdAt: recipe.createdAt,
+    });
+    return JSON.stringify(recipeComparable(current)) === JSON.stringify(recipeComparable(recipe));
+  } catch {
+    return false;
+  }
+}
+
 function presetToRecipeFields(preset: RawPreset): RecipeFields {
   const d = preset.decoded;
   if (!d) throw new Error("Preset has not been decoded yet");
@@ -227,4 +243,30 @@ function createUuid(): string {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   const suffix = Math.random().toString(16).slice(2, 14).padEnd(12, "0");
   return `00000000-0000-4000-8000-${suffix}`;
+}
+
+function recipeComparable(recipe: RecipeType): RecipeFields & {
+  name: string;
+  capabilitySetId: string;
+  cameraModel: string;
+} {
+  return {
+    name: recipe.name,
+    capabilitySetId: recipe.capabilitySetId,
+    cameraModel: recipe.cameraModel,
+    filmSimulation: recipe.filmSimulation,
+    dynamicRange: recipe.dynamicRange,
+    whiteBalance: recipe.whiteBalance,
+    highlightTone: recipe.highlightTone,
+    shadowTone: recipe.shadowTone,
+    color: recipe.color,
+    sharpness: recipe.sharpness,
+    noiseReduction: recipe.noiseReduction,
+    clarity: recipe.clarity,
+    grainEffect: recipe.grainEffect,
+    colorChromeEffect: recipe.colorChromeEffect,
+    colorChromeEffectBlue: recipe.colorChromeEffectBlue,
+    ...(recipe.smoothSkinEffect ? { smoothSkinEffect: recipe.smoothSkinEffect } : {}),
+    ...(recipe.monochromaticColor ? { monochromaticColor: recipe.monochromaticColor } : {}),
+  };
 }

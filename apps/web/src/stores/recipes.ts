@@ -143,7 +143,11 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
 
   importRecipe(recipe) {
     const parsed = Recipe.parse(recipe);
-    const imported = upsertImportedRecipe(parsed, loadImportedRecipes());
+    const inMemoryImports = get().recipes.filter((candidate) => recipeCameraImportKey(candidate));
+    const imported = upsertImportedRecipe(
+      parsed,
+      mergeRecipes(inMemoryImports, loadImportedRecipes()),
+    );
     const selected = imported[0]!;
     persistImportedRecipes(imported);
     set({

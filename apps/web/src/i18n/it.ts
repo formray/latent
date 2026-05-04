@@ -113,6 +113,7 @@ export const it: Record<MessageKey, string> = {
   "camera.recipes.inspector": "ispettore slot",
   "camera.recipes.import": "Importa come ricetta",
   "camera.recipes.imported": "Importata",
+  "camera.recipes.updateImport": "Aggiorna ricetta",
   "camera.recipes.importDisabled":
     "L'import sarà abilitato dopo la verifica della UI in sola lettura.",
   "camera.recipes.properties": "Proprietà",

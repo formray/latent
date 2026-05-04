@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RawPreset } from "@latent/camera-connection";
 import {
   cameraPresetImportKey,
+  cameraPresetMatchesRecipe,
   cameraPresetToRecipe,
   canImportCameraPreset,
   recipeCameraImportKey,
@@ -71,5 +72,26 @@ describe("cameraPresetToRecipe", () => {
     );
 
     expect(recipeCameraImportKey(recipe)).toBe(cameraPresetImportKey(preset(), metadata));
+  });
+
+  it("detects when an existing import no longer matches the camera slot", () => {
+    const metadata = { cameraModel: "X-M5", firmwareVersion: "1.20" };
+    const recipe = cameraPresetToRecipe(
+      preset(),
+      metadata,
+      {
+        id: "99999999-9999-4999-8999-999999999999",
+        createdAt: "2026-05-04T17:00:00.000Z",
+      },
+    );
+
+    expect(cameraPresetMatchesRecipe(preset(), metadata, recipe)).toBe(true);
+    expect(
+      cameraPresetMatchesRecipe(
+        preset({ decoded: { ...preset().decoded!, color: 3 } }),
+        metadata,
+        recipe,
+      ),
+    ).toBe(false);
   });
 });
