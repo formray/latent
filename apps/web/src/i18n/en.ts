@@ -30,6 +30,14 @@ export const en = {
   "detail.delete": "Delete",
   "detail.delete.hideDefault": "Hide",
   "detail.delete.confirm": "Remove this recipe from the library?",
+  "detail.cameraWrite.section": "Write to camera",
+  "detail.cameraWrite.slot": "Write C{slot}",
+  "detail.cameraWrite.writing": "Writing",
+  "detail.cameraWrite.confirm":
+    "Write this recipe to camera slot C{slot}? Latent will back up the current slot and verify after writing.",
+  "detail.cameraWrite.success": "Wrote C{slot} and verified {n} properties.",
+  "detail.cameraWrite.error": "Write failed: {message}",
+  "detail.cameraWrite.disconnected": "Connect a camera to write this recipe to a custom slot.",
   "detail.setupWalkthrough": "Set up on camera",
   "detail.setupWalkthrough.intro":
     "Follow these steps to enter the recipe in a custom slot on your camera.",
