@@ -31,4 +31,25 @@ describe("AutoAmbiencePriority ↔ AmbiencePriority codec (NL1 R3)", () => {
     });
     expect(back.whiteBalance.mode).toBe("AutoAmbiencePriority");
   });
+
+  it("schema accepts AutoWhitePriority for X-S20 FW 3.30 camera imports", () => {
+    const r = Recipe.parse({
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      schemaVersion: 1,
+      name: "WB White Priority",
+      tags: [],
+      createdAt: "2026-05-04T10:00:00Z",
+      capabilitySetId: "x-s20-fw3.30",
+      cameraModel: "X-S20",
+      filmSimulation: "ClassicChrome",
+      dynamicRange: "DR100",
+      whiteBalance: { mode: "AutoWhitePriority", shiftR: 0, shiftB: 0 },
+      highlightTone: 0, shadowTone: 0, color: 0, sharpness: 0,
+      noiseReduction: 0, clarity: 0,
+      grainEffect: { strength: "Off", size: "Small" },
+      colorChromeEffect: "Off", colorChromeEffectBlue: "Off",
+    });
+
+    expect(r.whiteBalance.mode).toBe("AutoWhitePriority");
+  });
 });

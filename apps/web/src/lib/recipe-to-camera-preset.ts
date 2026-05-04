@@ -67,6 +67,7 @@ const MONOCHROME_SIMS = new Set<RecipeType["filmSimulation"]>([
 
 const WB: Record<RecipeType["whiteBalance"]["mode"], number> = {
   Auto: 0x0002,
+  AutoWhitePriority: 0x8020,
   AutoAmbiencePriority: 0x8021,
   Daylight: 0x0004,
   Shade: 0x8006,
