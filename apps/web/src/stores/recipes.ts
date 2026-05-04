@@ -5,6 +5,7 @@ import {
   type FilmSimulation,
 } from "@latent/recipe-schema/browser";
 import { z } from "zod";
+import { recipeCameraImportKey } from "../lib/camera-preset-to-recipe";
 
 const FAVORITES_KEY = "latent-favorites-v1";
 const IMPORTED_RECIPES_KEY = "latent-imported-recipes-v1";
@@ -69,7 +70,7 @@ function dedupeImportedRecipes(recipes: RecipeType[]): RecipeType[] {
   const keyed = new Set<string>();
   const result: RecipeType[] = [];
   for (const recipe of recipes) {
-    const key = cameraImportKey(recipe) ?? `id:${recipe.id}`;
+    const key = recipeCameraImportKey(recipe) ?? `id:${recipe.id}`;
     if (keyed.has(key)) continue;
     keyed.add(key);
     result.push(recipe);
@@ -77,27 +78,14 @@ function dedupeImportedRecipes(recipes: RecipeType[]): RecipeType[] {
   return result;
 }
 
-function cameraImportKey(recipe: RecipeType): string | null {
-  if (recipe.author !== "Camera import") return null;
-  if (!recipe.tags.includes("camera-import")) return null;
-  const slot = recipe.tags.find((tag) => /^c\d+$/i.test(tag));
-  if (!slot) return null;
-  return [
-    recipe.cameraModel.trim().toLowerCase(),
-    recipe.capabilitySetId.trim().toLowerCase(),
-    slot.toLowerCase(),
-    recipe.name.trim().toLowerCase(),
-  ].join("|");
-}
-
 function upsertImportedRecipe(recipe: RecipeType, imported: RecipeType[]): RecipeType[] {
-  const key = cameraImportKey(recipe);
+  const key = recipeCameraImportKey(recipe);
   if (!key) return mergeRecipes([recipe], imported);
-  const existing = imported.find((candidate) => cameraImportKey(candidate) === key);
+  const existing = imported.find((candidate) => recipeCameraImportKey(candidate) === key);
   const nextRecipe = existing
     ? { ...recipe, id: existing.id, createdAt: existing.createdAt }
     : recipe;
-  return [nextRecipe, ...imported.filter((candidate) => cameraImportKey(candidate) !== key)];
+  return [nextRecipe, ...imported.filter((candidate) => recipeCameraImportKey(candidate) !== key)];
 }
 
 export type FilmSimulationValue = z.infer<typeof FilmSimulation>;
@@ -159,7 +147,10 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
     const selected = imported[0]!;
     persistImportedRecipes(imported);
     set({
-      recipes: mergeRecipes(imported, get().recipes.filter((candidate) => !cameraImportKey(candidate))),
+      recipes: mergeRecipes(
+        imported,
+        get().recipes.filter((candidate) => !recipeCameraImportKey(candidate)),
+      ),
       loadError: null,
       selectedRecipeId: selected.id,
     });

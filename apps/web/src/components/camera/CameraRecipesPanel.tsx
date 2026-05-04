@@ -4,8 +4,10 @@ import type { RawPreset } from "@latent/camera-connection";
 import { useCameraStore } from "../../stores/camera";
 import { useRecipesStore } from "../../stores/recipes";
 import {
+  cameraPresetImportKey,
   cameraPresetToRecipe,
   canImportCameraPreset,
+  recipeCameraImportKey,
 } from "../../lib/camera-preset-to-recipe";
 import { useT } from "../../i18n";
 
@@ -164,6 +166,8 @@ function CameraSlotCard({
 function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.Element {
   const t = useT();
   const importRecipe = useRecipesStore((s) => s.importRecipe);
+  const selectRecipe = useRecipesStore((s) => s.selectRecipe);
+  const recipes = useRecipesStore((s) => s.recipes);
   const state = useCameraStore((s) => s.state);
   const d = preset?.decoded;
   if (!preset || !d) {
@@ -180,16 +184,23 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
   const firmwareVersion = state.kind === "connected" || state.kind === "degraded"
     ? state.firmwareVersion
     : undefined;
+  const importMetadata = {
+    cameraModel,
+    ...(firmwareVersion ? { firmwareVersion } : {}),
+  };
   const importCheck = canImportCameraPreset(preset);
   const importDisabledReason = importCheck.reason ?? t("camera.recipes.importDisabled");
+  const existingImportKey = cameraPresetImportKey(preset, importMetadata);
+  const existingImport = recipes.find(
+    (recipe) => recipeCameraImportKey(recipe) === existingImportKey,
+  );
   const handleImport = (): void => {
     if (!importCheck.ok) return;
-    importRecipe(
-      cameraPresetToRecipe(preset, {
-        cameraModel,
-        ...(firmwareVersion ? { firmwareVersion } : {}),
-      }),
-    );
+    if (existingImport) {
+      selectRecipe(existingImport.id);
+      return;
+    }
+    importRecipe(cameraPresetToRecipe(preset, importMetadata));
   };
 
   return (
@@ -216,7 +227,7 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
           )}
           title={importCheck.ok ? undefined : importDisabledReason}
         >
-          {t("camera.recipes.import")}
+          {existingImport ? t("camera.recipes.imported") : t("camera.recipes.import")}
         </button>
       </div>
 
