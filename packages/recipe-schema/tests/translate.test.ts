@@ -55,4 +55,18 @@ describe("Recipe ↔ camera property translator", () => {
     const props = recipeToProperties({ ...sample, shadowTone: -2 });
     expect(props.shadowTone).toBe(-20);
   });
+
+  it("round-trips dynamic range auto for camera-imported recipes", () => {
+    const props = recipeToProperties({ ...sample, dynamicRange: "DRAuto" });
+    const back = propertiesToRecipe(props, {
+      id: sample.id,
+      schemaVersion: 1,
+      name: sample.name,
+      tags: [],
+      createdAt: sample.createdAt,
+      capabilitySetId: sample.capabilitySetId,
+      cameraModel: sample.cameraModel,
+    });
+    expect(back.dynamicRange).toBe("DRAuto");
+  });
 });
