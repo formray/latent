@@ -66,7 +66,7 @@ export const it: Record<MessageKey, string> = {
     "La finestra di selezione del browser è stata chiusa. Riprova e scegli la fotocamera dall'elenco.",
   "error.WebUSBUnsupported.title": "Browser non supportato",
   "error.WebUSBUnsupported.body":
-    "FilmFork usa WebUSB per dialogare con la fotocamera. Apri l'app in un browser basato su Chromium (Chrome, Edge o Arc) per collegarla.",
+    "Latent usa WebUSB per dialogare con la fotocamera. Apri l'app in un browser basato su Chromium (Chrome, Edge o Arc) per collegarla.",
   "error.WebUSBSecureContextRequired.title": "Contesto sicuro richiesto",
   "error.WebUSBSecureContextRequired.body":
     "WebUSB richiede HTTPS o localhost. Ricarica l'app su un URL sicuro.",

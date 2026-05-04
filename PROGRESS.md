@@ -1,5 +1,27 @@
 # Progress
 
+> **Note:** This project was named *FilmFork* through 2026-05-04. References
+> to "FilmFork" or `@filmfork/*` in entries below describe the project's
+> prior name; the current name is **Latent** and packages are `@latent/*`.
+> See `CHANGELOG.md` for the rename entry.
+
+## 2026-05-04 — Rename to Latent + repo restructure
+
+End-of-session bookkeeping: project renamed from FilmFork to Latent,
+monorepo flattened from `filmfork-app/` umbrella to root, OSS governance
+files added (CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, GOVERNANCE),
+GitHub community templates added (issues, PR, CODEOWNERS, dependabot).
+
+- 4 commits: flatten, docs restructure, governance, GitHub community
+- All `@filmfork/*` packages renamed to `@latent/*`; `FilmForkError`
+  renamed to `LatentError`; user-facing strings (titles, error
+  messages, i18n) updated; localStorage key `filmfork-favorites-v1`
+  renamed to `latent-favorites-v1`
+- Historical artifacts (`docs/specs/`, `docs/plans/`, `docs/reviews/`)
+  preserve the project's prior names ("fujicomp", "FilmFork") as
+  honest archive rather than retroactive rewrite
+- `filmkit/` reference repo remains gitignored at the project root
+
 ## 2026-05-04 — Phase 1 in progress
 
 Scaffolded monorepo. Initialized recipe-schema and ptp-fuji packages. CI gates green.

@@ -1,5 +1,5 @@
 {
-  "name": "@filmfork/ptp-fuji-webusb",
+  "name": "@latent/ptp-fuji-webusb",
   "version": "0.0.0",
   "private": false,
   "license": "MIT",
@@ -18,7 +18,7 @@
     "test": "vitest run --dir tests"
   },
   "dependencies": {
-    "@filmfork/ptp-fuji": "0.0.0"
+    "@latent/ptp-fuji": "0.0.0"
   },
   "devDependencies": {
     "@types/w3c-web-usb": "^1"

@@ -1,12 +1,12 @@
 /**
- * Typed error taxonomy for @filmfork/ptp-fuji and consumers.
+ * Typed error taxonomy for @latent/ptp-fuji and consumers.
  *
  * Categories per spec §6.9 (R5.1) — note `WebUSBSecureContextRequired`
  * was renamed from `WebUsbSecureContextRequired` for casing consistency
  * with the other WebUSB-prefixed members.
  */
 
-export type FilmForkErrorCategory =
+export type LatentErrorCategory =
   | "PtpSessionAlreadyOpen"
   | "PtpDeviceBusy"
   | "PtpUnsupportedOperation"
@@ -35,13 +35,13 @@ export type FilmForkErrorCategory =
   | "RecipeCapabilityMismatch"
   | "RecipeUrlPayloadTooLarge";
 
-export class FilmForkError extends Error {
-  readonly category: FilmForkErrorCategory;
+export class LatentError extends Error {
+  readonly category: LatentErrorCategory;
   override readonly cause?: unknown;
 
-  constructor(category: FilmForkErrorCategory, message: string, cause?: unknown) {
+  constructor(category: LatentErrorCategory, message: string, cause?: unknown) {
     super(message);
-    this.name = "FilmForkError";
+    this.name = "LatentError";
     this.category = category;
     if (cause !== undefined) {
       this.cause = cause;

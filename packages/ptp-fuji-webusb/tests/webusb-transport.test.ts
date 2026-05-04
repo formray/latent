@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { FilmForkError } from "@filmfork/ptp-fuji";
+import { LatentError } from "@latent/ptp-fuji";
 import { WebUsbPtpTransport } from "../src/webusb-transport.js";
 
 /**
@@ -76,7 +76,7 @@ describe("WebUsbPtpTransport.send", () => {
     expect(device.transferOut).not.toHaveBeenCalled();
   });
 
-  it("throws FilmForkError(PtpStall) when transferOut status is not ok", async () => {
+  it("throws LatentError(PtpStall) when transferOut status is not ok", async () => {
     const device = makeMockDevice({
       transferOut: vi.fn(async () => ({ status: "stall" as const, bytesWritten: 0 })),
     });
@@ -86,7 +86,7 @@ describe("WebUsbPtpTransport.send", () => {
       0x02,
     );
     await expect(transport.send(new Uint8Array([1]))).rejects.toBeInstanceOf(
-      FilmForkError,
+      LatentError,
     );
   });
 });
@@ -186,8 +186,8 @@ describe("WebUsbPtpTransport.close", () => {
     );
     await transport.close();
     await expect(transport.send(new Uint8Array([1]))).rejects.toBeInstanceOf(
-      FilmForkError,
+      LatentError,
     );
-    await expect(transport.receive()).rejects.toBeInstanceOf(FilmForkError);
+    await expect(transport.receive()).rejects.toBeInstanceOf(LatentError);
   });
 });

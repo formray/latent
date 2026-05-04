@@ -1,18 +1,18 @@
 import { create } from "zustand";
 import {
-  FilmForkError,
-  type FilmForkErrorCategory,
+  LatentError,
+  type LatentErrorCategory,
   type FujiCameraSession,
-} from "@filmfork/ptp-fuji";
+} from "@latent/ptp-fuji";
 import {
   connectAndReadPresets,
   type RawPreset,
-} from "@filmfork/ptp-fuji-webusb";
+} from "@latent/ptp-fuji-webusb";
 
 export type ConnectFn = typeof connectAndReadPresets;
 
 export interface CameraError {
-  category: FilmForkErrorCategory | "Unknown";
+  category: LatentErrorCategory | "Unknown";
   message: string;
 }
 
@@ -30,7 +30,7 @@ export interface CameraState {
 }
 
 function classifyError(err: unknown): CameraError {
-  if (err instanceof FilmForkError) {
+  if (err instanceof LatentError) {
     return { category: err.category, message: err.message };
   }
   if (typeof err === "object" && err !== null) {

@@ -1,6 +1,6 @@
-# @filmfork/web
+# @latent/web
 
-The FilmFork web app — recipe library and camera companion for Fujifilm
+The Latent web app — recipe library and camera companion for Fujifilm
 photographers. Browse curated recipes, study every parameter, and connect
 your camera over WebUSB.
 
@@ -16,7 +16,7 @@ cd apps/web
 npm run dev          # Vite at http://localhost:5173
 ```
 
-The dev server runs against the source of all `@filmfork/*` workspace
+The dev server runs against the source of all `@latent/*` workspace
 packages — no extra build step needed for normal iteration.
 
 ## Build
@@ -40,7 +40,7 @@ lockstep gate.
 
 ## Camera support (Phase 3-base)
 
-- **Connect & list presets:** uses `@filmfork/ptp-fuji-webusb` to open a
+- **Connect & list presets:** uses `@latent/ptp-fuji-webusb` to open a
   WebUSB session and read whatever camera-side preset slots the session
   exposes. Per-slot reads land progressively in Phase 2-full.
 - **Push to camera, AI agent, side-by-side preview:** out of scope for
@@ -70,6 +70,6 @@ apps/web/
   tsconfig.json
 ```
 
-Seed recipes live in `the repo root/data/seed-recipes.json`
-and are loaded at startup, validated against the Recipe schema from
-`@filmfork/recipe-schema`.
+Seed recipes live in `data/seed-recipes.json` (relative to the monorepo
+root) and are loaded at startup, validated against the Recipe schema
+from `@latent/recipe-schema`.

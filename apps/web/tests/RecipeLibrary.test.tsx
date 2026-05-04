@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { RecipeLibrary } from "../src/components/RecipeLibrary";
 import { useRecipesStore } from "../src/stores/recipes";
-import type { RecipeType } from "@filmfork/recipe-schema/browser";
+import type { RecipeType } from "@latent/recipe-schema/browser";
 
 const recipe = (
   id: string,
@@ -13,7 +13,7 @@ const recipe = (
   id,
   schemaVersion: 1,
   name,
-  author: "FilmFork",
+  author: "Latent",
   tags,
   createdAt: "2026-05-04T08:00:00.000Z",
   capabilitySetId: "x-s20-fw1.10",
@@ -95,7 +95,7 @@ describe("<RecipeLibrary />", () => {
     expect(saveButtons.length).toBeGreaterThan(0);
     fireEvent.click(saveButtons[0]!);
 
-    const stored = localStorage.getItem("filmfork-favorites-v1");
+    const stored = localStorage.getItem("latent-favorites-v1");
     expect(stored).toBeTruthy();
     expect(JSON.parse(stored ?? "[]")).toContain(
       "11111111-1111-4111-8111-111111111111",

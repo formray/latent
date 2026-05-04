@@ -5,7 +5,7 @@ import "./index.css";
 
 const rootEl = document.getElementById("root");
 if (!rootEl) {
-  throw new Error("FilmFork: #root element not found in index.html");
+  throw new Error("Latent: #root element not found in index.html");
 }
 
 ReactDOM.createRoot(rootEl).render(

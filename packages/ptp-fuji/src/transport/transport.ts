@@ -1,7 +1,7 @@
 /**
  * PtpTransport — DI boundary between PTP session logic and the underlying
  * USB stack. Phase 2 will provide a WebUSB implementation in
- * @filmfork/ptp-fuji-webusb; tests use a FakeTransport.
+ * @latent/ptp-fuji-webusb; tests use a FakeTransport.
  *
  * The session layer is transport-agnostic: chunking, timeouts, and
  * abort-signal handling are the implementation's responsibility.

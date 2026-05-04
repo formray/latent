@@ -12,7 +12,7 @@
  * gains the read methods.
  */
 
-import { FujiCameraSession, FilmForkError } from "@filmfork/ptp-fuji";
+import { FujiCameraSession, LatentError } from "@latent/ptp-fuji";
 import { requestFujiCamera } from "./request-camera.js";
 
 /** A raw, untranslated preset read from a C-slot. Schema firms up in Phase 2-full. */
@@ -85,7 +85,7 @@ async function tryReadPreset(
   try {
     return await reader.call(session, slot);
   } catch (err) {
-    if (err instanceof FilmForkError) {
+    if (err instanceof LatentError) {
       if (
         err.category === "PtpUnsupportedOperation" ||
         err.category === "PtpStall"

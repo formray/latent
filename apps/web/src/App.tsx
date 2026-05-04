@@ -23,7 +23,7 @@ export function App(): JSX.Element {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-baseline gap-3">
             <h1 className="font-semibold tracking-tight text-zinc-50 text-lg">
-              FilmFork
+              Latent
             </h1>
             <span className="text-xs text-zinc-500">{t("app.tagline")}</span>
           </div>

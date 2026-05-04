@@ -1,6 +1,6 @@
 import { useState, type JSX } from "react";
 import clsx from "clsx";
-import type { RecipeType } from "@filmfork/recipe-schema/browser";
+import type { RecipeType } from "@latent/recipe-schema/browser";
 import { useRecipesStore } from "../stores/recipes";
 import { detectLocale, useT } from "../i18n";
 import {

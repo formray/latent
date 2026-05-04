@@ -1,7 +1,7 @@
 /**
  * WebUSB implementation of `PtpTransport`.
  *
- * The session layer in `@filmfork/ptp-fuji` issues PTP containers as opaque
+ * The session layer in `@latent/ptp-fuji` issues PTP containers as opaque
  * `Uint8Array` blobs and expects this transport to push them over the bulk
  * OUT endpoint and read responses off the bulk IN endpoint. Endpoint
  * discovery and interface lifecycle are the caller's responsibility — see
@@ -11,7 +11,7 @@
  * lockstep with that implementation for chunk size and behaviour.
  */
 
-import { FilmForkError, type PtpTransport, type TransportOptions } from "@filmfork/ptp-fuji";
+import { LatentError, type PtpTransport, type TransportOptions } from "@latent/ptp-fuji";
 
 /** filmkit convention: 512 KB max per WebUSB transfer chunk. */
 const DEFAULT_MAX_CHUNK = 512 * 1024;
@@ -62,7 +62,7 @@ export class WebUsbPtpTransport implements PtpTransport {
   async send(data: Uint8Array, signal?: AbortSignal): Promise<void> {
     throwIfAborted(signal);
     if (this.closed) {
-      throw new FilmForkError("UsbDisconnect", "transport is closed");
+      throw new LatentError("UsbDisconnect", "transport is closed");
     }
 
     let offset = 0;
@@ -80,7 +80,7 @@ export class WebUsbPtpTransport implements PtpTransport {
         signal,
       );
       if (result.status !== "ok") {
-        throw new FilmForkError(
+        throw new LatentError(
           "PtpStall",
           `WebUSB transferOut returned status="${result.status}"`,
         );
@@ -97,7 +97,7 @@ export class WebUsbPtpTransport implements PtpTransport {
   async receive(signal?: AbortSignal): Promise<Uint8Array> {
     throwIfAborted(signal);
     if (this.closed) {
-      throw new FilmForkError("UsbDisconnect", "transport is closed");
+      throw new LatentError("UsbDisconnect", "transport is closed");
     }
 
     const result = await this.raceWithSignal(
@@ -105,7 +105,7 @@ export class WebUsbPtpTransport implements PtpTransport {
       signal,
     );
     if (result.status !== "ok") {
-      throw new FilmForkError(
+      throw new LatentError(
         "PtpStall",
         `WebUSB transferIn returned status="${result.status}"`,
       );
