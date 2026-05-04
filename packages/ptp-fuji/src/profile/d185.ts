@@ -34,6 +34,14 @@ export interface ConversionParams {
   imageQuality?: number
 }
 
+export interface PatchProfileOptions {
+  /**
+   * X100VI captures indicated that D185 stores DR as raw percentage.
+   * X-S20 diagnostics need to compare the raw-percent form against enum form.
+   */
+  dynamicRangeEncoding?: 'raw-percent' | 'enum'
+}
+
 // ==========================================================================
 // Native profile patching
 // ==========================================================================
@@ -86,6 +94,7 @@ const DR_TO_NATIVE: Record<number, number> = { 1: 100, 2: 200, 3: 400 }
 export function patchProfile(
   baseProfile: Uint8Array,
   changes: ConversionParams,
+  options: PatchProfileOptions = {},
 ): Uint8Array<ArrayBuffer> {
   const patched = new Uint8Array(baseProfile.length)
   patched.set(baseProfile)
@@ -97,7 +106,13 @@ export function patchProfile(
 
   if (changes.filmSimulation !== undefined) set(NativeIdx.FilmSimulation, changes.filmSimulation)
   if (changes.exposureBias !== undefined)   set(NativeIdx.ExposureBias, changes.exposureBias)
-  if (changes.dynamicRange !== undefined)   set(NativeIdx.DynamicRange, DR_TO_NATIVE[changes.dynamicRange] ?? 0)
+  if (changes.dynamicRange !== undefined) {
+    const dynamicRange =
+      options.dynamicRangeEncoding === 'enum'
+        ? changes.dynamicRange
+        : (DR_TO_NATIVE[changes.dynamicRange] ?? 0)
+    set(NativeIdx.DynamicRange, dynamicRange)
+  }
   if (changes.wideDRange !== undefined)     set(NativeIdx.WideDRange, changes.wideDRange)
 
   // Grain: UI combined value → native flat enum
@@ -127,4 +142,3 @@ export function patchProfile(
 
   return patched
 }
-

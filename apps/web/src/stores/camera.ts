@@ -85,7 +85,8 @@ export interface RawPreviewDiagnosticResult {
 export type RawPreviewDiagnosticVariantId =
   | "base"
   | "film"
-  | "film-dynamic-range"
+  | "film-dynamic-range-enum"
+  | "film-dynamic-range-raw"
   | "film-tone"
   | "film-color"
   | "film-chrome"
@@ -529,8 +530,16 @@ function diagnosticVariants(full: ConversionParams): Array<{
       buildProfile: buildDiagnosticProfile(film),
     },
     {
-      id: "film-dynamic-range",
-      label: "Film + DR",
+      id: "film-dynamic-range-enum",
+      label: "Film + DR enum",
+      buildProfile: buildDiagnosticProfile({
+        ...film,
+        ...pickParams(full, ["dynamicRange"]),
+      }, { dynamicRangeEncoding: "enum" }),
+    },
+    {
+      id: "film-dynamic-range-raw",
+      label: "Film + DR raw %",
       buildProfile: buildDiagnosticProfile({
         ...film,
         ...pickParams(full, ["dynamicRange"]),
@@ -592,8 +601,9 @@ function pickParams<K extends keyof ConversionParams>(
 
 function buildDiagnosticProfile(
   params: ConversionParams,
+  options?: { dynamicRangeEncoding?: "raw-percent" | "enum" },
 ): (baseProfile: Uint8Array) => Uint8Array {
-  return (baseProfile) => patchProfile(baseProfile, params);
+  return (baseProfile) => patchProfile(baseProfile, params, options);
 }
 
 async function fileToBytes(file: File): Promise<Uint8Array> {
