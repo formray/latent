@@ -3,6 +3,7 @@ import {
   LatentError,
   type FujiDeviceInfo,
   type PtpTransport,
+  type FujiRawPreset,
 } from "@latent/ptp-fuji";
 import { WebUsbPtpTransport } from "@latent/ptp-fuji-webusb";
 import type { CameraDriver, ConnectOptions, DriverConnectResult } from "../driver.js";
@@ -13,7 +14,14 @@ const USB_CLASS_IMAGE = 0x06;
 
 type FujiSessionLike = Pick<
   FujiCameraSession,
-  "open" | "close" | "fireCloseSession" | "getDeviceInfo" | "state"
+  | "open"
+  | "close"
+  | "fireCloseSession"
+  | "getDeviceInfo"
+  | "getDevicePropValue"
+  | "setDevicePropValue"
+  | "getPreset"
+  | "state"
 >;
 
 export interface WebUsbCameraDriverOptions {
@@ -35,25 +43,93 @@ export class WebUsbSessionPort implements CameraSessionPort {
     return this.session.getDeviceInfo(signal);
   }
 
-  getDevicePropValue(_code: number, _signal?: AbortSignal): Promise<DeviceValue> {
-    return Promise.reject(
-      new LatentError("PtpUnsupportedOperation", "GetDevicePropValue is not wired yet"),
-    );
+  async getDevicePropValue(code: number, signal?: AbortSignal): Promise<DeviceValue> {
+    return toDeviceValue(await this.session.getDevicePropValue(code, signal));
   }
 
-  setDevicePropValue(
-    _code: number,
-    _value: DeviceValue,
-    _signal?: AbortSignal,
+  async setDevicePropValue(
+    code: number,
+    value: DeviceValue,
+    signal?: AbortSignal,
   ): Promise<void> {
-    return Promise.reject(
-      new LatentError("PtpUnsupportedOperation", "SetDevicePropValue is not wired yet"),
-    );
+    await this.session.setDevicePropValue(code, fromDeviceValue(value), signal);
+  }
+
+  async getPreset(slot: number, signal?: AbortSignal): Promise<{
+    slot: number;
+    name?: string;
+    properties: Record<string, unknown>;
+  }> {
+    return toRawPreset(await this.session.getPreset(slot, signal));
   }
 
   isOpen(): boolean {
     return this.session.state === "open";
   }
+}
+
+function toDeviceValue(value: { bytes: Uint8Array; value: number | string | Uint8Array }): DeviceValue {
+  if (typeof value.value === "string") return { kind: "string", value: value.value };
+  if (typeof value.value !== "number") return { kind: "bytes", value: value.bytes };
+  if (value.bytes.byteLength <= 1) return { kind: "uint8", value: value.value };
+  if (value.bytes.byteLength <= 2) return { kind: "uint16", value: value.value & 0xffff };
+  return { kind: "uint32", value: value.value };
+}
+
+function fromDeviceValue(value: DeviceValue): Uint8Array {
+  switch (value.kind) {
+    case "uint8":
+      return new Uint8Array([value.value & 0xff]);
+    case "uint16": {
+      const bytes = new Uint8Array(2);
+      new DataView(bytes.buffer).setUint16(0, value.value, true);
+      return bytes;
+    }
+    case "uint32": {
+      const bytes = new Uint8Array(4);
+      new DataView(bytes.buffer).setUint32(0, value.value, true);
+      return bytes;
+    }
+    case "string":
+      return encodePtpString(value.value);
+    case "bytes":
+      return value.value;
+  }
+}
+
+function encodePtpString(value: string): Uint8Array {
+  if (!value) return new Uint8Array([0]);
+  const bytes = new Uint8Array(1 + (value.length + 1) * 2);
+  bytes[0] = value.length + 1;
+  const view = new DataView(bytes.buffer);
+  for (let index = 0; index < value.length; index++) {
+    view.setUint16(1 + index * 2, value.charCodeAt(index), true);
+  }
+  return bytes;
+}
+
+function toRawPreset(preset: FujiRawPreset): {
+  slot: number;
+  name?: string;
+  properties: Record<string, unknown>;
+} {
+  const properties: Record<string, unknown> = {};
+  for (const setting of preset.settings) {
+    properties[`0x${setting.id.toString(16)}`] = {
+      id: setting.id,
+      name: setting.name,
+      value: setting.value,
+      bytes: Array.from(setting.bytes),
+    };
+  }
+  if (preset.missing.length > 0) {
+    properties["_missing"] = preset.missing.map((code) => `0x${code.toString(16)}`);
+  }
+  return {
+    slot: preset.slot,
+    ...(preset.name ? { name: preset.name } : {}),
+    properties,
+  };
 }
 
 export class WebUsbCameraDriver implements CameraDriver {

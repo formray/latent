@@ -32,6 +32,26 @@ function array16(values: number[]): number[] {
   return [...le32(values.length), ...values.flatMap(le16)];
 }
 
+function response(code: number, txid: number, params: number[] = []): Uint8Array {
+  return packContainer({
+    type: ContainerType.Response,
+    code,
+    transactionId: txid,
+    params,
+    data: new Uint8Array(0),
+  });
+}
+
+function dataContainer(code: number, txid: number, data: Uint8Array): Uint8Array {
+  return packContainer({
+    type: ContainerType.Data,
+    code,
+    transactionId: txid,
+    params: [],
+    data,
+  });
+}
+
 function deviceInfoPayload(): Uint8Array {
   return new Uint8Array([
     ...le16(100),
@@ -194,5 +214,67 @@ describe("FujiCameraSession", () => {
     await expect(s.getDeviceInfo()).rejects.toMatchObject({
       category: "PtpStall",
     });
+  });
+
+  it("getDevicePropValue reads raw bytes and decoded value", async () => {
+    const t = new FakeTransport();
+    t.enqueue(response(0x2001, 1));
+    t.enqueue(dataContainer(0x1015, 2, new Uint8Array([0x2a, 0x00])));
+    t.enqueue(response(0x2001, 2));
+    const s = new FujiCameraSession(t);
+    await s.open();
+    await expect(s.getDevicePropValue(0xd190)).resolves.toMatchObject({
+      value: 42,
+    });
+    expect(t.sent[1]?.[6]).toBe(0x15);
+    expect(t.sent[1]?.[7]).toBe(0x10);
+  });
+
+  it("setDevicePropValue sends SetDevicePropValue command and data", async () => {
+    const t = new FakeTransport();
+    t.enqueue(response(0x2001, 1));
+    t.enqueue(response(0x2001, 2));
+    const s = new FujiCameraSession(t);
+    await s.open();
+    await s.setDevicePropValue(0xd18c, new Uint8Array([0x02, 0x00]));
+    expect(t.sent[1]?.[6]).toBe(0x16);
+    expect(t.sent[1]?.[7]).toBe(0x10);
+    expect(t.sent[2]?.[6]).toBe(0x16);
+    expect(t.sent[2]?.[7]).toBe(0x10);
+  });
+
+  it("getPreset selects slot, reads custom properties, and restores previous slot", async () => {
+    const t = new FakeTransport();
+    t.enqueue(response(0x2001, 1));
+    // previous D18C = C1
+    t.enqueue(dataContainer(0x1015, 2, new Uint8Array([0x01, 0x00])));
+    t.enqueue(response(0x2001, 2));
+    // set D18C = C2
+    t.enqueue(response(0x2001, 3));
+    // readback D18C = C2
+    t.enqueue(dataContainer(0x1015, 4, new Uint8Array([0x02, 0x00])));
+    t.enqueue(response(0x2001, 4));
+    // D18D preset name
+    t.enqueue(dataContainer(0x1015, 5, new Uint8Array(ptpString("C2"))));
+    t.enqueue(response(0x2001, 5));
+    for (let txid = 6; txid <= 29; txid++) {
+      t.enqueue(dataContainer(0x1015, txid, new Uint8Array([txid & 0xff, 0x00])));
+      t.enqueue(response(0x2001, txid));
+    }
+    // restore previous D18C
+    t.enqueue(response(0x2001, 30));
+    const s = new FujiCameraSession(t);
+    await s.open();
+    await expect(s.getPreset(2)).resolves.toMatchObject({
+      slot: 2,
+      name: "C2",
+      settings: expect.arrayContaining([
+        expect.objectContaining({ id: 0xd18e }),
+        expect.objectContaining({ id: 0xd1a5 }),
+      ]),
+      missing: [],
+    });
+    expect(t.sent.at(-2)?.[6]).toBe(0x16);
+    expect(t.sent.at(-2)?.[7]).toBe(0x10);
   });
 });

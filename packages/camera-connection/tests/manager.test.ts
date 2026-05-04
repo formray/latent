@@ -56,6 +56,23 @@ describe("ConnectionManager public API", () => {
     expect(manager.getSnapshot().kind).toBe("connected");
   });
 
+  it("connect success reads C presets and emits presets-read", async () => {
+    const driver = new FakeCameraDriver();
+    const manager = new ConnectionManager(driver);
+    const handler = vi.fn();
+    manager.onNotification("presets-read", handler);
+    manager.dispatch({ type: "CONNECT_REQUESTED" });
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    expect(driver.port.getPreset).toHaveBeenCalledWith(1);
+    expect(driver.port.getPreset).toHaveBeenCalledWith(7);
+    expect(handler).toHaveBeenCalledWith({
+      presets: expect.arrayContaining([
+        expect.objectContaining({ slot: 1 }),
+        expect.objectContaining({ slot: 7 }),
+      ]),
+    });
+  });
+
   it("raw picker cancellation exits connecting as permission-denied", async () => {
     const driver = new FakeCameraDriver();
     driver.connect = vi.fn(async () => {

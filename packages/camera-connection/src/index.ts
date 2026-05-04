@@ -7,6 +7,7 @@ export type {
   CameraSessionPort,
   DeviceInfo,
   DeviceValue,
+  RawPreset,
 } from "./session-port.js";
 export {
   ERROR_REASONS,
@@ -29,5 +30,4 @@ export {
   ConnectionManager,
   type ConnectionManagerOptions,
   type ManagerNotifications,
-  type RawPreset,
 } from "./manager.js";
