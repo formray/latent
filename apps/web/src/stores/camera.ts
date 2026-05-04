@@ -41,95 +41,102 @@ export interface CameraStore {
 let manager: ConnectionManager | null = null;
 let unwireManager: Array<() => void> = [];
 
-export const useCameraStore = create<CameraStore>((set, get) => ({
-  state: { kind: "idle" },
-  presets: [],
-  macosBetaAcknowledged: readFlag(MACOS_BETA_ACK_KEY),
-  macosSetupAcknowledged: readFlag(MACOS_SETUP_ACK_KEY),
-  macosPersistentDisableConfigured: readFlag(MACOS_PERSISTENT_DISABLE_KEY),
-  macosWizardOpen: false,
-  macosShowAdvanced: false,
+export const useCameraStore = create<CameraStore>((set, get) => {
+  const update = (patch: Partial<CameraStore>): void => {
+    set(patch);
+    publishCameraDiagnostics(get());
+  };
 
-  connect() {
-    if (!manager) {
-      set({
-        state: {
-          kind: "error",
-          reason: "webusb-unsupported",
-          underlying: new LatentError(
-            "WebUSBUnsupported",
-            "navigator.usb is unavailable in this browser.",
-          ),
-          isPhysicallyRecoverable: false,
-        },
+  return {
+    state: { kind: "idle" },
+    presets: [],
+    macosBetaAcknowledged: readFlag(MACOS_BETA_ACK_KEY),
+    macosSetupAcknowledged: readFlag(MACOS_SETUP_ACK_KEY),
+    macosPersistentDisableConfigured: readFlag(MACOS_PERSISTENT_DISABLE_KEY),
+    macosWizardOpen: false,
+    macosShowAdvanced: false,
+
+    connect() {
+      if (!manager) {
+        update({
+          state: {
+            kind: "error",
+            reason: "webusb-unsupported",
+            underlying: new LatentError(
+              "WebUSBUnsupported",
+              "navigator.usb is unavailable in this browser.",
+            ),
+            isPhysicallyRecoverable: false,
+          },
+        });
+        return;
+      }
+      manager.dispatch({ type: "CONNECT_REQUESTED" });
+    },
+
+    disconnect() {
+      manager?.dispatch({ type: "DISCONNECT_REQUESTED" });
+    },
+
+    retry() {
+      manager?.dispatch({ type: "RETRY_REQUESTED" });
+    },
+
+    acknowledgeMacosBeta() {
+      writeFlag(MACOS_BETA_ACK_KEY, true);
+      update({ macosBetaAcknowledged: true });
+    },
+
+    acknowledgeMacosSetup() {
+      writeFlag(MACOS_SETUP_ACK_KEY, true);
+      update({ macosSetupAcknowledged: true });
+    },
+
+    markMacosPersistentDisable() {
+      writeFlag(MACOS_PERSISTENT_DISABLE_KEY, true);
+      update({ macosPersistentDisableConfigured: true });
+    },
+
+    resetMacosSetupStatus() {
+      writeFlag(MACOS_SETUP_ACK_KEY, false);
+      writeFlag(MACOS_PERSISTENT_DISABLE_KEY, false);
+      update({
+        macosSetupAcknowledged: false,
+        macosPersistentDisableConfigured: false,
       });
-      return;
-    }
-    manager.dispatch({ type: "CONNECT_REQUESTED" });
-  },
+    },
 
-  disconnect() {
-    manager?.dispatch({ type: "DISCONNECT_REQUESTED" });
-  },
+    openMacosWizard() {
+      const startAdvanced = get().macosShowAdvanced || get().macosPersistentDisableConfigured;
+      update({ macosWizardOpen: true, macosShowAdvanced: startAdvanced });
+    },
 
-  retry() {
-    manager?.dispatch({ type: "RETRY_REQUESTED" });
-  },
+    closeMacosWizard() {
+      update({ macosWizardOpen: false, macosShowAdvanced: false });
+    },
 
-  acknowledgeMacosBeta() {
-    writeFlag(MACOS_BETA_ACK_KEY, true);
-    set({ macosBetaAcknowledged: true });
-  },
+    toggleMacosAdvanced() {
+      update({ macosShowAdvanced: !get().macosShowAdvanced });
+    },
 
-  acknowledgeMacosSetup() {
-    writeFlag(MACOS_SETUP_ACK_KEY, true);
-    set({ macosSetupAcknowledged: true });
-  },
+    attemptMacosSetup(advanced: boolean) {
+      manager?.dispatch({ type: "MACOS_SETUP_ATTEMPTED", advanced });
+    },
 
-  markMacosPersistentDisable() {
-    writeFlag(MACOS_PERSISTENT_DISABLE_KEY, true);
-    set({ macosPersistentDisableConfigured: true });
-  },
+    isConnected() {
+      return get().state.kind === "connected" || get().state.kind === "degraded";
+    },
 
-  resetMacosSetupStatus() {
-    writeFlag(MACOS_SETUP_ACK_KEY, false);
-    writeFlag(MACOS_PERSISTENT_DISABLE_KEY, false);
-    set({
-      macosSetupAcknowledged: false,
-      macosPersistentDisableConfigured: false,
-    });
-  },
+    isConnecting() {
+      return get().state.kind === "connecting" || get().state.kind === "reconnecting";
+    },
 
-  openMacosWizard() {
-    const startAdvanced = get().macosShowAdvanced || get().macosPersistentDisableConfigured;
-    set({ macosWizardOpen: true, macosShowAdvanced: startAdvanced });
-  },
-
-  closeMacosWizard() {
-    set({ macosWizardOpen: false, macosShowAdvanced: false });
-  },
-
-  toggleMacosAdvanced() {
-    set({ macosShowAdvanced: !get().macosShowAdvanced });
-  },
-
-  attemptMacosSetup(advanced: boolean) {
-    manager?.dispatch({ type: "MACOS_SETUP_ATTEMPTED", advanced });
-  },
-
-  isConnected() {
-    return get().state.kind === "connected" || get().state.kind === "degraded";
-  },
-
-  isConnecting() {
-    return get().state.kind === "connecting" || get().state.kind === "reconnecting";
-  },
-
-  errorReason() {
-    const { state } = get();
-    return state.kind === "error" ? state.reason : null;
-  },
-}));
+    errorReason() {
+      const { state } = get();
+      return state.kind === "error" ? state.reason : null;
+    },
+  };
+});
 
 export function wireCameraManager(nextManager: ConnectionManager): void {
   for (const unwire of unwireManager) unwire();
@@ -139,21 +146,21 @@ export function wireCameraManager(nextManager: ConnectionManager): void {
   unwireManager.push(
     nextManager.subscribe((state) => {
       useCameraStore.setState({ state });
+      publishCameraDiagnostics(useCameraStore.getState());
       if (state.kind === "error") {
         // Surface the underlying error so DevTools shows the real cause
         // while the UI banner renders reason-level copy.
         console.error("[camera connect failed]", state.underlying);
       }
-      if (
-        state.kind === "error" &&
-        state.reason === "macos-claim-collision"
-      ) {
+      if (state.kind === "error" && state.reason === "macos-claim-collision") {
         const store = useCameraStore.getState();
         if (store.macosPersistentDisableConfigured) {
           store.resetMacosSetupStatus();
           useCameraStore.setState({ macosWizardOpen: false, macosShowAdvanced: true });
+          publishCameraDiagnostics(useCameraStore.getState());
         } else if (!store.macosSetupAcknowledged) {
           useCameraStore.setState({ macosWizardOpen: true });
+          publishCameraDiagnostics(useCameraStore.getState());
         }
       }
     }),
@@ -171,10 +178,12 @@ export function wireCameraManager(nextManager: ConnectionManager): void {
   unwireManager.push(
     nextManager.onNotification("presets-read", ({ presets }) => {
       useCameraStore.setState({ presets });
+      publishCameraDiagnostics(useCameraStore.getState());
     }),
   );
 
   nextManager.start();
+  publishCameraDiagnostics(useCameraStore.getState());
 }
 
 export function resetCameraManagerForTests(): void {
@@ -217,4 +226,27 @@ function safeLocalStorage(): Storage | null {
     return null;
   }
   return storage;
+}
+
+function publishCameraDiagnostics(state: CameraStore): void {
+  if (!import.meta.env.DEV || typeof window === "undefined") return;
+  window.__LATENT_CAMERA_STATE__ = {
+    state: state.state,
+    presets: state.presets,
+    isConnected: state.isConnected(),
+    isConnecting: state.isConnecting(),
+    errorReason: state.errorReason(),
+  };
+}
+
+declare global {
+  interface Window {
+    __LATENT_CAMERA_STATE__?: {
+      state: ConnectionState;
+      presets: RawPreset[];
+      isConnected: boolean;
+      isConnecting: boolean;
+      errorReason: ErrorReason | null;
+    };
+  }
 }
