@@ -173,4 +173,38 @@ describe("useRecipesStore", () => {
     expect(imported).toHaveLength(1);
     expect(imported[0]?.id).toBe(first.id);
   });
+
+  it("drops persisted imports that are now bundled as seed recipes", async () => {
+    const oldHtmlImport = sampleRecipe({
+      id: "f802c137-99c2-4058-8174-c35396bcd79d",
+      name: "Cinematic B&W",
+      author: "Casey Herzawg",
+      tags: ["fujifilm-recipes", "black-white", "acros-r-filter"],
+      filmSimulation: "AcrosR",
+    });
+    localStorage.setItem("latent-imported-recipes-v1", JSON.stringify([oldHtmlImport]));
+
+    await useRecipesStore.getState().loadSeedRecipes();
+
+    expect(useRecipesStore.getState().recipes[0]?.name).toBe("Silver Screen Mono");
+    expect(localStorage.getItem("latent-imported-recipes-v1")).toBe("[]");
+  });
+
+  it("ignores file imports that are already available as bundled defaults", async () => {
+    await useRecipesStore.getState().loadSeedRecipes();
+    const before = useRecipesStore.getState().recipes.length;
+    const duplicateDefault = sampleRecipe({
+      id: "f802c137-99c2-4058-8174-c35396bcd79d",
+      name: "Cinematic B&W",
+      author: "Casey Herzawg",
+      tags: ["fujifilm-recipes", "black-white", "acros-r-filter"],
+      filmSimulation: "AcrosR",
+    });
+
+    useRecipesStore.getState().importRecipe(duplicateDefault);
+
+    expect(useRecipesStore.getState().recipes).toHaveLength(before);
+    expect(useRecipesStore.getState().recipes[0]?.name).toBe("Silver Screen Mono");
+    expect(localStorage.getItem("latent-imported-recipes-v1")).toBeNull();
+  });
 });
