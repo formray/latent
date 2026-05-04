@@ -65,6 +65,7 @@ const WB_BY_VALUE: Record<number, RecipeType["whiteBalance"]["mode"]> = {
   0x8003: "Fluorescent3",
   0x8006: "Shade",
   0x8007: "ColorTemperature",
+  0x8020: "AutoWhitePriority",
   0x8021: "AutoAmbiencePriority",
 };
 
@@ -149,9 +150,6 @@ export function cameraPresetMatchesRecipe(
 function presetToRecipeFields(preset: RawPreset): RecipeFields {
   const d = preset.decoded;
   if (!d) throw new Error("Preset has not been decoded yet");
-  if (preset.missing?.length) {
-    throw new Error(`Preset is missing ${preset.missing.length} camera properties`);
-  }
 
   const filmSimulation = FILM_SIM_BY_VALUE[d.filmSimulation.value];
   if (!filmSimulation) {

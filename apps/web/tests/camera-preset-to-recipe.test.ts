@@ -54,10 +54,28 @@ describe("cameraPresetToRecipe", () => {
     expect(recipe.colorChromeEffect).toBe("Weak");
   });
 
-  it("rejects presets with missing camera properties", () => {
-    const check = canImportCameraPreset(preset({ missing: ["0xd192"] }));
-    expect(check.ok).toBe(false);
-    expect(check.reason).toMatch(/missing 1 camera properties/i);
+  it("allows import when a non-critical camera property is missing but decoded fields are complete", () => {
+    const check = canImportCameraPreset(preset({ missing: ["0xd19c"] }));
+    expect(check.ok).toBe(true);
+  });
+
+  it("maps Fuji auto white-priority WB value 0x8020 from X-S20 FW 3.30", () => {
+    const recipe = cameraPresetToRecipe(
+      preset({
+        missing: ["0xd19c"],
+        decoded: {
+          ...preset().decoded!,
+          whiteBalance: { value: 0x8020, label: "White Priority" },
+        },
+      }),
+      { cameraModel: "X-S20", firmwareVersion: "3.30" },
+      {
+        id: "99999999-9999-4999-8999-999999999999",
+        createdAt: "2026-05-04T17:00:00.000Z",
+      },
+    );
+
+    expect(recipe.whiteBalance.mode).toBe("AutoWhitePriority");
   });
 
   it("uses the same stable import key for a camera preset and its imported recipe", () => {

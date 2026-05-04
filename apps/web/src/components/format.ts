@@ -46,6 +46,8 @@ export function describeWhiteBalance(wb: RecipeType["whiteBalance"]): string {
   if (wb.mode === "ColorTemperature" && typeof wb.colorTemperatureK === "number") {
     return `${wb.colorTemperatureK}K`;
   }
+  if (wb.mode === "AutoWhitePriority") return "Auto White Priority";
+  if (wb.mode === "AutoAmbiencePriority") return "Auto Ambience Priority";
   return wb.mode;
 }
 

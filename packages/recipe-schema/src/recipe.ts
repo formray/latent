@@ -36,7 +36,7 @@ export const Recipe = z.object({
   dynamicRange: z.enum(["DRAuto", "DR100", "DR200", "DR400"]),
   whiteBalance: z.object({
     mode: z.enum([
-      "Auto", "AutoAmbiencePriority",            // filmkit-supported only in V1
+      "Auto", "AutoWhitePriority", "AutoAmbiencePriority",
       "Daylight", "Shade",
       "Fluorescent1", "Fluorescent2", "Fluorescent3",
       "Incandescent", "Underwater", "ColorTemperature",
