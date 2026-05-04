@@ -100,6 +100,7 @@ function CameraSlotCard({
   onSelect: () => void;
 }): JSX.Element {
   const d = preset.decoded;
+  const defaultSlot = isDefaultPreset(preset);
   return (
     <button
       type="button"
@@ -108,6 +109,7 @@ function CameraSlotCard({
         "group flex h-full min-h-40 w-full flex-col justify-between bg-zinc-950 p-4 text-left transition-colors",
         "hover:bg-zinc-900/70 focus:outline-none focus:ring-2 focus:ring-emerald-400/70 focus:ring-inset",
         selected && "bg-zinc-900",
+        defaultSlot && !selected && "opacity-60",
       )}
       aria-pressed={selected}
     >
@@ -122,13 +124,22 @@ function CameraSlotCard({
             C{preset.slot}
           </span>
           <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-600">
-            {preset.missing?.length ? `${preset.missing.length} missing` : "verified"}
+            {preset.missing?.length
+              ? `${preset.missing.length} missing`
+              : defaultSlot
+                ? "default"
+                : "verified"}
           </span>
         </div>
         <h3 className="mt-4 truncate text-base font-semibold tracking-tight text-zinc-50">
-          {preset.name || `Custom ${preset.slot}`}
+          {presetDisplayName(preset)}
         </h3>
-        <p className="mt-1 truncate text-sm text-emerald-300">
+        <p
+          className={clsx(
+            "mt-1 truncate text-sm",
+            defaultSlot ? "text-zinc-500" : "text-emerald-300",
+          )}
+        >
           {d?.filmSimulation.label ?? "Reading"}
         </p>
       </div>
@@ -164,7 +175,7 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
             C{preset.slot} · {t("camera.recipes.inspector")}
           </p>
           <h3 className="mt-2 truncate text-2xl font-semibold tracking-tight text-zinc-50">
-            {preset.name || `Custom ${preset.slot}`}
+            {presetDisplayName(preset)}
           </h3>
           <p className="mt-1 text-lg text-emerald-300">{d.filmSimulation.label}</p>
         </div>
@@ -190,13 +201,9 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
         <QTile label="CCR" value={d.colorChromeEffect.label} />
         <QTile label="CCB" value={d.colorChromeEffectBlue.label} />
         <QTile label="Skin" value={d.smoothSkinEffect.label} />
+        <QTile label={t("camera.recipes.properties")} value={String(propertyCount(preset))} />
+        <QTile label={t("camera.recipes.missing")} value={String(preset.missing?.length ?? 0)} />
       </div>
-
-      <dl className="mt-5 grid grid-cols-3 gap-px bg-zinc-900 text-xs">
-        <Meta label={t("camera.recipes.properties")} value={String(propertyCount(preset))} />
-        <Meta label={t("camera.recipes.missing")} value={String(preset.missing?.length ?? 0)} />
-        <Meta label={t("camera.recipes.mode")} value={t("camera.recipes.readOnly")} />
-      </dl>
     </aside>
   );
 }
@@ -226,17 +233,32 @@ function QTile({
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }): JSX.Element {
-  return (
-    <div className="bg-zinc-950 p-3">
-      <dt className="font-mono text-[10px] uppercase tracking-wider text-zinc-600">{label}</dt>
-      <dd className="mt-1 text-sm text-zinc-300">{value}</dd>
-    </div>
-  );
-}
-
 function isCameraAlive(kind: string): boolean {
   return kind === "connected" || kind === "degraded";
+}
+
+function presetDisplayName(preset: RawPreset): string {
+  return preset.name || `Default C${preset.slot}`;
+}
+
+function isDefaultPreset(preset: RawPreset): boolean {
+  const d = preset.decoded;
+  if (!d || preset.name) return false;
+  return (
+    d.filmSimulation.label.startsWith("Provia") &&
+    d.dynamicRange.label === "DR 100%" &&
+    d.wbShift.r === 0 &&
+    d.wbShift.b === 0 &&
+    d.highlightTone === 0 &&
+    d.shadowTone === 0 &&
+    d.color === 0 &&
+    d.sharpness === 0 &&
+    d.noiseReduction === 0 &&
+    d.clarity === 0 &&
+    d.grainEffect.label === "Off" &&
+    d.colorChromeEffect.label === "Off" &&
+    d.colorChromeEffectBlue.label === "Off"
+  );
 }
 
 function propertyCount(preset: RawPreset): number {
