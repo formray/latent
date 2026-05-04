@@ -1,6 +1,6 @@
 # Camera connection stability — design
 
-**Status**: Draft, awaiting user review (revision 3 — incorporates Codex review round 2)
+**Status**: Draft, awaiting user review (revision 4 — incorporates Codex review round 3)
 **Date**: 2026-05-04
 **Owner**: Giuseppe Albrizio
 **Related**:
@@ -222,8 +222,10 @@ type ConnectionState =
       kind: "connecting";
       attempt: number;
       abort: AbortController;
-      macosSetupPending?: true;  // set when entered via MACOS_SETUP_ATTEMPTED;
-                                 // success emits MACOS_SETUP_CONFIRMED
+      macosSetupPending?: "basic" | "advanced";
+        // set when entered via MACOS_SETUP_ATTEMPTED.
+        // On connect-success, manager emits a "setup-confirmed" notification
+        // (NOT a reducer event) so the store can persist the right flag.
     }
   | {
       kind: "connected";
@@ -289,9 +291,17 @@ changes.
 | `OPERATION_SUCCEEDED` | Driver succeeds and `degraded` state needs to clear | `{ opId: number }` |
 | `PROBE_RESULT` | Manager runs `probe()` after `OPERATION_FAILED` to disambiguate; payload carries the original failure so transitions can classify | `{ ok: boolean; err: LatentError; opId: number }` |
 | `RETRY_REQUESTED` | UI click on retry | — |
-| `MACOS_SETUP_ATTEMPTED` | Wizard "I've run it" click | — |
-| `MACOS_SETUP_CONFIRMED` | Dispatched by the manager when a `connecting` triggered by `MACOS_SETUP_ATTEMPTED` reaches `connected` | — |
+| `MACOS_SETUP_ATTEMPTED` | Wizard "I've run it" click | `{ advanced: boolean }` — true if user is on the persistent-disable advanced step |
 | `PAGE_HIDING` | `beforeunload` or `pagehide` | — |
+
+`MACOS_SETUP_CONFIRMED` is **not** a state-machine event. It is a
+**manager notification** emitted post-commit (after the reducer
+finishes the transition into `connected`) when the source `connecting`
+carried `macosSetupPending`. The store subscribes to manager
+notifications separately from state subscriptions and reacts by
+setting the appropriate flag (Codex H-r3-2). Reducer re-entry is
+impossible because the notification is emitted on a different code
+path than `dispatch()`.
 
 `opId` is a monotonic integer assigned at operation dispatch time.
 Events carrying a stale `opId` (older than the current connection
@@ -353,13 +363,17 @@ error{reason}
                             // replug does not free the daemon, retry would loop
                             // skipped when reason ∈ {secure-context, webusb-unsupported}:
                             // environment dead-end, USB events unrelated
-  ─[MACOS_SETUP_ATTEMPTED]→ connecting{attempt: 1, macosSetupPending: true}
+  ─[MACOS_SETUP_ATTEMPTED, payload.advanced]→ connecting{attempt: 1, macosSetupPending: payload.advanced ? "advanced" : "basic"}
                              // marks the connect attempt as setup-driven so a success
-                             // emits MACOS_SETUP_CONFIRMED at connected entry
+                             // triggers a setup-confirmed notification post-commit
   ─[DISCONNECT_REQUESTED]→ disconnected
 
-connecting{attempt: 1, macosSetupPending: true}
-  ─[connect-success]→ connected (entry emits MACOS_SETUP_CONFIRMED before clearing flag)
+connecting{attempt: 1, macosSetupPending: "basic" | "advanced"}
+  ─[connect-success]→ connected
+                      // post-commit: manager emits "setup-confirmed" notification
+                      // with { advanced: boolean }; store sets macosSetupAcknowledged
+                      // and (if advanced) macosPersistentDisableConfigured.
+                      // The notification is NOT a reducer event.
   ─[OPERATION_FAILED]→ error{reason: classify(err)}
                        // setup attempt failed; flag cleared. Wizard re-opens "Try again"
                        // and reveals the advanced option.
@@ -389,22 +403,28 @@ the contradiction Codex flagged at NH2 between `connected` exit and
 | State | Entry action | Exit action |
 |---|---|---|
 | `idle` | None | None |
-| `connecting` | Mint new `opId`. Mint new `AbortController`. Call `driver.connect({autoSelectPaired: true, signal: abort.signal})`. On rejection, dispatch `OPERATION_FAILED({err, opId})`. On resolution after a state change, the result is **discarded after closing the late-created device** (see "stale-completion cleanup" below). (Driver's internal `device.reset()` retry is described in §7.3.) If the source state was `error{macos-claim-collision}` and the entry is via `MACOS_SETUP_ATTEMPTED`, set the per-attempt `macosSetupPending` flag. | `abort.abort()` cancels in-flight connect. |
-| `connected` | If entering from `connecting` (i.e. a fresh `currentGeneration`): install USB disconnect, USB connect, `pagehide`, `beforeunload` listeners — store handles in `listenerHandles`. If `macosSetupPending` was set on the source `connecting`, dispatch `MACOS_SETUP_CONFIRMED` synchronously and clear the flag. Populate store presets via Phase 2-full read flow. If entering from `degraded` or `reconnecting` (same generation): no listener changes. | If transitioning to `disconnected` or `error`: uninstall all listeners via `listenerHandles`; bump `currentGeneration`. Otherwise (to `degraded` or `reconnecting`): no action. |
+| `connecting` | Mint new `opId`. Mint new `AbortController`. Call `driver.connect({autoSelectPaired: true, signal: abort.signal})`. On rejection, dispatch `OPERATION_FAILED({err, opId})`. On resolution after a state change, the result is **discarded after disposing it** (see "stale-completion cleanup" below). (Driver's internal `device.reset()` retry is described in §7.3.) If the source state was `error{macos-claim-collision}` and the entry is via `MACOS_SETUP_ATTEMPTED`, set the per-attempt `macosSetupPending` flag to `"basic"` or `"advanced"` based on the event payload. | `abort.abort()` cancels in-flight connect. |
+| `connected` | If entering from `connecting` (i.e. a fresh `currentGeneration`): install USB disconnect, USB connect, `pagehide`, `beforeunload` listeners — store handles in `listenerHandles`. Populate store presets via Phase 2-full read flow. If entering from `degraded` or `reconnecting` (same generation): no listener changes. **Post-commit hook (after the reducer returns)**: if the source `connecting` carried `macosSetupPending`, the manager emits a `"setup-confirmed"` notification with `{ advanced: macosSetupPending === "advanced" }`. The notification flows out of the manager's notification channel, NOT through `dispatch()`, so reducer re-entry is impossible. | If transitioning to `disconnected` or `error`: uninstall all listeners via `listenerHandles`; bump `currentGeneration`. Otherwise (to `degraded` or `reconnecting`): no action. |
 | `degraded` | Track `consecutiveSoftFailures` and `lastFailure`. No listener changes (still inside the alive generation). | No listener changes. |
 | `reconnecting` | Mint new `opId`. Mint new `AbortController`. Schedule timer `setTimeout(backoff[attempt-1])`. On timer fire, call `driver.connect({autoSelectPaired: true, signal: abort.signal})`. No listener changes (still inside the alive generation). | Clear timer; `abort.abort()`. If transitioning to `error`: uninstall listeners + bump generation. If transitioning to `connected`: keep listeners. |
 | `error` | If transitioning from an alive state, uninstall listeners + bump generation. Otherwise, no action. Wait for user action. | None. |
 | `disconnected` | Call `driver.disconnect()` (graceful CloseSession + releaseInterface). If transitioning from an alive state, uninstall listeners + bump generation. | None. |
 
-**Stale-completion cleanup** (Codex B3 round 2): when a `driver.connect()`
-promise resolves *after* the manager has already left `connecting`
-(e.g. user clicked Disconnect, or a USB event short-circuited the
-state), the manager checks `opId` against `currentGeneration`:
+**Stale-completion cleanup** (Codex B3 round 2 + H-r3-1): when a
+`driver.connect()` promise resolves *after* the manager has already
+left `connecting` (e.g. user clicked Disconnect, or a USB event
+short-circuited the state, or a fresh CONNECT_REQUESTED started a new
+attempt), the manager checks `opId` against `currentGeneration`:
 
 - If stale, the manager **does not** trust the result for state
-  transitions, **and** calls `driver.disconnect()` on the late-arriving
-  port to close the device that may have been opened/claimed during the
-  abandoned connect. This prevents leaking USB ownership.
+  transitions, **and** calls `result.dispose()` on the
+  `DriverConnectResult` returned by the late connect. `dispose()` is a
+  port-specific cleanup — it closes only that specific session and its
+  associated `USBDevice` ownership. It must NOT touch any current
+  active connection that the driver may already own (Codex H-r3-1).
+
+The `DriverConnectResult.dispose()` contract is part of `CameraDriver`
+in §7.1.
 
 `probe()` itself runs as a manager-internal coroutine when
 `OPERATION_FAILED` arrives in `connected` or `degraded`. The state stays
@@ -551,7 +571,21 @@ export interface ConnectOptions {
 
 export interface DriverConnectResult {
   port: CameraSessionPort;          // not FujiCameraSession
-  deviceInfo: DeviceInfo;           // includes model + firmware
+  deviceInfo: DeviceInfo;           // includes model + firmware (PTP-side)
+  usbSerialNumber?: string;         // USB descriptor serial — used for USB
+                                    // event filtering, distinct from
+                                    // deviceInfo.serialNumber which is the
+                                    // PTP GetDeviceInfo serial
+  /**
+   * Port-specific cleanup. Closes the session, releases its interface,
+   * and closes the underlying USBDevice (or equivalent in V2). Must NOT
+   * affect any other active connection the driver may currently own —
+   * specifically, calling dispose() on a stale result must not close
+   * the active live connection.
+   *
+   * Idempotent and best-effort: errors are swallowed.
+   */
+  dispose(): Promise<void>;
 }
 ```
 
@@ -680,13 +714,22 @@ This addresses Codex H1: reset is not blanket-applied, it is conditional
 on a recoverable claim failure, and the post-reset reconfiguration is
 explicit.
 
-**USB event subscription with vendor + product + (optional) serial + permission filter**
+**USB event subscription with vendor + product + (optional) USB serial + permission filter**
+
+The filter compares the **USB descriptor serial** (`USBDevice.serialNumber`),
+NOT the PTP `GetDeviceInfo` serial. These are two distinct sources and
+can differ. The driver captures `usbSerialNumber` from the
+`USBDevice.serialNumber` descriptor at connect time and stores it on
+`DriverConnectResult.usbSerialNumber`. The PTP serial lives in
+`deviceInfo.serialNumber` and is used elsewhere (e.g. backup keys in
+Phase 4) but never in USB event filtering. This addresses Codex
+M-r3-3.
 
 ```ts
 subscribeConnectEvents(handler: () => void): () => void {
   const expectedVendor = FUJI_VENDOR_ID;
-  const expectedProduct = this.connectedProductId;     // captured at connect time
-  const expectedSerial = this.connectedSerialNumber;   // when discoverable, else undefined
+  const expectedProduct = this.connectedProductId;        // USB descriptor productId
+  const expectedUsbSerial = this.connectedUsbSerialNumber; // USB descriptor serial
 
   const listener = async (e: USBConnectionEvent) => {
     // Match by vendor + product, NOT by USBDevice object identity.
@@ -695,18 +738,17 @@ subscribeConnectEvents(handler: () => void): () => void {
     if (e.device.vendorId !== expectedVendor) return;
     if (e.device.productId !== expectedProduct) return;
 
-    // If we have a serial from the original connect, prefer matching on it
-    // so multi-camera setups don't cross-fire.
-    if (expectedSerial !== undefined) {
-      // Serial is read at the device descriptor level; compare strictly.
-      if (e.device.serialNumber !== expectedSerial) return;
+    // If we have a USB descriptor serial from the original connect, prefer
+    // matching on it so multi-camera setups don't cross-fire.
+    if (expectedUsbSerial !== undefined) {
+      if (e.device.serialNumber !== expectedUsbSerial) return;
     }
 
     // Confirm we still hold permission (the user may have revoked it).
     const paired = await navigator.usb.getDevices();
     const stillPaired = paired.some(
       d => d.vendorId === expectedVendor && d.productId === expectedProduct
-        && (expectedSerial === undefined || d.serialNumber === expectedSerial)
+        && (expectedUsbSerial === undefined || d.serialNumber === expectedUsbSerial)
     );
     if (!stillPaired) return;
 
@@ -717,12 +759,11 @@ subscribeConnectEvents(handler: () => void): () => void {
 }
 ```
 
-Same vendor + product + optional serial + permission pattern for
+Same vendor + product + optional USB serial + permission pattern for
 `subscribeDisconnectEvents`. The `connectedProductId` and
-`connectedSerialNumber` fields are populated by the driver during
-`connect()` from the `USBDevice` descriptor and from the
-`getDeviceInfo()` response respectively. This addresses Codex H3 and
-NM2.
+`connectedUsbSerialNumber` fields are populated by the driver during
+`connect()` from the `USBDevice` descriptor exclusively. This addresses
+Codex H3, NM2, and M-r3-3.
 
 **Wrap raw `transferIn`/`transferOut` rejections**
 
@@ -832,7 +873,18 @@ interface CameraStore {
   markMacosPersistentDisable: () => void;    // set when the user clicks the
                                              // advanced "I've run launchctl
                                              // disable" path AND a real connect
-                                             // confirms it
+                                             // confirms it (via the
+                                             // setup-confirmed manager
+                                             // notification with advanced=true)
+  resetMacosSetupStatus: () => void;         // clears macosSetupAcknowledged AND
+                                             // macosPersistentDisableConfigured.
+                                             // Exposed via a "Reset macOS setup
+                                             // status" action in the wizard's
+                                             // success step and called
+                                             // automatically when a claim
+                                             // collision occurs while
+                                             // macosPersistentDisableConfigured
+                                             // is true (Codex M-r3-1).
   openMacosWizard: () => void;
   closeMacosWizard: () => void;
   toggleMacosAdvanced: () => void;
@@ -1002,7 +1054,7 @@ explicitly walked through Step 2; running the basic Step 1 only sets
 |---|---|---|
 | false | false | Auto-opens wizard at Step 1 (first-time path) |
 | true | false | Banner with "Re-open setup". On click, wizard opens at Step 1 — the basic killall — because we cannot assume persistent state. Education is suppressed (no beta warning re-shown). |
-| true | true | Banner with "Re-open setup". On click, wizard opens at Step 2 — the advanced path — because the user explicitly chose persistent disable previously. If they re-enabled `ptpcamerad` deliberately, this puts the advanced reset in front of them quickly. |
+| true | true | Manager calls `resetMacosSetupStatus()` automatically — the persistent flag was lying. Banner reads "macOS is holding the camera again" with body explaining that `ptpcamerad` may have been re-enabled by macOS or by the user. On click, wizard opens at Step 2 — the advanced path — but with both flags now cleared, so a new success will repopulate them honestly (Codex M-r3-1). |
 
 ## 9. Failure mode catalog
 
@@ -1128,11 +1180,34 @@ Existing PTP/WebUSB tests (untouched, still green)
 
 Pure TypeScript, no DOM, no USB. Tests transitions only.
 
-Target: ~30 tests. Every declared transition + entry/exit action
-side-effect (timer cleared, listener uninstalled, abort dispatched).
-Backoff timing verified with `vi.useFakeTimers()`. Stale-`opId`
-filtering tested explicitly. Classifier covered with one test per
-`(stage, category, domException, platform)` triple of interest.
+**Minimum 40 tests** (was ~30 in r3 — Codex M-r3-2 flagged as
+undercounted). Mandatory coverage:
+
+- Every declared transition (one happy-path test each)
+- Entry/exit action side-effects: timer cleared on `reconnecting` exit,
+  abort dispatched on `connecting` exit, listeners installed exactly
+  once on `connecting → connected` and uninstalled exactly once on
+  alive → `disconnected`/`error`
+- Listener preservation across `connected ↔ degraded` and alive →
+  `reconnecting` → alive (no double-install, no stray uninstall)
+- Backoff timing `[200ms, 800ms, 2000ms]` verified with
+  `vi.useFakeTimers()`
+- Stale-`opId` filtering: `OPERATION_FAILED` with stale opId ignored;
+  `OPERATION_SUCCEEDED` with stale opId ignored; stale-completion
+  cleanup invokes `result.dispose()` exactly once
+- `macosSetupPending: "basic" | "advanced"` round-trip: source `error`
+  → `connecting{macosSetupPending}` → `connected` → manager emits
+  `setup-confirmed` notification with the right `advanced` flag
+- Probe routing: `connected + OPERATION_FAILED → PROBE_RESULT(ok=true)
+  → degraded`; `degraded + OPERATION_FAILED → PROBE_RESULT(ok=false)
+  → reconnecting` (escalates immediately, regardless of soft count);
+  `degraded + OPERATION_FAILED → PROBE_RESULT(ok=true) at k=2 →
+  reconnecting` (escalates after 3 soft)
+- Classifier: one test per `(stage, category, domException, platform)`
+  triple in §6.5, including `PtpTimeout → camera-off` and Linux/Windows
+  `claim` collision routing to `session-stale` not `macos-claim-collision`
+- Auto-recovery skip rules in `error`: `USB_DEVICE_CONNECTED` skipped
+  for `macos-claim-collision`, `secure-context`, `webusb-unsupported`
 
 ### 10.3 Driver tests
 
@@ -1142,28 +1217,73 @@ Local fakes in `tests/fakes.ts` — a `FakeUSBDevice` that supports
 `FakeTransport` from `@latent/ptp-fuji` is internal to that package
 and not exported; we do not depend on it.
 
-Target: ~18 tests. `connect` with paired vs picker; `claimWithReset`
-all branches (success first try, reset+reclaim success, reset rejects,
-reclaim rejects); disconnect graceful close; event subscription with
-vendor+product+permission filter (including new-USBDevice-instance
-case); `probe` OK / timeout / stall; idempotent disconnect;
-`fireCloseSession` returns synchronously even if the underlying send
-rejects.
+**Minimum 25 tests** (was ~18 — Codex M-r3-2). Mandatory coverage:
 
-This addresses Codex M1.
+- `connect` paths: paired device fast-path; picker fallback; abort via
+  signal mid-claim; abort via signal mid-`OpenSession`
+- `claimWithReset` branches: success first try; `isClaimCollision`
+  false → no reset, immediate throw with `stage:"claim"`; reset
+  rejects → throw with `stage:"reset"`; reconfig fails → throw with
+  `stage:"setup-config"`; endpoint rediscovery fails → throw with
+  `stage:"endpoint-discovery"`; second claim fails → throw with
+  `stage:"claim"` and original cause preserved
+- `openSessionWithStaging`: `LatentError` from lower layer rewrapped
+  with `stage:"open"`; non-`LatentError` wrapped fresh
+- Raw `transferIn` / `transferOut` rejection wrapping:
+  `stage:"transfer-in"` / `"transfer-out"` plus `domException` name;
+  non-`ok` status path unchanged
+- `disconnect` graceful close: CloseSession then releaseInterface
+  then close; idempotent (second call no-op); errors swallowed
+- `DriverConnectResult.dispose()`: closes only its own port, does NOT
+  affect another active connection (test with two concurrent
+  connect+dispose simulating a stale-completion cleanup race)
+- Event subscription filter: vendor mismatch ignored; product mismatch
+  ignored; USB serial mismatch ignored when expected serial set;
+  permission revoked ignored; new `USBDevice` instance for same
+  physical device matches and fires
+- `probe`: `GetDeviceInfo` OK → true; timeout → false; stall → false;
+  not-open → false (no PTP traffic)
+- `fireCloseSession` returns synchronously; underlying `send` rejection
+  does not throw to caller
 
 ### 10.4 Integration tests (`apps/web`)
 
 Mock the driver with `FakeCameraDriver` implementing `CameraDriver`.
 Drives the full UI flow.
 
-Target: ~12 tests. Cold connect; auto-connect at boot; macOS beta
-warning shown then acknowledged; macOS wizard safer-first path
-(success); macOS wizard advanced path; `macosSetupAcknowledged` only set on
-real reconnect success; cable unplug shows banner with new "Camera
-unplugged" copy; USB connect event auto-recovers; disconnect button;
-`pagehide` calls `fireCloseSession`; presets event populates store;
-banner copy matches reason for all 8 reasons.
+**Minimum 18 tests** (was ~12 — Codex M-r3-2). Mandatory coverage:
+
+- Cold connect (idle → connecting → connected)
+- Auto-connect at boot when paired device exists
+- macOS beta warning shown on first claim collision; acknowledged once;
+  not re-shown on subsequent collisions
+- macOS wizard Step 1 (basic killall) success path:
+  `MACOS_SETUP_ATTEMPTED{advanced:false}` → connect succeeds → manager
+  emits `setup-confirmed{advanced:false}` → store sets only
+  `macosSetupAcknowledged`, NOT `macosPersistentDisableConfigured`
+- macOS wizard Step 1 failure path: connect fails → flags unchanged →
+  wizard shows "Try again" + "Show advanced"
+- macOS wizard Step 2 (advanced) success: `MACOS_SETUP_ATTEMPTED{advanced:true}`
+  → connect succeeds → store sets BOTH flags
+- Re-collision with `macosPersistentDisableConfigured === true` calls
+  `resetMacosSetupStatus()` automatically and surfaces banner with
+  "ptpcamerad may have been re-enabled" body
+- Cable unplug shows banner with "Camera unplugged" copy (NOT "Camera
+  disconnected")
+- USB connect event auto-recovers from `error{cable-unplugged}`
+- USB connect event does NOT auto-recover from
+  `error{macos-claim-collision}`, `error{secure-context}`,
+  `error{webusb-unsupported}`
+- Disconnect button transitions to `disconnected` and calls
+  `driver.disconnect()`
+- `pagehide` calls `fireCloseSession`; `beforeunload` same
+- Presets event populates store after `connected`
+- Banner copy correct for all 8 `ErrorReason` values
+- `Disconnect` while `connecting` aborts the in-flight connect; if it
+  resolves anyway, `result.dispose()` is called (no leaked active
+  connection)
+- `secure-context` detected via `window.isSecureContext === false` at
+  boot, before any user gesture
 
 ### 10.5 Hardware test plan
 
@@ -1225,28 +1345,37 @@ first.
 - ~5 tests for the new fields
 - All existing tests stay green
 
-**Step 1 — Refactor `FujiCameraSession` onto `PtpFraming` AND tighten `PtpFraming.sendCommand()`**
+**Step 1a — Tighten `PtpFraming.sendCommand()` validation**
 
-- **First**, add the missing validation to `PtpFraming.sendCommand()`:
+- Add the missing validation to `PtpFraming.sendCommand()`:
   - Verify response container type (existing local helper already does this)
   - Verify `transactionId` matches the command's txid (currently missing — Codex NB1)
   - Verify `code === PTPResp.OK` and throw classified `LatentError` on
     `SessionAlreadyOpen`, `DeviceBusy`, `InvalidParameter`, etc.
     (currently missing — Codex NB1)
-  - Add new tests in `packages/ptp-fuji/tests/ptp-framing.test.ts` covering
-    txid mismatch, type mismatch, non-OK response codes, short response.
-- **Then**, replace local `packCommand` / `assertResponseOK` in
-  `FujiCameraSession` with calls to the now-validated
-  `PtpFraming.sendCommand`.
-- **Then**, wire `fireCloseSession()` to live on `FujiCameraSession`
-  (using `PtpFraming` for the synchronous send) so the session-level
-  call is a real method, not a dangling util.
+- Add new tests in `packages/ptp-fuji/tests/ptp-framing.test.ts`
+  covering txid mismatch, type mismatch, non-OK response codes,
+  short response.
+- All existing tests stay green.
+
+Lands alone in its own commit. This is a pure additive change to
+`PtpFraming` — `FujiCameraSession` is not touched yet, so existing
+tests cannot regress (Codex L-r3-1).
+
+**Step 1b — Refactor `FujiCameraSession` onto the validated `PtpFraming`**
+
+- Replace local `packCommand` / `assertResponseOK` in
+  `FujiCameraSession` with calls to `PtpFraming.sendCommand`.
+- Wire `fireCloseSession()` to live on `FujiCameraSession` (using
+  `PtpFraming` for the synchronous send) so the session-level call is
+  a real method, not a dangling util.
 - All existing `session.ts` tests must stay green. Run `npm run test`
   on both `@latent/ptp-fuji` and `@latent/ptp-fuji-webusb` after the
   refactor to confirm no regression.
 
-This is the most risky structural change in the rollout and it lands
-**alone** in its own commit so any breakage is easy to bisect.
+Lands alone in its own commit. Bisecting between Step 1a and Step 1b
+isolates whether a regression is from the validation change or from
+the refactor (Codex L-r3-1).
 
 **Step 2 — Add `FujiCameraSession.getDeviceInfo()` with DATA→RESPONSE parsing**
 - PTP op `0x1001` issuance + container parsing
@@ -1457,3 +1586,39 @@ These are valid concerns, but not part of this design:
   - **NM2**: connect/disconnect event filter implementation explicitly
     matches the decision-table promise of vendor + product + optional
     serial.
+
+- **r4, 2026-05-04**: incorporates Codex external review round 3.
+  Round 3 returned no blockers but two highs and three mediums plus
+  one low. Material changes:
+  - **H-r3-1**: `DriverConnectResult` gains a port-specific
+    `dispose()` method. Stale-completion cleanup calls
+    `result.dispose()` instead of the global `driver.disconnect()`,
+    so a fresh user-initiated connect cannot be closed by the
+    cleanup of an abandoned earlier connect.
+  - **H-r3-2**: `MACOS_SETUP_CONFIRMED` is no longer a state-machine
+    event. It is a manager **notification** emitted post-commit
+    after the reducer transitions into `connected`. The store
+    subscribes to manager notifications separately from state
+    subscriptions. Reducer re-entry is impossible because the
+    notification flows on a different channel than `dispatch()`.
+    `MACOS_SETUP_ATTEMPTED` payload extended with
+    `{ advanced: boolean }` so the manager knows which flag the
+    notification should authorize.
+  - **M-r3-1**: when a `macos-claim-collision` occurs while
+    `macosPersistentDisableConfigured === true`, the manager calls
+    `resetMacosSetupStatus()` automatically (which clears both
+    `macosSetupAcknowledged` and
+    `macosPersistentDisableConfigured`). The wizard re-opens at
+    Step 2 with both flags cleared so a new success repopulates them
+    honestly. Wizard success step also exposes a "Reset macOS setup
+    status" action.
+  - **M-r3-2**: test count targets raised and treated as minimums
+    with mandatory enumerated cases: state machine ≥ 40, driver
+    ≥ 25, integration ≥ 18.
+  - **M-r3-3**: `usbSerialNumber` (USB descriptor) is stored
+    separately from `deviceInfo.serialNumber` (PTP `GetDeviceInfo`).
+    The USB event filter uses USB descriptor serial only;
+    PTP serial is reserved for backup keys and future use.
+  - **L-r3-1**: §11 Step 1 split into Step 1a (PtpFraming validation)
+    and Step 1b (FujiCameraSession refactor). Each is its own
+    commit so bisection isolates the source of any regression.
