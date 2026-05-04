@@ -139,6 +139,12 @@ export const it: Record<MessageKey, string> = {
   "camera.recipes.properties": "Proprietà",
   "camera.recipes.missing": "Mancanti",
   "camera.recipes.mode": "Modalità",
+  "camera.recipes.rawProperties": "Proprietà raw",
+  "camera.recipes.raw.code": "Codice",
+  "camera.recipes.raw.name": "Nome",
+  "camera.recipes.raw.value": "Valore",
+  "camera.recipes.raw.bytes": "Byte",
+  "camera.recipes.raw.missing": "Mancante",
 
   // Errors
   "error.UsbPermissionDenied.title": "Nessuna fotocamera selezionata",
