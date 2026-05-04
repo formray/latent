@@ -32,6 +32,10 @@ function array16(values: number[]): number[] {
   return [...le32(values.length), ...values.flatMap(le16)];
 }
 
+function array32(values: number[]): number[] {
+  return [...le32(values.length), ...values.flatMap(le32)];
+}
+
 function response(code: number, txid: number, params: number[] = []): Uint8Array {
   return packContainer({
     type: ContainerType.Response,
@@ -276,5 +280,50 @@ describe("FujiCameraSession", () => {
     });
     expect(t.sent.at(-2)?.[6]).toBe(0x16);
     expect(t.sent.at(-2)?.[7]).toBe(0x10);
+  });
+
+  it("sendRaf uploads RAF object info and RAF bytes with Fuji vendor ops", async () => {
+    const t = new FakeTransport();
+    t.enqueue(response(0x2001, 1));
+    t.enqueue(response(0x2001, 2));
+    t.enqueue(response(0x2001, 3));
+    const s = new FujiCameraSession(t);
+    await s.open();
+
+    await s.sendRaf(new Uint8Array([1, 2, 3, 4]));
+
+    expect(t.sent[1]?.[6]).toBe(0x0c);
+    expect(t.sent[1]?.[7]).toBe(0x90);
+    expect(t.sent[3]?.[6]).toBe(0x0d);
+    expect(t.sent[3]?.[7]).toBe(0x90);
+    expect(t.sent[4]?.subarray(12)).toEqual(new Uint8Array([1, 2, 3, 4]));
+  });
+
+  it("renderRawPreview uploads RAF, reads D185, triggers conversion, downloads JPEG, and deletes temp object", async () => {
+    const t = new FakeTransport();
+    t.enqueue(response(0x2001, 1));
+    t.enqueue(response(0x2001, 2));
+    t.enqueue(response(0x2001, 3));
+    t.enqueue(dataContainer(0x1015, 4, new Uint8Array([0x02, 0x00, 0xaa, 0xbb])));
+    t.enqueue(response(0x2001, 4));
+    t.enqueue(response(0x2001, 5));
+    t.enqueue(response(0x2001, 6));
+    t.enqueue(dataContainer(0x1007, 7, new Uint8Array(array32([0x44]))));
+    t.enqueue(response(0x2001, 7));
+    t.enqueue(dataContainer(0x1009, 8, new Uint8Array([0xff, 0xd8, 0xff, 0xd9])));
+    t.enqueue(response(0x2001, 8));
+    t.enqueue(response(0x2001, 9));
+    const s = new FujiCameraSession(t);
+    await s.open();
+
+    const result = await s.renderRawPreview(
+      new Uint8Array([0x52, 0x41, 0x46]),
+      (base) => new Uint8Array([...base, 0xcc]),
+    );
+
+    expect(result.baseProfile).toEqual(new Uint8Array([0x02, 0x00, 0xaa, 0xbb]));
+    expect(result.jpeg).toEqual(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]));
+    expect(t.sent.some((packet) => packet[6] === 0x09 && packet[7] === 0x10)).toBe(true);
+    expect(t.sent.some((packet) => packet[6] === 0x0b && packet[7] === 0x10)).toBe(true);
   });
 });

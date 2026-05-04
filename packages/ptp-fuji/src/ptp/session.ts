@@ -12,8 +12,8 @@
 
 import type { PtpTransport } from "../transport/transport.js";
 import { LatentError } from "../errors.js";
-import { packU16, parsePTPStringRaw } from "../util/binary.js";
-import { FujiPropNames, PTPOp } from "./constants.js";
+import { concat, packPTPString, packU16, packU32, parsePTPStringRaw } from "../util/binary.js";
+import { FujiOp, FujiProp, FujiPropNames, PTPOp } from "./constants.js";
 import { PtpFraming } from "./transport.js";
 
 export type SessionState = "closed" | "opening" | "open" | "degraded";
@@ -46,6 +46,11 @@ export interface FujiRawPreset {
   name?: string;
   settings: FujiRawProp[];
   missing: number[];
+}
+
+export interface FujiRawPreviewResult {
+  jpeg: Uint8Array;
+  baseProfile: Uint8Array;
 }
 
 const DEFAULT_SESSION_ID = 0x00000001;
@@ -158,6 +163,109 @@ export class FujiCameraSession {
     );
   }
 
+  async sendRaf(data: Uint8Array | ArrayBuffer, signal?: AbortSignal): Promise<void> {
+    this.assertOpen("cannot send RAF before session is open");
+    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+    if (bytes.byteLength === 0) {
+      throw new LatentError("RafFormatInvalid", "RAF file is empty");
+    }
+
+    await this.framing.sendDataCommand(
+      FujiOp.SendObjectInfo,
+      [0, 0, 0],
+      objectInfoForRaf(bytes.byteLength),
+      signal,
+    );
+    await this.framing.sendDataCommand(
+      FujiOp.SendObject2,
+      [],
+      arrayBufferBytes(bytes),
+      signal,
+    );
+  }
+
+  async getRawConversionProfile(signal?: AbortSignal): Promise<Uint8Array> {
+    this.assertOpen("cannot read raw conversion profile before session is open");
+    const result = await this.framing.sendCommand(
+      PTPOp.GetDevicePropValue,
+      [FujiProp.RawConvProfile],
+      signal,
+    );
+    if (result.data.byteLength === 0) {
+      throw new LatentError(
+        "RafFormatInvalid",
+        "raw conversion profile is empty; load a RAF before reading D185",
+      );
+    }
+    return result.data;
+  }
+
+  async setRawConversionProfile(profile: Uint8Array, signal?: AbortSignal): Promise<void> {
+    this.assertOpen("cannot write raw conversion profile before session is open");
+    if (profile.byteLength === 0) {
+      throw new LatentError("RafFormatInvalid", "raw conversion profile is empty");
+    }
+    await this.framing.sendDataCommand(
+      PTPOp.SetDevicePropValue,
+      [FujiProp.RawConvProfile],
+      arrayBufferBytes(profile),
+      signal,
+    );
+  }
+
+  async triggerRawConversion(signal?: AbortSignal): Promise<void> {
+    this.assertOpen("cannot trigger raw conversion before session is open");
+    await this.framing.sendDataCommand(
+      PTPOp.SetDevicePropValue,
+      [FujiProp.StartRawConversion],
+      arrayBufferBytes(packU16(0)),
+      signal,
+    );
+  }
+
+  async waitForRawConversionResult(
+    options: { timeoutMs?: number; pollMs?: number } = {},
+    signal?: AbortSignal,
+  ): Promise<Uint8Array> {
+    this.assertOpen("cannot wait for raw conversion before session is open");
+    const timeoutMs = options.timeoutMs ?? 30_000;
+    const pollMs = options.pollMs ?? 1_000;
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      throwIfAborted(signal);
+      const handles = await this.getObjectHandles(signal);
+      const handle = handles[0];
+      if (handle !== undefined) {
+        try {
+          const result = await this.framing.sendCommand(PTPOp.GetObject, [handle], signal);
+          return result.data;
+        } finally {
+          await this.deleteObject(handle, signal).catch(() => undefined);
+        }
+      }
+      await sleep(pollMs, signal);
+    }
+    throw new LatentError(
+      "PtpTimeout",
+      `raw conversion timed out after ${Math.round(timeoutMs / 1000)}s`,
+    );
+  }
+
+  async renderRawPreview(
+    raf: Uint8Array | ArrayBuffer,
+    profileBuilder: (baseProfile: Uint8Array) => Uint8Array = (baseProfile) => baseProfile,
+    signal?: AbortSignal,
+  ): Promise<FujiRawPreviewResult> {
+    await this.sendRaf(raf, signal);
+    const baseProfile = await this.getRawConversionProfile(signal);
+    const profile = profileBuilder(baseProfile);
+    await this.setRawConversionProfile(profile, signal);
+    await this.triggerRawConversion(signal);
+    const jpeg = await this.waitForRawConversionResult({}, signal);
+    return { jpeg, baseProfile };
+  }
+
   async getPreset(slot: number, signal?: AbortSignal): Promise<FujiRawPreset> {
     if (!Number.isInteger(slot) || slot < 1 || slot > 7) {
       throw new LatentError("PtpUnsupportedOperation", `invalid custom slot C${slot}`);
@@ -226,6 +334,80 @@ export class FujiCameraSession {
       throw new LatentError("PtpStall", message);
     }
   }
+
+  private async getObjectHandles(signal?: AbortSignal): Promise<number[]> {
+    const result = await this.framing.sendCommand(
+      PTPOp.GetObjectHandles,
+      [0xffffffff, 0x0000, 0x00000000],
+      signal,
+    );
+    return parseU32Array(result.data);
+  }
+
+  private async deleteObject(handle: number, signal?: AbortSignal): Promise<void> {
+    await this.framing.sendCommand(PTPOp.DeleteObject, [handle], signal);
+  }
+}
+
+function objectInfoForRaf(byteLength: number): Uint8Array<ArrayBuffer> {
+  return concat(
+    packU32(0),
+    packU16(0xf802),
+    packU16(0),
+    packU32(byteLength),
+    packU16(0),
+    packU32(0),
+    packU32(0),
+    packU32(0),
+    packU32(0),
+    packU32(0),
+    packU32(0),
+    packU32(0),
+    packU16(0),
+    packU32(0),
+    packU32(0),
+    packPTPString("FUP_FILE.dat"),
+    new Uint8Array([0]),
+    new Uint8Array([0]),
+    new Uint8Array([0]),
+  );
+}
+
+function parseU32Array(data: Uint8Array): number[] {
+  if (data.byteLength < 4) return [];
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const count = view.getUint32(0, true);
+  const handles: number[] = [];
+  for (let index = 0; index < count && 4 + index * 4 + 4 <= data.byteLength; index += 1) {
+    handles.push(view.getUint32(4 + index * 4, true));
+  }
+  return handles;
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(abortError());
+      return;
+    }
+    const timeout = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = (): void => {
+      clearTimeout(timeout);
+      reject(abortError());
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw abortError();
+}
+
+function abortError(): DOMException {
+  return new DOMException("Aborted", "AbortError");
 }
 
 function parseDeviceInfo(data: Uint8Array): FujiDeviceInfo {
