@@ -24,7 +24,7 @@
     "validate": "npm run typecheck && npm run lint && npm run test && npm run license-check && npm run lockstep-check"
   },
   "devDependencies": {
-    "@eslint/js": "^9",
+    "@eslint/js": "^10",
     "@types/node": "^22",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9",
