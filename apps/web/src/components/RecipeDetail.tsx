@@ -21,6 +21,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const locale = detectLocale();
   const isFavorite = useRecipesStore((s) => s.favorites.has(recipe.id));
   const toggleFavorite = useRecipesStore((s) => s.toggleFavorite);
+  const deleteRecipe = useRecipesStore((s) => s.deleteRecipe);
   const [copied, setCopied] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
 
@@ -36,6 +37,11 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleDelete = (): void => {
+    if (!window.confirm(t("detail.delete.confirm"))) return;
+    deleteRecipe(recipe.id);
   };
 
   return (
@@ -79,6 +85,15 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
               className="rounded-sm border border-zinc-800 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
             >
               {t("detail.downloadJson")}
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="rounded-sm border border-red-950/80 px-3 py-1.5 text-xs text-red-300 transition-colors hover:border-red-800 hover:bg-red-950/30"
+            >
+              {recipe.tags.includes("latent-default")
+                ? t("detail.delete.hideDefault")
+                : t("detail.delete")}
             </button>
           </div>
         </div>

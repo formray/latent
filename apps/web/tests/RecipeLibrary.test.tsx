@@ -59,6 +59,7 @@ describe("<RecipeLibrary />", () => {
       loaded: true,
       loadError: null,
       favorites: new Set(),
+      hiddenDefaultIds: new Set(),
       searchQuery: "",
       filmSimFilter: null,
       favoritesOnly: false,

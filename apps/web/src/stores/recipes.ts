@@ -9,6 +9,7 @@ import { recipeCameraImportKey } from "../lib/camera-preset-to-recipe";
 
 const FAVORITES_KEY = "latent-favorites-v1";
 const IMPORTED_RECIPES_KEY = "latent-imported-recipes-v1";
+const HIDDEN_DEFAULT_RECIPES_KEY = "latent-hidden-default-recipes-v1";
 
 function loadFavorites(): Set<string> {
   try {
@@ -50,6 +51,28 @@ function persistImportedRecipes(recipes: RecipeType[]): void {
   try {
     if (typeof localStorage === "undefined") return;
     localStorage.setItem(IMPORTED_RECIPES_KEY, JSON.stringify(recipes));
+  } catch {
+    // ignore quota / privacy-mode failures
+  }
+}
+
+function loadHiddenDefaultIds(): Set<string> {
+  try {
+    if (typeof localStorage === "undefined") return new Set();
+    const raw = localStorage.getItem(HIDDEN_DEFAULT_RECIPES_KEY);
+    if (!raw) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((x): x is string => typeof x === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+function persistHiddenDefaultIds(ids: Set<string>): void {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(HIDDEN_DEFAULT_RECIPES_KEY, JSON.stringify(Array.from(ids)));
   } catch {
     // ignore quota / privacy-mode failures
   }
@@ -100,6 +123,7 @@ export interface RecipesState {
   loaded: boolean;
   loadError: string | null;
   favorites: Set<string>;
+  hiddenDefaultIds: Set<string>;
   searchQuery: string;
   filmSimFilter: FilmSimulationValue | null;
   favoritesOnly: boolean;
@@ -109,6 +133,8 @@ export interface RecipesState {
   setRecipes: (recipes: RecipeType[]) => void;
   importRecipe: (recipe: RecipeType) => void;
   importRecipes: (recipes: RecipeType[]) => void;
+  deleteRecipe: (id: string) => void;
+  resetRecipeLibrary: () => Promise<void>;
   setSearchQuery: (q: string) => void;
   setFilmSimFilter: (sim: FilmSimulationValue | null) => void;
   toggleFavoritesOnly: () => void;
@@ -124,6 +150,7 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
   loaded: false,
   loadError: null,
   favorites: loadFavorites(),
+  hiddenDefaultIds: loadHiddenDefaultIds(),
   searchQuery: "",
   filmSimFilter: null,
   favoritesOnly: false,
@@ -136,10 +163,17 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
         default: unknown;
       };
       const validated = SeedFile.parse(mod.default);
+      const hiddenDefaultIds = loadHiddenDefaultIds();
       const imported = loadImportedRecipes();
       const userImports = dropBundledImports(imported, validated);
       if (userImports.length !== imported.length) persistImportedRecipes(userImports);
-      set({ recipes: mergeRecipes(userImports, validated), loaded: true, loadError: null });
+      const visibleSeeds = validated.filter((recipe) => !hiddenDefaultIds.has(recipe.id));
+      set({
+        recipes: mergeRecipes(userImports, visibleSeeds),
+        loaded: true,
+        loadError: null,
+        hiddenDefaultIds,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       set({ loaded: true, loadError: message, recipes: [] });
@@ -180,6 +214,61 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
       loadError: null,
       selectedRecipeId: selected.id,
     });
+  },
+
+  deleteRecipe(id) {
+    const recipe = get().recipes.find((candidate) => candidate.id === id);
+    if (!recipe) return;
+
+    const nextFavorites = new Set(get().favorites);
+    nextFavorites.delete(id);
+    persistFavorites(nextFavorites);
+
+    if (recipe.tags.includes("latent-default")) {
+      const hiddenDefaultIds = new Set(get().hiddenDefaultIds);
+      hiddenDefaultIds.add(id);
+      persistHiddenDefaultIds(hiddenDefaultIds);
+      const recipes = get().recipes.filter((candidate) => candidate.id !== id);
+      set({
+        recipes,
+        hiddenDefaultIds,
+        favorites: nextFavorites,
+        selectedRecipeId: get().selectedRecipeId === id ? (recipes[0]?.id ?? null) : get().selectedRecipeId,
+      });
+      return;
+    }
+
+    const imported = loadImportedRecipes().filter((candidate) => candidate.id !== id);
+    persistImportedRecipes(imported);
+    const recipes = get().recipes.filter((candidate) => candidate.id !== id);
+    set({
+      recipes,
+      favorites: nextFavorites,
+      selectedRecipeId: get().selectedRecipeId === id ? (recipes[0]?.id ?? null) : get().selectedRecipeId,
+    });
+  },
+
+  async resetRecipeLibrary() {
+    try {
+      const mod = (await import("../../../../data/seed-recipes.json")) as {
+        default: unknown;
+      };
+      const validated = SeedFile.parse(mod.default);
+      persistImportedRecipes([]);
+      persistHiddenDefaultIds(new Set());
+      persistFavorites(new Set());
+      set({
+        recipes: validated,
+        loaded: true,
+        loadError: null,
+        favorites: new Set(),
+        hiddenDefaultIds: new Set(),
+        selectedRecipeId: validated[0]?.id ?? null,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      set({ loaded: true, loadError: message });
+    }
   },
 
   setSearchQuery(q) {

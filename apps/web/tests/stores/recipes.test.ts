@@ -35,6 +35,7 @@ describe("useRecipesStore", () => {
       loaded: false,
       loadError: null,
       favorites: new Set(),
+      hiddenDefaultIds: new Set(),
       searchQuery: "",
       filmSimFilter: null,
       favoritesOnly: false,
@@ -206,5 +207,54 @@ describe("useRecipesStore", () => {
     expect(useRecipesStore.getState().recipes).toHaveLength(before);
     expect(useRecipesStore.getState().recipes[0]?.name).toBe("Silver Screen Mono");
     expect(localStorage.getItem("latent-imported-recipes-v1")).toBeNull();
+  });
+
+  it("deletes imported recipes from memory and localStorage", () => {
+    const imported = sampleRecipe({
+      id: "44444444-4444-4444-8444-444444444444",
+      name: "Camera C2",
+      tags: ["camera-import", "x-m5", "c2"],
+    });
+    useRecipesStore.getState().setRecipes([imported, sampleRecipe()]);
+    useRecipesStore.getState().importRecipe(imported);
+
+    useRecipesStore.getState().deleteRecipe(imported.id);
+
+    expect(useRecipesStore.getState().recipes.some((recipe) => recipe.id === imported.id)).toBe(false);
+    expect(localStorage.getItem("latent-imported-recipes-v1")).toBe("[]");
+  });
+
+  it("hides bundled defaults without deleting them from the app bundle", async () => {
+    await useRecipesStore.getState().loadSeedRecipes();
+    const defaultRecipe = useRecipesStore.getState().recipes[0]!;
+
+    useRecipesStore.getState().deleteRecipe(defaultRecipe.id);
+
+    expect(useRecipesStore.getState().recipes.some((recipe) => recipe.id === defaultRecipe.id)).toBe(false);
+    expect(JSON.parse(localStorage.getItem("latent-hidden-default-recipes-v1") ?? "[]")).toContain(
+      defaultRecipe.id,
+    );
+  });
+
+  it("factory reset clears imports and hidden defaults, then restores bundled defaults", async () => {
+    await useRecipesStore.getState().loadSeedRecipes();
+    const defaultRecipe = useRecipesStore.getState().recipes[0]!;
+    const imported = sampleRecipe({
+      id: "44444444-4444-4444-8444-444444444444",
+      name: "Camera C2",
+      tags: ["camera-import", "x-m5", "c2"],
+    });
+    useRecipesStore.getState().importRecipe(imported);
+    useRecipesStore.getState().deleteRecipe(defaultRecipe.id);
+    useRecipesStore.getState().toggleFavorite(imported.id);
+
+    await useRecipesStore.getState().resetRecipeLibrary();
+
+    expect(useRecipesStore.getState().recipes).toHaveLength(49);
+    expect(useRecipesStore.getState().recipes[0]?.id).toBe(defaultRecipe.id);
+    expect(useRecipesStore.getState().favorites).toHaveLength(0);
+    expect(localStorage.getItem("latent-imported-recipes-v1")).toBe("[]");
+    expect(localStorage.getItem("latent-hidden-default-recipes-v1")).toBe("[]");
+    expect(localStorage.getItem("latent-favorites-v1")).toBe("[]");
   });
 });
