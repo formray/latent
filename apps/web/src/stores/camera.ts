@@ -245,7 +245,9 @@ export const useCameraStore = create<CameraStore>((set, get) => {
         const raf = await fileToBytes(file);
         const profileBuilder = recipe
           ? (baseProfile: Uint8Array): Uint8Array => (
-              patchProfile(baseProfile, recipeToConversionParams(recipe))
+              patchProfile(baseProfile, recipeToConversionParams(recipe), {
+                dynamicRangeEncoding: "enum",
+              })
             )
           : undefined;
         const result = await state.port.renderRawPreview(raf, profileBuilder);
@@ -580,7 +582,7 @@ function diagnosticVariants(full: ConversionParams): Array<{
     {
       id: "full",
       label: "Full recipe",
-      buildProfile: (baseProfile) => patchProfile(baseProfile, full),
+      buildProfile: buildDiagnosticProfile(full, { dynamicRangeEncoding: "enum" }),
     },
   ];
 }
