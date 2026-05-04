@@ -35,14 +35,50 @@ export type LatentErrorCategory =
   | "RecipeCapabilityMismatch"
   | "RecipeUrlPayloadTooLarge";
 
+export type LatentErrorStage =
+  | "open"
+  | "claim"
+  | "transfer-in"
+  | "transfer-out"
+  | "reset"
+  | "setup-config"
+  | "endpoint-discovery";
+
+export type LatentPlatform = "mac" | "windows" | "linux" | "unknown";
+
+export interface LatentErrorMetadata {
+  stage?: LatentErrorStage;
+  domException?: string | undefined;
+  platform?: LatentPlatform;
+}
+
 export class LatentError extends Error {
   readonly category: LatentErrorCategory;
+  readonly stage?: LatentErrorStage;
+  readonly domException?: string;
+  readonly platform?: LatentPlatform;
+  readonly metadata: LatentErrorMetadata;
   override readonly cause?: unknown;
 
-  constructor(category: LatentErrorCategory, message: string, cause?: unknown) {
+  constructor(
+    category: LatentErrorCategory,
+    message: string,
+    cause?: unknown,
+    metadata: LatentErrorMetadata = {},
+  ) {
     super(message);
     this.name = "LatentError";
     this.category = category;
+    this.metadata = metadata;
+    if (metadata.stage !== undefined) {
+      this.stage = metadata.stage;
+    }
+    if (metadata.domException !== undefined) {
+      this.domException = metadata.domException;
+    }
+    if (metadata.platform !== undefined) {
+      this.platform = metadata.platform;
+    }
     if (cause !== undefined) {
       this.cause = cause;
     }

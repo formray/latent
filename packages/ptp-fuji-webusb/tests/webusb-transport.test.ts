@@ -89,6 +89,24 @@ describe("WebUsbPtpTransport.send", () => {
       LatentError,
     );
   });
+
+  it("wraps raw transferOut rejection with stage transfer-out", async () => {
+    const device = makeMockDevice({
+      transferOut: vi.fn(async () => {
+        throw new DOMException("gone", "NetworkError");
+      }),
+    });
+    const transport = new WebUsbPtpTransport(
+      device as unknown as USBDevice,
+      0x81,
+      0x02,
+    );
+    await expect(transport.send(new Uint8Array([1]))).rejects.toMatchObject({
+      category: "UsbDisconnect",
+      stage: "transfer-out",
+      domException: "NetworkError",
+    });
+  });
 });
 
 describe("WebUsbPtpTransport.receive", () => {
@@ -147,6 +165,24 @@ describe("WebUsbPtpTransport.receive", () => {
     await expect(recvPromise).rejects.toMatchObject({ name: "AbortError" });
     // Resolve to avoid unhandled-promise warnings.
     resolveTransfer?.({ status: "ok", data: new DataView(new Uint8Array(0).buffer) });
+  });
+
+  it("wraps raw transferIn rejection with stage transfer-in", async () => {
+    const device = makeMockDevice({
+      transferIn: vi.fn(async () => {
+        throw new DOMException("gone", "NetworkError");
+      }),
+    });
+    const transport = new WebUsbPtpTransport(
+      device as unknown as USBDevice,
+      0x81,
+      0x02,
+    );
+    await expect(transport.receive()).rejects.toMatchObject({
+      category: "UsbDisconnect",
+      stage: "transfer-in",
+      domException: "NetworkError",
+    });
   });
 });
 

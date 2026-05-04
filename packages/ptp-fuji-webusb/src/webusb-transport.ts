@@ -75,14 +75,31 @@ export class WebUsbPtpTransport implements PtpTransport {
       // of where the input bytes came from.
       const chunk = new Uint8Array(end - offset);
       chunk.set(data.subarray(offset, end));
-      const result = await this.raceWithSignal(
-        this.device.transferOut(this.endpointOut, chunk),
-        signal,
-      );
+      let result: USBOutTransferResult;
+      try {
+        result = await this.raceWithSignal(
+          this.device.transferOut(this.endpointOut, chunk),
+          signal,
+        );
+      } catch (err) {
+        if (nameOf(err) === "AbortError") {
+          throw err;
+        }
+        throw new LatentError("UsbDisconnect", "WebUSB transferOut threw", err, {
+          stage: "transfer-out",
+          domException: nameOf(err),
+          platform: detectPlatform(),
+        });
+      }
       if (result.status !== "ok") {
         throw new LatentError(
           "PtpStall",
           `WebUSB transferOut returned status="${result.status}"`,
+          undefined,
+          {
+            stage: "transfer-out",
+            platform: detectPlatform(),
+          },
         );
       }
       offset = end;
@@ -100,14 +117,31 @@ export class WebUsbPtpTransport implements PtpTransport {
       throw new LatentError("UsbDisconnect", "transport is closed");
     }
 
-    const result = await this.raceWithSignal(
-      this.device.transferIn(this.endpointIn, this.maxChunkSize),
-      signal,
-    );
+    let result: USBInTransferResult;
+    try {
+      result = await this.raceWithSignal(
+        this.device.transferIn(this.endpointIn, this.maxChunkSize),
+        signal,
+      );
+    } catch (err) {
+      if (nameOf(err) === "AbortError") {
+        throw err;
+      }
+      throw new LatentError("UsbDisconnect", "WebUSB transferIn threw", err, {
+        stage: "transfer-in",
+        domException: nameOf(err),
+        platform: detectPlatform(),
+      });
+    }
     if (result.status !== "ok") {
       throw new LatentError(
         "PtpStall",
         `WebUSB transferIn returned status="${result.status}"`,
+        undefined,
+        {
+          stage: "transfer-in",
+          platform: detectPlatform(),
+        },
       );
     }
     if (!result.data) {
@@ -200,4 +234,20 @@ function makeAbortError(signal: AbortSignal): Error {
   );
   err.name = "AbortError";
   return err;
+}
+
+function nameOf(err: unknown): string | undefined {
+  if (typeof DOMException !== "undefined" && err instanceof DOMException) {
+    return err.name;
+  }
+  const maybe = err as { name?: unknown } | null;
+  return typeof maybe?.name === "string" ? maybe.name : undefined;
+}
+
+function detectPlatform(): "mac" | "windows" | "linux" | "unknown" {
+  const platform = globalThis.navigator?.platform?.toLowerCase() ?? "";
+  if (platform.includes("mac")) return "mac";
+  if (platform.includes("win")) return "windows";
+  if (platform.includes("linux")) return "linux";
+  return "unknown";
 }
