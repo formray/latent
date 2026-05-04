@@ -95,6 +95,7 @@ export class WebUsbCameraDriver implements CameraDriver {
     } catch (err) {
       if (nameOf(err) === "AbortError") throw err;
       if (!(err instanceof LatentError) || err.stage !== "open") throw err;
+      await disposeSessionTransport(session, transport);
       iface = await recoverFromOpenSessionFailure(
         device,
         this.configurationValue,
@@ -106,7 +107,13 @@ export class WebUsbCameraDriver implements CameraDriver {
       await openSessionWithStaging(session, opts.signal);
     }
     const port = new WebUsbSessionPort(session);
-    const deviceInfo = await port.getDeviceInfo(opts.signal);
+    let deviceInfo: DeviceInfo;
+    try {
+      deviceInfo = await port.getDeviceInfo(opts.signal);
+    } catch (err) {
+      await disposeSessionTransport(session, transport);
+      throw err;
+    }
 
     let disposed = false;
     const result: DriverConnectResult = {
@@ -116,15 +123,7 @@ export class WebUsbCameraDriver implements CameraDriver {
       dispose: async () => {
         if (disposed) return;
         disposed = true;
-        try {
-          await session.close();
-        } catch {
-          try {
-            await transport.close();
-          } catch {
-            // best-effort dispose
-          }
-        }
+        await disposeSessionTransport(session, transport);
       },
     };
 
@@ -212,6 +211,21 @@ export class WebUsbCameraDriver implements CameraDriver {
       return false;
     }
     return true;
+  }
+}
+
+async function disposeSessionTransport(
+  session: FujiSessionLike,
+  transport: PtpTransport,
+): Promise<void> {
+  try {
+    await session.close();
+  } catch {
+    try {
+      await transport.close();
+    } catch {
+      // best-effort cleanup
+    }
   }
 }
 
