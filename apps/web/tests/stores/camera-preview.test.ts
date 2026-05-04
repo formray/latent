@@ -90,7 +90,7 @@ describe("camera store raw preview", () => {
 
     await useCameraStore.getState().renderRawPreviewDiagnostics(file(), recipe);
 
-    expect(port.renderRawPreview).toHaveBeenCalledTimes(4);
+    expect(port.renderRawPreview).toHaveBeenCalledTimes(8);
     expect(port.renderRawPreview).toHaveBeenNthCalledWith(1, new Uint8Array([1, 2, 3, 4]), undefined);
     expect(vi.mocked(port.renderRawPreview).mock.calls[1]?.[1]).toBeTypeOf("function");
     expect(useCameraStore.getState().rawPreviewStatus).toMatchObject({
@@ -99,7 +99,11 @@ describe("camera store raw preview", () => {
       diagnostics: [
         { id: "base", label: "Base RAF" },
         { id: "film", label: "Film simulation only" },
-        { id: "without-white-balance", label: "Full recipe without WB" },
+        { id: "film-dynamic-range", label: "Film + DR" },
+        { id: "film-tone", label: "Film + tone" },
+        { id: "film-color", label: "Film + color" },
+        { id: "film-chrome", label: "Film + chrome" },
+        { id: "film-texture", label: "Film + texture" },
         { id: "full", label: "Full recipe" },
       ],
     });
