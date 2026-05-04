@@ -17,6 +17,10 @@ function connectedState(): ConnectionState {
       getDevicePropValue: async () => ({ kind: "uint16", value: 0 }),
       setDevicePropValue: async () => undefined,
       getPreset: async (slot: number) => preset(slot),
+      renderRawPreview: async () => ({
+        jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
+        baseProfile: new Uint8Array([1, 2, 3, 4]),
+      }),
       isOpen: () => true,
     },
     cameraModel: "X-M5",

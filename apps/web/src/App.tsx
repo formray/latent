@@ -4,6 +4,7 @@ import { RecipeLibrary } from "./components/RecipeLibrary";
 import { RecipeDetail } from "./components/RecipeDetail";
 import { CameraConnect } from "./components/CameraConnect";
 import { CameraRecipesPanel } from "./components/camera/CameraRecipesPanel";
+import { RawPreviewPanel } from "./components/camera/RawPreviewPanel";
 import { useT } from "./i18n";
 
 export function App(): JSX.Element {
@@ -31,6 +32,7 @@ export function App(): JSX.Element {
       </header>
 
       <CameraRecipesPanel />
+      <RawPreviewPanel />
 
       <main className="flex flex-1 overflow-hidden">
         <section

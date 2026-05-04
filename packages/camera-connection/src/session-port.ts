@@ -3,7 +3,17 @@ export interface CameraSessionPort {
   getDevicePropValue(code: number, signal?: AbortSignal): Promise<DeviceValue>;
   setDevicePropValue(code: number, value: DeviceValue, signal?: AbortSignal): Promise<void>;
   getPreset(slot: number, signal?: AbortSignal): Promise<RawPreset>;
+  renderRawPreview(
+    raf: Uint8Array,
+    profileBuilder?: (baseProfile: Uint8Array) => Uint8Array,
+    signal?: AbortSignal,
+  ): Promise<RawPreviewResult>;
   isOpen(): boolean;
+}
+
+export interface RawPreviewResult {
+  jpeg: Uint8Array;
+  baseProfile: Uint8Array;
 }
 
 export interface RawPreset {

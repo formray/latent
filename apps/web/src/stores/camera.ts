@@ -19,6 +19,7 @@ export interface CameraStore {
   state: ConnectionState;
   presets: RawPreset[];
   writeStatus: CameraWriteStatus;
+  rawPreviewStatus: RawPreviewStatus;
   macosBetaAcknowledged: boolean;
   macosSetupAcknowledged: boolean;
   macosPersistentDisableConfigured: boolean;
@@ -37,6 +38,8 @@ export interface CameraStore {
   toggleMacosAdvanced: () => void;
   attemptMacosSetup: (advanced: boolean) => void;
   writeRecipeToSlot: (recipe: RecipeType, slot: number) => Promise<void>;
+  renderRawPreview: (file: File) => Promise<void>;
+  clearRawPreview: () => void;
   isConnected: () => boolean;
   isConnecting: () => boolean;
   errorReason: () => ErrorReason | null;
@@ -48,8 +51,21 @@ export type CameraWriteStatus =
   | { kind: "success"; slot: number; recipeName: string; propertiesWritten: number }
   | { kind: "error"; slot: number; recipeName: string; message: string };
 
+export type RawPreviewStatus =
+  | { kind: "idle" }
+  | { kind: "rendering"; fileName: string }
+  | {
+      kind: "success";
+      fileName: string;
+      objectUrl: string;
+      jpegBytes: number;
+      baseProfileBytes: number;
+    }
+  | { kind: "error"; fileName: string; message: string };
+
 let manager: ConnectionManager | null = null;
 let unwireManager: Array<() => void> = [];
+let rawPreviewObjectUrl: string | null = null;
 
 export const useCameraStore = create<CameraStore>((set, get) => {
   const update = (patch: Partial<CameraStore>): void => {
@@ -61,6 +77,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
     state: { kind: "idle" },
     presets: [],
     writeStatus: { kind: "idle" },
+    rawPreviewStatus: { kind: "idle" },
     macosBetaAcknowledged: readFlag(MACOS_BETA_ACK_KEY),
     macosSetupAcknowledged: readFlag(MACOS_SETUP_ACK_KEY),
     macosPersistentDisableConfigured: readFlag(MACOS_PERSISTENT_DISABLE_KEY),
@@ -172,6 +189,50 @@ export const useCameraStore = create<CameraStore>((set, get) => {
       }
     },
 
+    async renderRawPreview(file: File) {
+      const { state } = get();
+      if (state.kind !== "connected" && state.kind !== "degraded") {
+        update({
+          rawPreviewStatus: {
+            kind: "error",
+            fileName: file.name,
+            message: "Camera is not connected.",
+          },
+        });
+        return;
+      }
+
+      update({ rawPreviewStatus: { kind: "rendering", fileName: file.name } });
+      try {
+        const raf = await fileToBytes(file);
+        const result = await state.port.renderRawPreview(raf);
+        revokeRawPreviewUrl();
+        rawPreviewObjectUrl = createJpegObjectUrl(result.jpeg);
+        update({
+          rawPreviewStatus: {
+            kind: "success",
+            fileName: file.name,
+            objectUrl: rawPreviewObjectUrl,
+            jpegBytes: result.jpeg.byteLength,
+            baseProfileBytes: result.baseProfile.byteLength,
+          },
+        });
+      } catch (err) {
+        update({
+          rawPreviewStatus: {
+            kind: "error",
+            fileName: file.name,
+            message: err instanceof Error ? err.message : String(err),
+          },
+        });
+      }
+    },
+
+    clearRawPreview() {
+      revokeRawPreviewUrl();
+      update({ rawPreviewStatus: { kind: "idle" } });
+    },
+
     isConnected() {
       return get().state.kind === "connected" || get().state.kind === "degraded";
     },
@@ -239,6 +300,7 @@ export function resetCameraManagerForTests(): void {
   for (const unwire of unwireManager) unwire();
   unwireManager = [];
   manager = null;
+  revokeRawPreviewUrl();
 }
 
 export function dispatchCameraEventForTests(event: ConnectionEvent): void {
@@ -284,6 +346,7 @@ function publishCameraDiagnostics(state: CameraStore): void {
     presets: state.presets,
     decodedPresets: compactDecodedPresets(state.presets),
     writeStatus: state.writeStatus,
+    rawPreviewStatus: state.rawPreviewStatus,
     isConnected: state.isConnected(),
     isConnecting: state.isConnecting(),
     errorReason: state.errorReason(),
@@ -319,6 +382,39 @@ function upsertPreset(presets: RawPreset[], preset: RawPreset): RawPreset[] {
   return presets.map((item) => (item.slot === preset.slot ? preset : item));
 }
 
+function createJpegObjectUrl(jpeg: Uint8Array): string {
+  if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") return "";
+  const copy = new Uint8Array(jpeg.byteLength);
+  copy.set(jpeg);
+  return URL.createObjectURL(new Blob([copy], { type: "image/jpeg" }));
+}
+
+async function fileToBytes(file: File): Promise<Uint8Array> {
+  if (typeof file.arrayBuffer === "function") {
+    return new Uint8Array(await file.arrayBuffer());
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error ?? new Error("Failed to read RAF file."));
+    reader.onload = () => {
+      if (!(reader.result instanceof ArrayBuffer)) {
+        reject(new Error("Failed to read RAF file as bytes."));
+        return;
+      }
+      resolve(new Uint8Array(reader.result));
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function revokeRawPreviewUrl(): void {
+  if (!rawPreviewObjectUrl) return;
+  if (typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
+    URL.revokeObjectURL(rawPreviewObjectUrl);
+  }
+  rawPreviewObjectUrl = null;
+}
+
 interface CameraPresetDiagnostics {
   slot: number;
   name: string;
@@ -347,6 +443,7 @@ declare global {
       presets: RawPreset[];
       decodedPresets: CameraPresetDiagnostics[];
       writeStatus: CameraWriteStatus;
+      rawPreviewStatus: RawPreviewStatus;
       isConnected: boolean;
       isConnecting: boolean;
       errorReason: ErrorReason | null;
