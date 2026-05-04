@@ -1,9 +1,25 @@
+# Dependencies
 node_modules/
+
+# Build artifacts
 dist/
+.tsbuildinfo
+*.tsbuildinfo
+
+# Test artifacts
+coverage/
+
+# Editor / OS noise
 .DS_Store
+
+# Environment / secrets
 .env
 .env.*
 !.env.example
 .ops/
+
+# Logs
 *.log
+
+# Vendor / reference clones (kept locally for parity, never published)
 filmkit/
