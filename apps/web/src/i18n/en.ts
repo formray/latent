@@ -62,8 +62,7 @@ export const en = {
     "Image Capture is claiming exclusive access. Open the macOS setup to release it.",
   "camera.error.macos-claim-collision.action": "Open setup",
   "camera.error.camera-off.title": "Camera not responding",
-  "camera.error.camera-off.body":
-    "Power-cycle the camera and check the cable, then click retry.",
+  "camera.error.camera-off.body": "Power-cycle the camera and check the cable, then click retry.",
   "camera.error.camera-off.action": "Retry",
   "camera.error.cable-unplugged.title": "Camera unplugged",
   "camera.error.cable-unplugged.body":
@@ -73,8 +72,7 @@ export const en = {
     "Click Connect and allow access to the camera in the picker.",
   "camera.error.permission-denied.action": "Connect",
   "camera.error.secure-context.title": "Insecure context",
-  "camera.error.secure-context.body":
-    "Latent needs HTTPS or localhost to access USB devices.",
+  "camera.error.secure-context.body": "Latent needs HTTPS or localhost to access USB devices.",
   "camera.error.webusb-unsupported.title": "Browser not supported",
   "camera.error.webusb-unsupported.body":
     "Latent needs a Chromium browser such as Chrome, Edge, Brave, or Arc.",
@@ -83,8 +81,7 @@ export const en = {
     "The previous session did not close cleanly, or another app is holding the camera. Close other camera apps if any, then power-cycle the camera and retry.",
   "camera.error.session-stale.action": "Retry",
   "camera.error.unknown.title": "Connection failed",
-  "camera.error.unknown.body":
-    "An unexpected error happened while talking to the camera.",
+  "camera.error.unknown.body": "An unexpected error happened while talking to the camera.",
   "camera.error.unknown.action": "Retry",
   "camera.macos.beta.title": "macOS camera support is beta",
   "camera.macos.beta.body":
@@ -99,6 +96,20 @@ export const en = {
   "camera.macos.done.title": "macOS setup confirmed",
   "camera.macos.reset": "Reset macOS setup status",
   "camera.macos.close": "Close",
+  "camera.recipes.title": "Camera recipes",
+  "camera.recipes.verified": "Verified via USB",
+  "camera.recipes.cached": "Last camera read",
+  "camera.recipes.awaiting": "Waiting for camera preset data",
+  "camera.recipes.slotsRead": "{n} slots read",
+  "camera.recipes.readOnly": "Read only",
+  "camera.recipes.scanning": "Reading custom slots from the camera",
+  "camera.recipes.empty": "Connect a camera to read custom slots.",
+  "camera.recipes.inspector": "slot inspector",
+  "camera.recipes.import": "Import as recipe",
+  "camera.recipes.importDisabled": "Import will be enabled after the read-only UI is verified.",
+  "camera.recipes.properties": "Properties",
+  "camera.recipes.missing": "Missing",
+  "camera.recipes.mode": "Mode",
 
   // Errors
   "error.UsbPermissionDenied.title": "No camera selected",

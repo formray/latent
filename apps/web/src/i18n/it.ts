@@ -3,8 +3,7 @@ import type { MessageKey } from "./en";
 export const it: Record<MessageKey, string> = {
   // App shell
   "app.tagline": "Ricette per fotocamere Fujifilm",
-  "footer.license":
-    "Software libero · AGPL-3.0 · Costruito per la comunità Fujifilm",
+  "footer.license": "Software libero · AGPL-3.0 · Costruito per la comunità Fujifilm",
 
   // Library
   "library.title": "Libreria ricette",
@@ -97,11 +96,27 @@ export const it: Record<MessageKey, string> = {
   "camera.macos.basic.body": "Esegui questo comando temporaneo, poi conferma.",
   "camera.macos.ran": "L'ho eseguito",
   "camera.macos.showAdvanced": "Mostra opzione avanzata",
-  "camera.macos.advanced.title": "Avanzato — disabilita Acquisizione Immagine finché non la riattivi",
+  "camera.macos.advanced.title":
+    "Avanzato — disabilita Acquisizione Immagine finché non la riattivi",
   "camera.macos.advanced.enable": "Comando per riattivare:",
   "camera.macos.done.title": "Configurazione macOS confermata",
   "camera.macos.reset": "Reimposta stato configurazione macOS",
   "camera.macos.close": "Chiudi",
+  "camera.recipes.title": "Ricette dalla fotocamera",
+  "camera.recipes.verified": "Verificata via USB",
+  "camera.recipes.cached": "Ultima lettura camera",
+  "camera.recipes.awaiting": "In attesa dei dati dalla fotocamera",
+  "camera.recipes.slotsRead": "{n} slot letti",
+  "camera.recipes.readOnly": "Sola lettura",
+  "camera.recipes.scanning": "Lettura degli slot custom dalla fotocamera",
+  "camera.recipes.empty": "Collega una fotocamera per leggere gli slot custom.",
+  "camera.recipes.inspector": "ispettore slot",
+  "camera.recipes.import": "Importa come ricetta",
+  "camera.recipes.importDisabled":
+    "L'import sarà abilitato dopo la verifica della UI in sola lettura.",
+  "camera.recipes.properties": "Proprietà",
+  "camera.recipes.missing": "Mancanti",
+  "camera.recipes.mode": "Modalità",
 
   // Errors
   "error.UsbPermissionDenied.title": "Nessuna fotocamera selezionata",
