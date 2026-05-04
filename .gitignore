@@ -23,3 +23,6 @@ coverage/
 
 # Vendor / reference clones (kept locally for parity, never published)
 filmkit/
+
+# Local hardware validation inputs (RAW files can contain metadata and are large)
+.hardware-samples/

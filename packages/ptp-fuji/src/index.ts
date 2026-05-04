@@ -4,6 +4,7 @@ export { FujiCameraSession } from "./ptp/session.js";
 export type {
   FujiDeviceInfo,
   FujiDevicePropValue,
+  FujiRawPreviewResult,
   FujiRawPreset,
   FujiRawProp,
   SessionOptions,
