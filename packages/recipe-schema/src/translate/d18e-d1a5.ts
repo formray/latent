@@ -4,7 +4,7 @@ import type { Recipe } from "../recipe.js";
 // D18E..D1A5 (24 properties). Numbers represent encoded camera values.
 export interface CameraProperties {
   filmSimulation: string;
-  dynamicRange: "DR100" | "DR200" | "DR400";
+  dynamicRange: "DRAuto" | "DR100" | "DR200" | "DR400";
   wbMode: string;
   wbColorTemperatureK?: number;
   wbShiftR: number;

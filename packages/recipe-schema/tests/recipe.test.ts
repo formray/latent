@@ -62,4 +62,29 @@ describe("Recipe identity & provenance", () => {
     };
     expect(() => Recipe.parse(minimal)).not.toThrow();
   });
+
+  it("accepts dynamic range auto from camera-imported custom slots", () => {
+    const imported = {
+      id: "770e8400-e29b-41d4-a716-446655440002",
+      schemaVersion: 1,
+      name: "Imported DR Auto",
+      tags: [],
+      createdAt: "2026-05-04T10:00:00Z",
+      capabilitySetId: "x-m5-fw1.20",
+      cameraModel: "X-M5",
+      filmSimulation: "ClassicChrome",
+      dynamicRange: "DRAuto",
+      whiteBalance: { mode: "Auto", shiftR: 1, shiftB: -5 },
+      highlightTone: 1,
+      shadowTone: 1,
+      color: 4,
+      sharpness: 0,
+      noiseReduction: -4,
+      clarity: 3,
+      grainEffect: { strength: "Strong", size: "Large" },
+      colorChromeEffect: "Weak",
+      colorChromeEffectBlue: "Off",
+    };
+    expect(() => Recipe.parse(imported)).not.toThrow();
+  });
 });

@@ -33,7 +33,7 @@ export const Recipe = z.object({
     warmCool: z.number().int().min(-9).max(9),  // filmkit D193 (monoWC)
     greenMagenta: z.number().int().min(-9).max(9), // filmkit D194 (monoMG)
   }).optional(),
-  dynamicRange: z.enum(["DR100", "DR200", "DR400"]),  // DRAuto deferred to V2
+  dynamicRange: z.enum(["DRAuto", "DR100", "DR200", "DR400"]),
   whiteBalance: z.object({
     mode: z.enum([
       "Auto", "AutoAmbiencePriority",            // filmkit-supported only in V1
