@@ -190,14 +190,18 @@ export class ConnectionManager {
     }
   }
 
-  private async readPresets(opId: number, port: { getPreset: (slot: number, signal?: AbortSignal) => Promise<RawPreset> }): Promise<void> {
+  private async readPresets(
+    opId: number,
+    port: { getPreset: (slot: number, signal?: AbortSignal) => Promise<RawPreset> },
+  ): Promise<void> {
     const presets: RawPreset[] = [];
     for (let slot = 1; slot <= 7; slot++) {
       if (opId !== this.currentOpId || !isAlive(this.state)) return;
       try {
         presets.push(await port.getPreset(slot));
       } catch (err) {
-        if (!isOptionalPresetReadFailure(err)) return;
+        if (isOptionalPresetReadFailure(err)) continue;
+        return;
       }
     }
     if (opId === this.currentOpId && isAlive(this.state)) {
@@ -247,7 +251,9 @@ export class ConnectionManager {
     type: K,
     payload: ManagerNotifications[K],
   ): void {
-    for (const subscriber of this.notificationSubscribers[type] as Array<NotificationSubscriber<K>>) {
+    for (const subscriber of this.notificationSubscribers[type] as Array<
+      NotificationSubscriber<K>
+    >) {
       subscriber(payload);
     }
   }
@@ -287,8 +293,8 @@ function nameOf(err: unknown): string | undefined {
 }
 
 function isOptionalPresetReadFailure(err: unknown): boolean {
-  return err instanceof LatentError && (
-    err.category === "PtpUnsupportedOperation" ||
-    err.category === "PtpStall"
+  return (
+    err instanceof LatentError &&
+    (err.category === "PtpUnsupportedOperation" || err.category === "PtpStall")
   );
 }

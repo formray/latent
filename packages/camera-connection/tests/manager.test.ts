@@ -73,6 +73,29 @@ describe("ConnectionManager public API", () => {
     });
   });
 
+  it("preset read emits earlier slots when later custom slots are unavailable", async () => {
+    const driver = new FakeCameraDriver();
+    driver.port.getPreset.mockImplementation(async (slot: number) => {
+      if (slot > 4) {
+        throw new LatentError("PtpUnsupportedOperation", `C${slot} unavailable`);
+      }
+      return { slot, name: `C${slot}`, properties: {} };
+    });
+    const manager = new ConnectionManager(driver);
+    const handler = vi.fn();
+    manager.onNotification("presets-read", handler);
+    manager.dispatch({ type: "CONNECT_REQUESTED" });
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    expect(handler).toHaveBeenCalledWith({
+      presets: [
+        expect.objectContaining({ slot: 1 }),
+        expect.objectContaining({ slot: 2 }),
+        expect.objectContaining({ slot: 3 }),
+        expect.objectContaining({ slot: 4 }),
+      ],
+    });
+  });
+
   it("raw picker cancellation exits connecting as permission-denied", async () => {
     const driver = new FakeCameraDriver();
     driver.connect = vi.fn(async () => {
@@ -165,7 +188,8 @@ describe("ConnectionManager stale operation handling", () => {
     const driver = new FakeCameraDriver();
     const firstPending = deferred<DriverConnectResult>();
     const second = result();
-    driver.connect = vi.fn()
+    driver.connect = vi
+      .fn()
       .mockReturnValueOnce(firstPending.promise)
       .mockResolvedValueOnce(second);
     const late = result();
@@ -297,9 +321,7 @@ describe("ConnectionManager probe, backoff, and notifications", () => {
     vi.useFakeTimers();
     const driver = new FakeCameraDriver();
     driver.probe.mockResolvedValueOnce(false);
-    driver.connect = vi.fn()
-      .mockResolvedValueOnce(result())
-      .mockRejectedValue(err);
+    driver.connect = vi.fn().mockResolvedValueOnce(result()).mockRejectedValue(err);
     const manager = new ConnectionManager(driver);
     manager.dispatch({ type: "CONNECT_REQUESTED" });
     await Promise.resolve();
@@ -314,12 +336,15 @@ describe("ConnectionManager probe, backoff, and notifications", () => {
 
   it("setup-confirmed notification fires after state subscribers", async () => {
     const driver = new FakeCameraDriver();
-    driver.connect = vi.fn()
-      .mockRejectedValueOnce(new LatentError("UsbDisconnect", "busy", undefined, {
-        stage: "claim",
-        domException: "NetworkError",
-        platform: "mac",
-      }))
+    driver.connect = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new LatentError("UsbDisconnect", "busy", undefined, {
+          stage: "claim",
+          domException: "NetworkError",
+          platform: "mac",
+        }),
+      )
       .mockResolvedValue(result());
     const manager = new ConnectionManager(driver);
     const order: string[] = [];
@@ -336,12 +361,15 @@ describe("ConnectionManager probe, backoff, and notifications", () => {
 
   it("setup-confirmed notification is dropped when no subscriber exists", async () => {
     const driver = new FakeCameraDriver();
-    driver.connect = vi.fn()
-      .mockRejectedValueOnce(new LatentError("UsbDisconnect", "busy", undefined, {
-        stage: "claim",
-        domException: "NetworkError",
-        platform: "mac",
-      }))
+    driver.connect = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new LatentError("UsbDisconnect", "busy", undefined, {
+          stage: "claim",
+          domException: "NetworkError",
+          platform: "mac",
+        }),
+      )
       .mockResolvedValue(result());
     const manager = new ConnectionManager(driver);
     manager.dispatch({ type: "CONNECT_REQUESTED" });
