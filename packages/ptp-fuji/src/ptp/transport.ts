@@ -9,7 +9,8 @@
  * @latent/ptp-fuji-webusb (Phase 2).
  */
 
-import { PTPOp } from './constants.js'
+import { LatentError } from '../errors.js'
+import { PTPOp, PTPResp } from './constants.js'
 import { packContainer, unpackContainer, containerLength, type PTPContainerData } from './container.js'
 import { ContainerType } from './constants.js'
 import type { PtpTransport } from '../transport/transport.js'
@@ -17,6 +18,35 @@ import type { PtpTransport } from '../transport/transport.js'
 export type LogFn = (msg: string) => void
 
 const MAX_RESPONSE_BYTES = 100 * 1024 * 1024
+
+function assertResponse(
+  resp: PTPContainerData,
+  expectedTransactionId: number,
+): void {
+  if (resp.type !== ContainerType.Response) {
+    throw new LatentError(
+      'PtpStall',
+      `expected RESPONSE container, got type=${resp.type}`,
+    )
+  }
+  if (resp.transactionId !== expectedTransactionId) {
+    throw new LatentError(
+      'PtpStall',
+      `txid mismatch: expected ${expectedTransactionId}, got ${resp.transactionId}`,
+    )
+  }
+  if (resp.code === PTPResp.OK) return
+  if (resp.code === PTPResp.SessionAlreadyOpen) {
+    throw new LatentError('PtpSessionAlreadyOpen', 'PTP session is already open')
+  }
+  if (resp.code === PTPResp.DeviceBusy) {
+    throw new LatentError('PtpDeviceBusy', 'PTP device is busy')
+  }
+  throw new LatentError(
+    'PtpUnsupportedOperation',
+    `PTP response code 0x${resp.code.toString(16)}`,
+  )
+}
 
 /**
  * PTP framing on top of a `PtpTransport`. Provides:
@@ -47,6 +77,9 @@ export class PtpFraming {
    */
   async recv(signal?: AbortSignal): Promise<PTPContainerData> {
     let data = await this.transport.receive(signal)
+    if (data.length < 12) {
+      throw new LatentError('PtpStall', `container too short: ${data.length} bytes`)
+    }
 
     const totalLength = containerLength(data)
     while (data.length < totalLength) {
@@ -92,9 +125,7 @@ export class PtpFraming {
       resp = await this.recv(signal)
     }
 
-    if (resp.type !== ContainerType.Response) {
-      throw new Error(`Expected RESPONSE, got type 0x${resp.type.toString(16)}`)
-    }
+    assertResponse(resp, transactionId)
 
     return { code: resp.code, params: resp.params, data }
   }
@@ -128,9 +159,7 @@ export class PtpFraming {
     }, signal)
 
     const resp = await this.recv(signal)
-    if (resp.type !== ContainerType.Response) {
-      throw new Error(`Expected RESPONSE, got type 0x${resp.type.toString(16)}`)
-    }
+    assertResponse(resp, transactionId)
 
     return { code: resp.code, params: resp.params }
   }

@@ -35,6 +35,7 @@ export const PTPResp = {
   InvalidStorageID:      0x2008,
   InvalidObjectHandle:   0x2009,
   DevicePropNotSupported: 0x200A,
+  DeviceBusy:            0x2019,
   SessionAlreadyOpen:    0x201E,
 } as const
 
