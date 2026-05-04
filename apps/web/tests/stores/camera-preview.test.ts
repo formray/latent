@@ -70,7 +70,9 @@ describe("camera store raw preview", () => {
 
     const builder = vi.mocked(port.renderRawPreview).mock.calls[0]?.[1];
     expect(builder).toBeTypeOf("function");
-    expect(builder?.(baseProfile())).not.toEqual(baseProfile());
+    const patched = builder?.(baseProfile());
+    expect(patched).not.toEqual(baseProfile());
+    expect(readD185Field(patched, 6)).toBe(3);
     expect(useCameraStore.getState().rawPreviewStatus).toMatchObject({
       kind: "success",
       recipeName: "Preview sample",
@@ -135,6 +137,14 @@ function baseProfile(): Uint8Array {
   const profile = new Uint8Array(120);
   new DataView(profile.buffer).setUint16(0, 28, true);
   return profile;
+}
+
+function readD185Field(profile: Uint8Array | undefined, index: number): number | undefined {
+  if (!profile) return undefined;
+  const view = new DataView(profile.buffer, profile.byteOffset, profile.byteLength);
+  const count = view.getUint16(0, true);
+  const offset = profile.byteLength - count * 4;
+  return view.getInt32(offset + index * 4, true);
 }
 
 const recipe: RecipeType = {
