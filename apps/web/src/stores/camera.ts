@@ -7,9 +7,10 @@ import type {
   ManagerNotifications,
   RawPreset,
 } from "@latent/camera-connection";
-import { LatentError } from "@latent/ptp-fuji";
+import { LatentError, patchProfile } from "@latent/ptp-fuji";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import { writeRecipeToCameraSlot } from "../lib/recipe-to-camera-preset";
+import { recipeToConversionParams } from "../lib/recipe-to-conversion-params";
 
 const MACOS_BETA_ACK_KEY = "latent:macos-beta-ack-v1";
 const MACOS_SETUP_ACK_KEY = "latent:macos-setup-ack-v1";
@@ -38,7 +39,7 @@ export interface CameraStore {
   toggleMacosAdvanced: () => void;
   attemptMacosSetup: (advanced: boolean) => void;
   writeRecipeToSlot: (recipe: RecipeType, slot: number) => Promise<void>;
-  renderRawPreview: (file: File) => Promise<void>;
+  renderRawPreview: (file: File, recipe?: RecipeType | null) => Promise<void>;
   clearRawPreview: () => void;
   isConnected: () => boolean;
   isConnecting: () => boolean;
@@ -60,8 +61,9 @@ export type RawPreviewStatus =
       objectUrl: string;
       jpegBytes: number;
       baseProfileBytes: number;
+      recipeName?: string;
     }
-  | { kind: "error"; fileName: string; message: string };
+  | { kind: "error"; fileName: string; message: string; recipeName?: string };
 
 let manager: ConnectionManager | null = null;
 let unwireManager: Array<() => void> = [];
@@ -189,7 +191,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
       }
     },
 
-    async renderRawPreview(file: File) {
+    async renderRawPreview(file: File, recipe?: RecipeType | null) {
       const { state } = get();
       if (state.kind !== "connected" && state.kind !== "degraded") {
         update({
@@ -197,6 +199,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
             kind: "error",
             fileName: file.name,
             message: "Camera is not connected.",
+            ...(recipe ? { recipeName: recipe.name } : {}),
           },
         });
         return;
@@ -205,7 +208,12 @@ export const useCameraStore = create<CameraStore>((set, get) => {
       update({ rawPreviewStatus: { kind: "rendering", fileName: file.name } });
       try {
         const raf = await fileToBytes(file);
-        const result = await state.port.renderRawPreview(raf);
+        const profileBuilder = recipe
+          ? (baseProfile: Uint8Array): Uint8Array => (
+              patchProfile(baseProfile, recipeToConversionParams(recipe))
+            )
+          : undefined;
+        const result = await state.port.renderRawPreview(raf, profileBuilder);
         revokeRawPreviewUrl();
         rawPreviewObjectUrl = createJpegObjectUrl(result.jpeg);
         update({
@@ -215,6 +223,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
             objectUrl: rawPreviewObjectUrl,
             jpegBytes: result.jpeg.byteLength,
             baseProfileBytes: result.baseProfile.byteLength,
+            ...(recipe ? { recipeName: recipe.name } : {}),
           },
         });
       } catch (err) {
@@ -223,6 +232,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
             kind: "error",
             fileName: file.name,
             message: err instanceof Error ? err.message : String(err),
+            ...(recipe ? { recipeName: recipe.name } : {}),
           },
         });
       }
