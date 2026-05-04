@@ -1,6 +1,6 @@
 # Camera connection stability — design
 
-**Status**: Draft, awaiting user review (revision 2 — incorporates Codex review)
+**Status**: Draft, awaiting user review (revision 3 — incorporates Codex review round 2)
 **Date**: 2026-05-04
 **Owner**: Giuseppe Albrizio
 **Related**:
@@ -86,7 +86,18 @@ leak the `FujiCameraSession` JS type through the manager API.
 | Page-unload close | True best-effort: dispatch one `CloseSession` command synchronously into the WebUSB transport via `navigator.sendBeacon`-style write, do not rely on it for correctness | Async `transferOut` cannot complete reliably during `beforeunload` (Codex B2) |
 | Stale-session connect-time recovery | After failed `OpenSession`, attempt: reset → reopen device → reselect config → rediscover endpoints → reclaim → reopen session | This is the *real* recovery path — page-unload is a nice-to-have on top |
 | Reconnect attempts | 3 with exponential backoff `[200ms, 800ms, 2000ms]` per `reconnecting` entry; per-attempt `AbortController` for cancellation | Covers transient failures; cancellation prevents stale promise resolution from corrupting state (Codex B3) |
+| Stale-completion cleanup | If `driver.connect()` resolves with a stale `opId`, the manager calls `driver.disconnect()` on the late result before discarding it | Otherwise an aborted connect that opens a device "behind our back" leaves the device claimed (Codex B3 round 2) |
 | Liveness probe timeout | 3000ms | Balance between false positives and recovery latency |
+| Probe gating in `degraded` | `probe()` runs on every `OPERATION_FAILED` in `degraded`, not only after 3 soft failures | A hard failure (timeout, stall) during degraded must escalate immediately (Codex H4 round 2) |
+| Listener ownership | Connection-generation-owned, not per-state-entry/exit. Installed on entering `connected` from a `connecting` success; uninstalled only on entering `disconnected` or `error` | Avoids the `connected → degraded → connected` double-install bug and the `connected` exit / `degraded` retain contradiction (Codex NH2) |
+| Probe payload | `PROBE_RESULT { ok, err, opId }` carries the original failure so the state machine has nowhere to lose it | Avoids a `probing` sub-state while still giving transitions the `lastFailure` they declare (Codex NH1) |
+| `OpenSession` failure stage | Driver wraps every `session.open()` rejection with `stage: "open"` after a successful claim, regardless of which lower-layer stage threw | `transfer-in` from inside `OpenSession` would otherwise misroute to `cable-unplugged` (Codex B4 round 2) |
+| `PtpFraming.sendCommand()` validation | Validate response container type, transaction ID, and `code === PTPResp.OK` inside the framing layer | Step 1 refactor would otherwise drop the existing checks in `session.ts:114-136` and silently accept `SessionAlreadyOpen` and other non-OK codes (Codex NB1) |
+| `CameraSessionPort` scope | Minimal stability port for V1 Phase 2-min: `getDeviceInfo`, `getDevicePropValue`, `setDevicePropValue`, `isOpen`. Phase 4 extends it with a `Phase4SessionPort` sub-interface adding `sendCommand` / `sendDataCommand` for vendor opcodes and object I/O | Keeps the V1 surface small and reviewable; documents the extension point so V2's Tauri port can plan for it (Codex NH3) |
+| macOS persistence flags | Two separate flags: `macosSetupAcknowledged` (one-time wizard education seen) and `macosPersistentDisableConfigured` (advanced disable opt-in completed). Wizard auto-open is gated on the first; education re-display is gated on the second | `killall` is per-session and a successful reconnect after `killall` does not mean persistent setup is in place (Codex NH4) |
+| `MACOS_SETUP_*` event split | Two events: `MACOS_SETUP_ATTEMPTED` (user clicked "I've run it") triggers `connecting`; `MACOS_SETUP_CONFIRMED` is dispatched by the manager when that connect succeeds and only then are flags persisted | Round 1 had a single `MACOS_SETUP_DONE` whose semantics were contradictory across event table, transition, and wizard (Codex H5 round 2) |
+| `PtpTimeout` classification | Maps to `camera-off` by default; probe disambiguates between sleep (camera-off) and stale-session (session-stale) when called | Was falling through to `unknown` (Codex NM1) |
+| Connect/disconnect event filter | Vendor + product + optional serial + permission state — implementation matches the decision, no shortcut to vendor-only | Round 2's r2 sample code regressed to vendor-only (Codex NM2) |
 | Presets in store | Kept on the same `useCameraStore` as a separate `presets` field, populated by manager event after entering `connected` | Splitting into a second store is YAGNI for now |
 
 ## 5. Architecture
@@ -207,7 +218,13 @@ build. Keeping it in `packages/` matches the existing monorepo pattern.
 ```ts
 type ConnectionState =
   | { kind: "idle" }
-  | { kind: "connecting"; attempt: number; abort: AbortController }
+  | {
+      kind: "connecting";
+      attempt: number;
+      abort: AbortController;
+      macosSetupPending?: true;  // set when entered via MACOS_SETUP_ATTEMPTED;
+                                 // success emits MACOS_SETUP_CONFIRMED
+    }
   | {
       kind: "connected";
       port: CameraSessionPort;
@@ -270,9 +287,10 @@ changes.
 | `USB_DEVICE_CONNECTED` | `navigator.usb` `connect` event filtered for paired Fuji + permission state | — |
 | `OPERATION_FAILED` | Driver throws during I/O | `{ err: LatentError; opId: number }` |
 | `OPERATION_SUCCEEDED` | Driver succeeds and `degraded` state needs to clear | `{ opId: number }` |
-| `PROBE_RESULT` | Manager runs `probe()` after `OPERATION_FAILED` to disambiguate | `{ ok: boolean }` |
+| `PROBE_RESULT` | Manager runs `probe()` after `OPERATION_FAILED` to disambiguate; payload carries the original failure so transitions can classify | `{ ok: boolean; err: LatentError; opId: number }` |
 | `RETRY_REQUESTED` | UI click on retry | — |
-| `MACOS_SETUP_DONE` | Wizard "I've run it" click after a connect actually succeeds | — |
+| `MACOS_SETUP_ATTEMPTED` | Wizard "I've run it" click | — |
+| `MACOS_SETUP_CONFIRMED` | Dispatched by the manager when a `connecting` triggered by `MACOS_SETUP_ATTEMPTED` reaches `connected` | — |
 | `PAGE_HIDING` | `beforeunload` or `pagehide` | — |
 
 `opId` is a monotonic integer assigned at operation dispatch time.
@@ -301,15 +319,20 @@ connecting{attempt: n}
 connected
   ─[USB_DEVICE_DISCONNECTED]→ reconnecting{attempt: 1, lastReason: "cable-unplugged"}
   ─[OPERATION_FAILED]→ (run probe → wait for PROBE_RESULT)
-  ─[PROBE_RESULT, ok=true]→ degraded{consecutiveSoftFailures: 1, …}
-  ─[PROBE_RESULT, ok=false]→ reconnecting{attempt: 1, lastReason: classify(err)}
+  ─[PROBE_RESULT, ok=true]→ degraded{consecutiveSoftFailures: 1, lastFailure: err}
+  ─[PROBE_RESULT, ok=false]→ reconnecting{attempt: 1, lastReason: classify(err), lastFailure: err}
   ─[DISCONNECT_REQUESTED]→ disconnected
   ─[PAGE_HIDING]→ (best-effort fireCloseSession; no transition)
 
 degraded{consecutiveSoftFailures: k}
   ─[OPERATION_SUCCEEDED]→ connected
-  ─[OPERATION_FAILED, k < 2]→ degraded{consecutiveSoftFailures: k+1, …}
-  ─[OPERATION_FAILED, k == 2]→ reconnecting{attempt: 1, lastReason: classify(err)}
+  ─[OPERATION_FAILED]→ (run probe → wait for PROBE_RESULT)
+  ─[PROBE_RESULT, ok=false]→ reconnecting{attempt: 1, lastReason: classify(err), lastFailure: err}
+                              // probe-fail in degraded escalates immediately,
+                              // regardless of consecutiveSoftFailures count
+  ─[PROBE_RESULT, ok=true, k < 2]→ degraded{consecutiveSoftFailures: k+1, lastFailure: err}
+  ─[PROBE_RESULT, ok=true, k == 2]→ reconnecting{attempt: 1, lastReason: classify(err), lastFailure: err}
+                                     // 3 soft failures in a row escalate, even if probe still ok
   ─[USB_DEVICE_DISCONNECTED]→ reconnecting{attempt: 1, lastReason: "cable-unplugged"}
   ─[DISCONNECT_REQUESTED]→ disconnected
   ─[PAGE_HIDING]→ (best-effort fireCloseSession; no transition)
@@ -330,8 +353,16 @@ error{reason}
                             // replug does not free the daemon, retry would loop
                             // skipped when reason ∈ {secure-context, webusb-unsupported}:
                             // environment dead-end, USB events unrelated
-  ─[MACOS_SETUP_DONE]→ connecting{attempt: 1}        // only after a real connect-attempt success
+  ─[MACOS_SETUP_ATTEMPTED]→ connecting{attempt: 1, macosSetupPending: true}
+                             // marks the connect attempt as setup-driven so a success
+                             // emits MACOS_SETUP_CONFIRMED at connected entry
   ─[DISCONNECT_REQUESTED]→ disconnected
+
+connecting{attempt: 1, macosSetupPending: true}
+  ─[connect-success]→ connected (entry emits MACOS_SETUP_CONFIRMED before clearing flag)
+  ─[OPERATION_FAILED]→ error{reason: classify(err)}
+                       // setup attempt failed; flag cleared. Wizard re-opens "Try again"
+                       // and reveals the advanced option.
 
 disconnected
   ─[CONNECT_REQUESTED]→ connecting{attempt: 1}
@@ -344,25 +375,44 @@ Every state declares both. Exit actions matter as much as entry actions:
 they are how we prevent stale promise resolutions, leaked listeners, and
 timer accumulation (Codex B3).
 
+**Listener lifecycle is connection-generation-owned, not per-state.**
+The manager keeps a `currentGeneration: number` and a `listenerHandles`
+record. Listeners (USB disconnect, USB connect, `pagehide`,
+`beforeunload`) are **installed once** when entering `connected` from a
+fresh `connecting` success, and **uninstalled once** when leaving the
+"alive connection" set (transitioning into `disconnected` or `error`).
+Transitions inside the alive set — `connected ↔ degraded`, alive →
+`reconnecting` → alive — preserve the listener handles. This addresses
+the contradiction Codex flagged at NH2 between `connected` exit and
+`degraded` retain semantics.
+
 | State | Entry action | Exit action |
 |---|---|---|
 | `idle` | None | None |
-| `connecting` | Mint new `opId`. Mint new `AbortController`. Call `driver.connect({autoSelectPaired: true, signal: abort.signal})`. On rejection, dispatch `OPERATION_FAILED({err, opId})`. On resolution after a state change, the result is ignored because `opId` is stale. (Driver's internal `device.reset()` retry is described in §7.3.) | `abort.abort()` cancels in-flight connect. |
-| `connected` | (Idempotent) subscribe USB disconnect listener; install `pagehide` and `beforeunload` handlers that call `driver.fireCloseSession()`. Reset `attempt` counter implicitly by entering this state. Populate store presets via Phase 2-full read flow. | (Idempotent) unsubscribe USB disconnect listener; remove unload handlers. |
-| `degraded` | None beyond store update. (Listeners installed in `connected` remain.) | None. |
-| `reconnecting` | Mint new `opId`. Mint new `AbortController`. Schedule timer `setTimeout(backoff[attempt-1])`. On timer fire, call `driver.connect({autoSelectPaired: true, signal: abort.signal})`. | Clear timer; `abort.abort()`. |
-| `error` | None. Wait for user action. | None. |
-| `disconnected` | Call `driver.disconnect()` (graceful CloseSession + releaseInterface). Unsubscribe all listeners (idempotent). | None. |
+| `connecting` | Mint new `opId`. Mint new `AbortController`. Call `driver.connect({autoSelectPaired: true, signal: abort.signal})`. On rejection, dispatch `OPERATION_FAILED({err, opId})`. On resolution after a state change, the result is **discarded after closing the late-created device** (see "stale-completion cleanup" below). (Driver's internal `device.reset()` retry is described in §7.3.) If the source state was `error{macos-claim-collision}` and the entry is via `MACOS_SETUP_ATTEMPTED`, set the per-attempt `macosSetupPending` flag. | `abort.abort()` cancels in-flight connect. |
+| `connected` | If entering from `connecting` (i.e. a fresh `currentGeneration`): install USB disconnect, USB connect, `pagehide`, `beforeunload` listeners — store handles in `listenerHandles`. If `macosSetupPending` was set on the source `connecting`, dispatch `MACOS_SETUP_CONFIRMED` synchronously and clear the flag. Populate store presets via Phase 2-full read flow. If entering from `degraded` or `reconnecting` (same generation): no listener changes. | If transitioning to `disconnected` or `error`: uninstall all listeners via `listenerHandles`; bump `currentGeneration`. Otherwise (to `degraded` or `reconnecting`): no action. |
+| `degraded` | Track `consecutiveSoftFailures` and `lastFailure`. No listener changes (still inside the alive generation). | No listener changes. |
+| `reconnecting` | Mint new `opId`. Mint new `AbortController`. Schedule timer `setTimeout(backoff[attempt-1])`. On timer fire, call `driver.connect({autoSelectPaired: true, signal: abort.signal})`. No listener changes (still inside the alive generation). | Clear timer; `abort.abort()`. If transitioning to `error`: uninstall listeners + bump generation. If transitioning to `connected`: keep listeners. |
+| `error` | If transitioning from an alive state, uninstall listeners + bump generation. Otherwise, no action. Wait for user action. | None. |
+| `disconnected` | Call `driver.disconnect()` (graceful CloseSession + releaseInterface). If transitioning from an alive state, uninstall listeners + bump generation. | None. |
 
-Listener install/uninstall is **idempotent**: the manager tracks current
-subscription handles and refuses to double-install. This addresses
-Codex's concern that `connected → degraded → connected` could double up
-listeners (B3).
+**Stale-completion cleanup** (Codex B3 round 2): when a `driver.connect()`
+promise resolves *after* the manager has already left `connecting`
+(e.g. user clicked Disconnect, or a USB event short-circuited the
+state), the manager checks `opId` against `currentGeneration`:
+
+- If stale, the manager **does not** trust the result for state
+  transitions, **and** calls `driver.disconnect()` on the late-arriving
+  port to close the device that may have been opened/claimed during the
+  abandoned connect. This prevents leaking USB ownership.
 
 `probe()` itself runs as a manager-internal coroutine when
-`OPERATION_FAILED` arrives in `connected`. The state stays in
-`connected` until `PROBE_RESULT` is dispatched; this avoids a
-"connected-but-probing" sub-state.
+`OPERATION_FAILED` arrives in `connected` or `degraded`. The state stays
+in the source state until `PROBE_RESULT` is dispatched; this avoids a
+"connected-but-probing" sub-state. The probe carries the original `err`
+so the resulting transition can classify even when probe returns `ok:
+true` and the transition would otherwise have nowhere to put the
+failure.
 
 ### 6.5 Error classifier
 
@@ -411,6 +461,7 @@ function classifyDriverError(err: LatentError): ErrorReason {
   // boundary (e.g. PtpStall thrown by the session layer).
   switch (err.category) {
     case "PtpStall": return "camera-off";
+    case "PtpTimeout": return "camera-off";   // disambiguated by probe at call site
     case "UsbPermissionDenied": return "permission-denied";
     case "WebUSBSecureContextRequired": return "secure-context";
     case "WebUSBUnsupported": return "webusb-unsupported";
@@ -432,6 +483,23 @@ domException)` triple of interest.
 // session-port.ts — ops the connected session exposes to the manager and UI.
 // Platform-agnostic: WebUsbSessionPort and TauriRpcSessionPort both
 // implement this. The manager and UI never see FujiCameraSession.
+//
+// Scope: this is the MINIMAL STABILITY PORT for V1 Phase 2-min. It covers
+// what the manager itself needs (probe via getDeviceInfo, simple property
+// reads) and what Phase 2-full preset reads need (single-property reads
+// against the writableSlotProperties whitelist).
+//
+// Phase 4 will extend this with a Phase4SessionPort sub-interface adding:
+//   - sendCommand(opcode, params): RESPONSE-only commands
+//   - sendDataCommand(opcode, params, data): COMMAND→DATA→RESPONSE
+//   - vendor-opcode passthrough for §6.4 camera-side preview
+//   - object-handle ops (GetObjectHandles, GetObject, DeleteObject)
+//   - SendObjectInfo / SendObject2 vendor pair for RAF upload
+//
+// Adding these in V1 would expand the surface beyond what V1 needs and
+// would force WebUsbSessionPort to implement vendor opcodes that
+// Phase 2-min does not exercise. The extension contract is documented
+// here so V2's TauriRpcSessionPort can plan for it.
 export interface CameraSessionPort {
   /** Read device info: model, firmware, supported ops. PTP 0x1001 in V1. */
   getDeviceInfo(signal?: AbortSignal): Promise<DeviceInfo>;
@@ -529,7 +597,13 @@ async function claimWithReset(
     // Reset is only attempted under specific conditions:
     //   - the failure looks like a kernel claim collision (NetworkError)
     //   - the device is still attached (not a NotFoundError)
-    if (!isClaimCollision(firstClaimErr)) throw firstClaimErr;
+    if (!isClaimCollision(firstClaimErr)) {
+      throw new LatentError("UsbDisconnect", "claimInterface failed", firstClaimErr, {
+        stage: "claim",
+        domException: nameOf(firstClaimErr),
+        platform: detectPlatform(),
+      });
+    }
 
     try {
       await device.reset();
@@ -548,8 +622,56 @@ async function claimWithReset(
     // each must wrap with the correct stage for classification.
     await reselectConfiguration(device);                 // stage="setup-config"
     const endpoints = await rediscoverEndpoints(device); // stage="endpoint-discovery"
-    await device.claimInterface(iface);                  // stage="claim", retry final
+
+    try {
+      await device.claimInterface(iface);                // stage="claim", retry final
+    } catch (secondClaimErr) {
+      // The post-reset reclaim also failed — surface as classified claim
+      // collision so the manager can route to error{macos-claim-collision}.
+      throw new LatentError(
+        "UsbDisconnect",
+        "claimInterface failed after device.reset()",
+        secondClaimErr,
+        {
+          stage: "claim",
+          domException: nameOf(secondClaimErr),
+          platform: detectPlatform(),
+        },
+      );
+    }
     return;
+  }
+}
+```
+
+After successful claim, the driver opens the PTP session. Any failure
+of `session.open()` is wrapped with `stage: "open"` regardless of the
+underlying lower-layer stage that actually threw. Without this wrap, a
+`transfer-in` failure during the `OpenSession` round-trip would
+misroute to `cable-unplugged` (Codex B4 round 2):
+
+```ts
+async function openSessionWithStaging(
+  session: FujiCameraSession,
+  signal?: AbortSignal,
+): Promise<void> {
+  try {
+    await session.open(signal);
+  } catch (err) {
+    // Wrap any open-time failure with stage="open" so the classifier
+    // routes it to "session-stale" via §6.5 case "open", not via the
+    // transfer-in/out path.
+    if (err instanceof LatentError) {
+      throw new LatentError(err.category, "OpenSession failed", err.cause, {
+        ...err.metadata,
+        stage: "open",
+      });
+    }
+    throw new LatentError("UsbDisconnect", "OpenSession failed", err, {
+      stage: "open",
+      domException: nameOf(err),
+      platform: detectPlatform(),
+    });
   }
 }
 ```
@@ -558,18 +680,35 @@ This addresses Codex H1: reset is not blanket-applied, it is conditional
 on a recoverable claim failure, and the post-reset reconfiguration is
 explicit.
 
-**USB event subscription with vendor + product + permission filter**
+**USB event subscription with vendor + product + (optional) serial + permission filter**
 
 ```ts
 subscribeConnectEvents(handler: () => void): () => void {
+  const expectedVendor = FUJI_VENDOR_ID;
+  const expectedProduct = this.connectedProductId;     // captured at connect time
+  const expectedSerial = this.connectedSerialNumber;   // when discoverable, else undefined
+
   const listener = async (e: USBConnectionEvent) => {
     // Match by vendor + product, NOT by USBDevice object identity.
-    // After unplug/replug the browser may surface a new USBDevice instance.
-    if (e.device.vendorId !== FUJI_VENDOR_ID) return;
+    // After unplug/replug the browser may surface a new USBDevice instance
+    // for the same physical camera.
+    if (e.device.vendorId !== expectedVendor) return;
+    if (e.device.productId !== expectedProduct) return;
+
+    // If we have a serial from the original connect, prefer matching on it
+    // so multi-camera setups don't cross-fire.
+    if (expectedSerial !== undefined) {
+      // Serial is read at the device descriptor level; compare strictly.
+      if (e.device.serialNumber !== expectedSerial) return;
+    }
 
     // Confirm we still hold permission (the user may have revoked it).
     const paired = await navigator.usb.getDevices();
-    if (!paired.some(d => d.vendorId === FUJI_VENDOR_ID)) return;
+    const stillPaired = paired.some(
+      d => d.vendorId === expectedVendor && d.productId === expectedProduct
+        && (expectedSerial === undefined || d.serialNumber === expectedSerial)
+    );
+    if (!stillPaired) return;
 
     handler();
   };
@@ -578,8 +717,12 @@ subscribeConnectEvents(handler: () => void): () => void {
 }
 ```
 
-Same vendor+permission pattern for `subscribeDisconnectEvents`. This
-addresses Codex H3.
+Same vendor + product + optional serial + permission pattern for
+`subscribeDisconnectEvents`. The `connectedProductId` and
+`connectedSerialNumber` fields are populated by the driver during
+`connect()` from the `USBDevice` descriptor and from the
+`getDeviceInfo()` response respectively. This addresses Codex H3 and
+NM2.
 
 **Wrap raw `transferIn`/`transferOut` rejections**
 
@@ -667,17 +810,29 @@ interface CameraStore {
   presets: RawPreset[];
 
   // wizard / setup state — orthogonal to connection state
-  macosBetaAcknowledged: boolean;     // hydrated from localStorage
-  macosSetupDone: boolean;            // hydrated from localStorage
-  macosWizardOpen: boolean;           // UI-only, not persisted
-  macosShowAdvanced: boolean;         // UI-only
+  macosBetaAcknowledged: boolean;            // hydrated from localStorage
+  macosSetupAcknowledged: boolean;           // hydrated from localStorage; user has
+                                             // gone through the wizard once and
+                                             // achieved a real reconnect after it
+  macosPersistentDisableConfigured: boolean; // hydrated from localStorage; user
+                                             // explicitly opted into the advanced
+                                             // launchctl disable path
+  macosWizardOpen: boolean;                  // UI-only, not persisted
+  macosShowAdvanced: boolean;                // UI-only
 
   // actions
   connect: () => void;
   disconnect: () => void;
   retry: () => void;
   acknowledgeMacosBeta: () => void;
-  acknowledgeMacosSetup: () => void;  // gated on a real connect success
+  // The manager emits MACOS_SETUP_CONFIRMED on successful reconnect after
+  // a MACOS_SETUP_ATTEMPTED. The store reacts by setting
+  // macosSetupAcknowledged = true. There is no manual "I've run it sets
+  // the flag" path — the flag follows the actual connect.
+  markMacosPersistentDisable: () => void;    // set when the user clicks the
+                                             // advanced "I've run launchctl
+                                             // disable" path AND a real connect
+                                             // confirms it
   openMacosWizard: () => void;
   closeMacosWizard: () => void;
   toggleMacosAdvanced: () => void;
@@ -693,8 +848,23 @@ interface CameraStore {
 reached and the Phase 2-full read flow completes. Until then it is `[]`.
 This addresses Codex M3.
 
-`macosBetaAcknowledged` and `macosSetupDone` hydrate from localStorage
-keys `latent:macos-beta-ack-v1` and `latent:macos-setup-done-v1` at boot.
+`macosBetaAcknowledged`, `macosSetupAcknowledged`, and
+`macosPersistentDisableConfigured` hydrate from localStorage keys
+`latent:macos-beta-ack-v1`, `latent:macos-setup-ack-v1`, and
+`latent:macos-persistent-disable-v1` respectively at boot.
+
+The two macOS flags are intentionally separate (Codex NH4):
+
+- `macosSetupAcknowledged === true` means "the user has been through the
+  wizard once and a reconnect has succeeded after it". It suppresses
+  the auto-open behaviour of the wizard on subsequent
+  `macos-claim-collision` errors (we show a banner with "Re-open setup"
+  instead of auto-opening).
+- `macosPersistentDisableConfigured === true` means "the user explicitly
+  ran `launchctl disable` and a reconnect confirmed it". It is the
+  only flag that lets us *assume* the daemon is permanently off across
+  browser/macOS sessions. If only `macosSetupAcknowledged` is true, we
+  treat each new browser session as potentially needing `killall` again.
 
 ### 8.2 Wiring
 
@@ -780,14 +950,17 @@ Step 1 — Run the temporary release command:
 killall ptpcamerad
 ```
 
-Copy button. "I've run it" → wizard tries to reconnect via dispatching
-`MACOS_SETUP_DONE` (which transitions `error → connecting`).
+Copy button. The user clicks "I've run it" — this dispatches
+`MACOS_SETUP_ATTEMPTED` to the manager, which transitions
+`error{macos-claim-collision} → connecting{macosSetupPending: true}`.
 
-- If the connect succeeds within 10 seconds, the wizard sets
-  `macosSetupDone = true` and shows a success step.
-- If it fails again with `macos-claim-collision` (Image Capture re-grabbed
-  the device), the wizard surfaces a "Try again" + "Show advanced
-  option".
+- If the connect succeeds within ~10 seconds, the manager dispatches
+  `MACOS_SETUP_CONFIRMED` at `connected` entry. The store then sets
+  `macosSetupAcknowledged = true` and the wizard advances to the
+  success step.
+- If the connect fails again, the wizard surfaces a "Try again"
+  button **plus** "Show advanced option". Neither flag is persisted.
+  The user is not lied to about setup being done.
 
 Step 2 (advanced, hidden by default) — Persistent disable:
 
@@ -805,17 +978,31 @@ launchctl enable gui/$(id -u)/com.apple.ptpcamerad
 A note: "If you use Image Capture or Photos with cameras, prefer the
 basic command above and re-run it when needed."
 
+The advanced step has its own "I've run it" button. Click flow:
+
+1. Wizard dispatches `MACOS_SETUP_ATTEMPTED` like Step 1.
+2. On `MACOS_SETUP_CONFIRMED`, the store sets **both**
+   `macosSetupAcknowledged = true` **and**
+   `markMacosPersistentDisable()` (which sets
+   `macosPersistentDisableConfigured = true`).
+3. On failure, neither flag changes; wizard offers "Try again".
+
 Step 3 — Done: confirmation; reminder of the re-enable command; bullet
 for power users mentioning `brew install formray/latent/release-camera`
 (Homebrew formula distributed separately, optional).
 
-**`macosSetupDone` is gated on a real reconnect success**, not just on
-the user clicking "I've run it". This addresses Codex H5: the flag does
-not get set until the manager actually reaches `connected`.
+**Both flags are gated on a real reconnect success**, never on a click
+alone (Codex H5 + NH4). The advanced flag is only set when the user
+explicitly walked through Step 2; running the basic Step 1 only sets
+`macosSetupAcknowledged`.
 
-If the user hits `macos-claim-collision` again after `macosSetupDone`
-is true, the banner reads "macOS is holding the camera again" and
-offers "Re-open setup" rather than auto-opening the wizard.
+**Subsequent collision behaviour**:
+
+| `macosSetupAcknowledged` | `macosPersistentDisableConfigured` | New `macos-claim-collision` shows... |
+|---|---|---|
+| false | false | Auto-opens wizard at Step 1 (first-time path) |
+| true | false | Banner with "Re-open setup". On click, wizard opens at Step 1 — the basic killall — because we cannot assume persistent state. Education is suppressed (no beta warning re-shown). |
+| true | true | Banner with "Re-open setup". On click, wizard opens at Step 2 — the advanced path — because the user explicitly chose persistent disable previously. If they re-enabled `ptpcamerad` deliberately, this puts the advanced reset in front of them quickly. |
 
 ## 9. Failure mode catalog
 
@@ -864,7 +1051,7 @@ offer reconnect". This addresses Codex H4.
 | Variant | Detection | UX |
 |---|---|---|
 | First-time `ptpcamerad` collision (macOS) | `connecting` → `claim` stage fail → guarded reset+reclaim fail; `domException === "NetworkError"`; platform === "mac" | Beta warning (if not acknowledged) → safer-first wizard `killall ptpcamerad` |
-| Repeat collision after setup done | Same, `macosSetupDone === true` | Banner with "Re-open setup" button, wizard not auto-opened |
+| Repeat collision after setup done | Same, `macosSetupAcknowledged === true` | Banner with "Re-open setup" button; if `macosPersistentDisableConfigured === true` it opens at Step 2 (advanced), otherwise at Step 1 (basic killall) |
 | `Image Capture.app` open by user (macOS) | Same signature (claims via `mscamerad-xpc`) | Same banner / wizard path |
 | Linux/Windows generic claim collision | Same `claim` stage but `platform !== "mac"` | `error{session-stale}` with "another app may hold the camera; close it and retry" body — does NOT show macOS wizard |
 
@@ -972,7 +1159,7 @@ Drives the full UI flow.
 
 Target: ~12 tests. Cold connect; auto-connect at boot; macOS beta
 warning shown then acknowledged; macOS wizard safer-first path
-(success); macOS wizard advanced path; `macosSetupDone` only set on
+(success); macOS wizard advanced path; `macosSetupAcknowledged` only set on
 real reconnect success; cable unplug shows banner with new "Camera
 unplugged" copy; USB connect event auto-recovers; disconnect button;
 `pagehide` calls `fireCloseSession`; presets event populates store;
@@ -1002,7 +1189,7 @@ macOS version.
 | 2 | USB unplug-replug recovers | 20/20 cycles connected within 5s of replug |
 | 3 | Camera off/on recovers without click | 10/10 cycles |
 | 4 | macOS beta warning shown once | Acknowledged once, never re-shown unless localStorage cleared |
-| 5 | macOS setup flag only set after real reconnect | 0 cases of `macosSetupDone === true` while still in error |
+| 5 | macOS setup flags only set after real reconnect | 0 cases of `macosSetupAcknowledged === true` or `macosPersistentDisableConfigured === true` while still in `error` |
 | 6 | No "Camera disconnected" generic copy | 0 occurrences in any failure scenario |
 | 7 | TypeScript exhaustiveness on state | 0 `// @ts-ignore` or `as any` on state switches |
 | 8 | Coverage of `@latent/camera-connection` | ≥ 90% line coverage |
@@ -1038,10 +1225,28 @@ first.
 - ~5 tests for the new fields
 - All existing tests stay green
 
-**Step 1 — Refactor `FujiCameraSession` onto `PtpFraming`**
-- Replace local `packCommand` / `assertResponseOK` with `PtpFraming.sendCommand`
-- Wire `fireCloseSession()` to be a real session method
-- ~5 tests stay green; structure only
+**Step 1 — Refactor `FujiCameraSession` onto `PtpFraming` AND tighten `PtpFraming.sendCommand()`**
+
+- **First**, add the missing validation to `PtpFraming.sendCommand()`:
+  - Verify response container type (existing local helper already does this)
+  - Verify `transactionId` matches the command's txid (currently missing — Codex NB1)
+  - Verify `code === PTPResp.OK` and throw classified `LatentError` on
+    `SessionAlreadyOpen`, `DeviceBusy`, `InvalidParameter`, etc.
+    (currently missing — Codex NB1)
+  - Add new tests in `packages/ptp-fuji/tests/ptp-framing.test.ts` covering
+    txid mismatch, type mismatch, non-OK response codes, short response.
+- **Then**, replace local `packCommand` / `assertResponseOK` in
+  `FujiCameraSession` with calls to the now-validated
+  `PtpFraming.sendCommand`.
+- **Then**, wire `fireCloseSession()` to live on `FujiCameraSession`
+  (using `PtpFraming` for the synchronous send) so the session-level
+  call is a real method, not a dangling util.
+- All existing `session.ts` tests must stay green. Run `npm run test`
+  on both `@latent/ptp-fuji` and `@latent/ptp-fuji-webusb` after the
+  refactor to confirm no regression.
+
+This is the most risky structural change in the rollout and it lands
+**alone** in its own commit so any breakage is easy to bisect.
 
 **Step 2 — Add `FujiCameraSession.getDeviceInfo()` with DATA→RESPONSE parsing**
 - PTP op `0x1001` issuance + container parsing
@@ -1089,7 +1294,7 @@ first.
 **Step 9 — macOS path: beta warning + setup wizard**
 - `MacosBetaWarning.tsx` modal
 - `MacosSetupWizard.tsx` with safer-first default + advanced opt-in
-- Copy buttons, localStorage flags, gated `macosSetupDone`
+- Copy buttons, localStorage flags (`macosBetaAcknowledged`, `macosSetupAcknowledged`, `macosPersistentDisableConfigured`), gated on `MACOS_SETUP_CONFIRMED`
 - ~6 component tests
 
 **Step 10 — Hardware validation**
@@ -1170,8 +1375,8 @@ These are valid concerns, but not part of this design:
 ## 15. Revision history
 
 - **r1, 2026-05-04**: initial design after brainstorming session.
-- **r2, 2026-05-04**: incorporates Codex external review. Material
-  changes: V2 boundary moved from `FujiCameraSession` to
+- **r2, 2026-05-04**: incorporates Codex external review round 1.
+  Material changes: V2 boundary moved from `FujiCameraSession` to
   `CameraSessionPort` (B1); page-unload close demoted to strict
   best-effort with connect-time recovery as the real path (B2);
   state machine gains exit actions, per-attempt `AbortController`,
@@ -1191,3 +1396,64 @@ These are valid concerns, but not part of this design:
   to comply with §2 acceptance criterion (L2); §12 reframed as real
   open questions (L3); event payload types reconciled with handler
   signatures (L4); breaking i18n migration called out (L1).
+
+- **r3, 2026-05-04**: incorporates Codex external review round 2.
+  Material changes:
+  - **NB1**: Step 1 of the rollout now requires adding txid + response
+    code validation to `PtpFraming.sendCommand()` *before* refactoring
+    `FujiCameraSession` onto it, so the existing
+    `assertResponseOK`-style guarantees are preserved. New tests in
+    `packages/ptp-fuji/tests/ptp-framing.test.ts` cover the cases.
+  - **B4 round 2**: `OpenSession` failures are explicitly wrapped with
+    `stage: "open"` by a driver-level `openSessionWithStaging` helper,
+    so a `transfer-in` failing inside `OpenSession` does not misroute
+    to `cable-unplugged`.
+  - **B3 round 2**: stale-completion cleanup added — when
+    `driver.connect()` resolves with a stale `opId`, the manager calls
+    `driver.disconnect()` on the late-arriving port to close the
+    device that may have been opened during the abandoned connect.
+  - **H1 round 2**: the post-reset final `claimInterface` is now
+    explicitly wrapped with `stage: "claim"` so a second claim
+    failure cannot escape as a raw DOMException.
+  - **H2 round 2**: the §11 Step 1 plan now explicitly requires
+    adding txid + response-code validation to `PtpFraming.sendCommand`
+    *before* the `FujiCameraSession` refactor.
+  - **H3 round 2**: the connect/disconnect event filter now matches
+    vendor + product + (optional) serial + permission state, with
+    explicit code rather than just the decision-table claim.
+  - **H4 round 2**: `degraded` runs `probe()` on every
+    `OPERATION_FAILED`, not only after 3 soft failures. A hard
+    failure during degraded escalates immediately. The state's
+    `lastFailure` is preserved through `PROBE_RESULT`.
+  - **H5 round 2**: `MACOS_SETUP_DONE` split into
+    `MACOS_SETUP_ATTEMPTED` (user click) and `MACOS_SETUP_CONFIRMED`
+    (manager-emitted on real reconnect success). Wizard never claims
+    setup is done from a click alone.
+  - **NH1**: `PROBE_RESULT` payload extended to carry
+    `{ ok, err, opId }` so transitions have access to the original
+    failure for classification, without introducing a `probing`
+    sub-state.
+  - **NH2**: listener lifecycle is now connection-generation-owned;
+    listeners are installed once on entering `connected` from a
+    fresh `connecting` and uninstalled once on entering `disconnected`
+    or `error`. Internal `connected ↔ degraded` and alive →
+    `reconnecting` → alive transitions preserve the listener handles.
+    The contradiction between `connected` exit and `degraded` retain
+    is removed.
+  - **NH3**: `CameraSessionPort` is explicitly documented as the
+    **minimal stability port for V1 Phase 2-min**. Phase 4 will extend
+    it via a `Phase4SessionPort` sub-interface that adds
+    `sendCommand` / `sendDataCommand` and vendor-opcode passthrough
+    for §6.4 preview, object handle ops, and RAF upload. The V2
+    Tauri port plans for the extension.
+  - **NH4**: the macOS persistence flag split into
+    `macosSetupAcknowledged` (one-time wizard education succeeded once)
+    and `macosPersistentDisableConfigured` (advanced disable opt-in
+    confirmed). The wizard auto-open behaviour and the assumed daemon
+    state are gated on different flags so a successful `killall` does
+    not get conflated with persistent setup.
+  - **NM1**: `PtpTimeout` classified as `camera-off`; probe at the
+    call site disambiguates from `session-stale`.
+  - **NM2**: connect/disconnect event filter implementation explicitly
+    matches the decision-table promise of vendor + product + optional
+    serial.
