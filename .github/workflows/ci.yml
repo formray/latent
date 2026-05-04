@@ -15,8 +15,12 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
       - run: npm ci
-      - run: npm run lint
+      # typecheck must run before lint. `tsc -b` builds package dist/ outputs
+      # that the type-aware ESLint rules (recommendedTypeChecked) need to
+      # resolve cross-workspace imports like `@latent/ptp-fuji`. Lint without
+      # dist/ produces ~170 spurious "no-unsafe-*" errors.
       - run: npm run typecheck
+      - run: npm run lint
       - run: npm run test
       - run: npm run license-check
       - run: npm run lockstep-check
