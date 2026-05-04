@@ -10,6 +10,7 @@ import {
   humanFilmSim,
   signedNumber,
 } from "./format";
+import { downloadRecipeJson, serializeRecipeJson } from "../lib/recipe-json";
 
 export interface RecipeDetailProps {
   recipe: RecipeType;
@@ -24,7 +25,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const [showWalkthrough, setShowWalkthrough] = useState(false);
 
   const handleCopy = async (): Promise<void> => {
-    const json = JSON.stringify(recipe, null, 2);
+    const json = serializeRecipeJson(recipe);
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(json);
@@ -71,6 +72,13 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
               className="rounded-sm border border-zinc-800 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
             >
               {copied ? t("detail.copyJson.copied") : t("detail.copyJson")}
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadRecipeJson(recipe)}
+              className="rounded-sm border border-zinc-800 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+            >
+              {t("detail.downloadJson")}
             </button>
           </div>
         </div>

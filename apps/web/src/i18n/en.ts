@@ -12,6 +12,9 @@ export const en = {
   "library.empty.loading": "Loading recipes",
   "library.count.one": "1 recipe",
   "library.count.other": "{n} recipes",
+  "library.importJson": "Import JSON",
+  "library.import.success": "{n} imported",
+  "library.import.error": "Invalid recipe JSON",
 
   // Detail
   "detail.title": "Recipe detail",
@@ -19,6 +22,7 @@ export const en = {
     "Select a recipe from the library to read its full set of camera parameters and a step-by-step setup walkthrough.",
   "detail.copyJson": "Copy as JSON",
   "detail.copyJson.copied": "Copied",
+  "detail.downloadJson": "Download .json",
   "detail.setupWalkthrough": "Set up on camera",
   "detail.setupWalkthrough.intro":
     "Follow these steps to enter the recipe in a custom slot on your camera.",
