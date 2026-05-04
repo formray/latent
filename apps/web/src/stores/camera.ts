@@ -233,10 +233,55 @@ function publishCameraDiagnostics(state: CameraStore): void {
   window.__LATENT_CAMERA_STATE__ = {
     state: state.state,
     presets: state.presets,
+    decodedPresets: compactDecodedPresets(state.presets),
     isConnected: state.isConnected(),
     isConnecting: state.isConnecting(),
     errorReason: state.errorReason(),
   };
+}
+
+function compactDecodedPresets(presets: RawPreset[]): CameraPresetDiagnostics[] {
+  return presets.map((preset) => ({
+    slot: preset.slot,
+    name: preset.name ?? "",
+    propertyCount: Object.keys(preset.properties).filter((key) => key !== "_missing").length,
+    missingCount: preset.missing?.length ?? 0,
+    film: preset.decoded?.filmSimulation.label ?? "",
+    dynamicRange: preset.decoded?.dynamicRange.label ?? "",
+    whiteBalance: preset.decoded?.whiteBalance.label ?? "",
+    wbShiftR: preset.decoded?.wbShift.r ?? null,
+    wbShiftB: preset.decoded?.wbShift.b ?? null,
+    highlightTone: preset.decoded?.highlightTone ?? null,
+    shadowTone: preset.decoded?.shadowTone ?? null,
+    color: preset.decoded?.color ?? null,
+    sharpness: preset.decoded?.sharpness ?? null,
+    noiseReduction: preset.decoded?.noiseReduction ?? null,
+    clarity: preset.decoded?.clarity ?? null,
+    grain: preset.decoded?.grainEffect.label ?? "",
+    colorChrome: preset.decoded?.colorChromeEffect.label ?? "",
+    colorChromeBlue: preset.decoded?.colorChromeEffectBlue.label ?? "",
+  }));
+}
+
+interface CameraPresetDiagnostics {
+  slot: number;
+  name: string;
+  propertyCount: number;
+  missingCount: number;
+  film: string;
+  dynamicRange: string;
+  whiteBalance: string;
+  wbShiftR: number | null;
+  wbShiftB: number | null;
+  highlightTone: number | null;
+  shadowTone: number | null;
+  color: number | null;
+  sharpness: number | null;
+  noiseReduction: number | null;
+  clarity: number | null;
+  grain: string;
+  colorChrome: string;
+  colorChromeBlue: string;
 }
 
 declare global {
@@ -244,6 +289,7 @@ declare global {
     __LATENT_CAMERA_STATE__?: {
       state: ConnectionState;
       presets: RawPreset[];
+      decodedPresets: CameraPresetDiagnostics[];
       isConnected: boolean;
       isConnecting: boolean;
       errorReason: ErrorReason | null;
