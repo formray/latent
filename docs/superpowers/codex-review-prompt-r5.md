@@ -35,7 +35,7 @@ Be terse. This is a focused validation, not an open-ended adversarial review.
 
 # Files to read
 
-1. **R5 spec (current):** `/Users/giuseppealbriziowork/fuji-comp/docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` (1182 lines, 19 sections — added §6.7, §6.8, renumbered §6.7 typed errors → §6.9, added §19 changelog)
+1. **R5 spec (current):** `/Users/giuseppealbriziowork/Repos/Formray/filmfork/docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` (1182 lines, 19 sections — added §6.7, §6.8, renumbered §6.7 typed errors → §6.9, added §19 changelog)
 2. **R4 spec history** is in git: `git show 4d5ea16:docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` if you want to diff
 3. **R4 review output (your prior approval):** `docs/superpowers/codex-review-output-r4.md`
 4. Other R1-R4 lineage in same folder

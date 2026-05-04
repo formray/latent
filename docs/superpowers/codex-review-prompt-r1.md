@@ -23,7 +23,7 @@ You are reviewing a draft V1 design specification for an open-source software pr
 # Your task
 
 Read this file end-to-end:
-**`/Users/giuseppealbriziowork/fuji-comp/docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md`** (510 lines, 16 sections)
+**`/Users/giuseppealbriziowork/Repos/Formray/filmfork/docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md`** (510 lines, 16 sections)
 
 Then produce an adversarial review. I want to know what's actually wrong, missing, or risky — not where it succeeds.
 
