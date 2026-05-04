@@ -1,6 +1,6 @@
 # Camera connection stability — design
 
-**Status**: Draft, awaiting user review (revision 4 — incorporates Codex review round 3)
+**Status**: Draft, awaiting user review (revision 5 — incorporates Codex review round 4 minor edits)
 **Date**: 2026-05-04
 **Owner**: Giuseppe Albrizio
 **Related**:
@@ -86,7 +86,7 @@ leak the `FujiCameraSession` JS type through the manager API.
 | Page-unload close | True best-effort: dispatch one `CloseSession` command synchronously into the WebUSB transport via `navigator.sendBeacon`-style write, do not rely on it for correctness | Async `transferOut` cannot complete reliably during `beforeunload` (Codex B2) |
 | Stale-session connect-time recovery | After failed `OpenSession`, attempt: reset → reopen device → reselect config → rediscover endpoints → reclaim → reopen session | This is the *real* recovery path — page-unload is a nice-to-have on top |
 | Reconnect attempts | 3 with exponential backoff `[200ms, 800ms, 2000ms]` per `reconnecting` entry; per-attempt `AbortController` for cancellation | Covers transient failures; cancellation prevents stale promise resolution from corrupting state (Codex B3) |
-| Stale-completion cleanup | If `driver.connect()` resolves with a stale `opId`, the manager calls `driver.disconnect()` on the late result before discarding it | Otherwise an aborted connect that opens a device "behind our back" leaves the device claimed (Codex B3 round 2) |
+| Stale-completion cleanup | If `driver.connect()` resolves with a stale `opId`, the manager calls `result.dispose()` on the port-specific late result before discarding it; the global `driver.disconnect()` is reserved for tearing down the active connection | A global `disconnect()` on stale cleanup would close a fresh user-initiated active connection (Codex B3 round 2 + H-r3-1) |
 | Liveness probe timeout | 3000ms | Balance between false positives and recovery latency |
 | Probe gating in `degraded` | `probe()` runs on every `OPERATION_FAILED` in `degraded`, not only after 3 soft failures | A hard failure (timeout, stall) during degraded must escalate immediately (Codex H4 round 2) |
 | Listener ownership | Connection-generation-owned, not per-state-entry/exit. Installed on entering `connected` from a `connecting` success; uninstalled only on entering `disconnected` or `error` | Avoids the `connected → degraded → connected` double-install bug and the `connected` exit / `degraded` retain contradiction (Codex NH2) |
@@ -95,7 +95,7 @@ leak the `FujiCameraSession` JS type through the manager API.
 | `PtpFraming.sendCommand()` validation | Validate response container type, transaction ID, and `code === PTPResp.OK` inside the framing layer | Step 1 refactor would otherwise drop the existing checks in `session.ts:114-136` and silently accept `SessionAlreadyOpen` and other non-OK codes (Codex NB1) |
 | `CameraSessionPort` scope | Minimal stability port for V1 Phase 2-min: `getDeviceInfo`, `getDevicePropValue`, `setDevicePropValue`, `isOpen`. Phase 4 extends it with a `Phase4SessionPort` sub-interface adding `sendCommand` / `sendDataCommand` for vendor opcodes and object I/O | Keeps the V1 surface small and reviewable; documents the extension point so V2's Tauri port can plan for it (Codex NH3) |
 | macOS persistence flags | Two separate flags: `macosSetupAcknowledged` (one-time wizard education seen) and `macosPersistentDisableConfigured` (advanced disable opt-in completed). Wizard auto-open is gated on the first; education re-display is gated on the second | `killall` is per-session and a successful reconnect after `killall` does not mean persistent setup is in place (Codex NH4) |
-| `MACOS_SETUP_*` event split | Two events: `MACOS_SETUP_ATTEMPTED` (user clicked "I've run it") triggers `connecting`; `MACOS_SETUP_CONFIRMED` is dispatched by the manager when that connect succeeds and only then are flags persisted | Round 1 had a single `MACOS_SETUP_DONE` whose semantics were contradictory across event table, transition, and wizard (Codex H5 round 2) |
+| Setup attempt/confirmation split | One state-machine event `MACOS_SETUP_ATTEMPTED { advanced: boolean }` triggers `connecting`; on success the manager emits a separate `setup-confirmed` **notification** (out of band from `dispatch()`) carrying `{ advanced }`; only the notification persists flags | A single reducer event would either re-enter the reducer or race with state subscribers (Codex H5 round 2 + H-r3-2) |
 | `PtpTimeout` classification | Maps to `camera-off` by default; probe disambiguates between sleep (camera-off) and stale-session (session-stale) when called | Was falling through to `unknown` (Codex NM1) |
 | Connect/disconnect event filter | Vendor + product + optional serial + permission state — implementation matches the decision, no shortcut to vendor-only | Round 2's r2 sample code regressed to vendor-only (Codex NM2) |
 | Presets in store | Kept on the same `useCameraStore` as a separate `presets` field, populated by manager event after entering `connected` | Splitting into a second store is YAGNI for now |
@@ -210,6 +210,63 @@ build. Keeping it in `packages/` matches the existing monorepo pattern.
 - **Session port** owns the PTP-level operations a connected session
   exposes (read device info, read prop, write prop, etc.). Its
   implementation is platform-specific; its interface is platform-agnostic.
+
+### 5.3 Manager public surface
+
+The `ConnectionManager` exposes three public APIs and nothing else.
+This is the contract the store wires against.
+
+```ts
+type ManagerNotifications = {
+  /** Emitted post-commit when a connecting{macosSetupPending} reaches connected. */
+  "setup-confirmed": { advanced: boolean };
+  /** Emitted after `connected` is reached and the Phase 2-full preset read flow completes. */
+  "presets-read": { presets: RawPreset[] };
+};
+
+export interface ConnectionManager {
+  /** Subscribe to ConnectionState changes. Fires on every reducer commit. */
+  subscribe(handler: (state: ConnectionState) => void): () => void;
+
+  /**
+   * Subscribe to manager notifications. A notification fires AFTER all
+   * state subscribers have run for the same commit. Notifications are
+   * one-shot (no replay): if no subscriber is registered when one fires,
+   * it is dropped. Stores subscribe at boot before calling start().
+   */
+  onNotification<K extends keyof ManagerNotifications>(
+    type: K,
+    handler: (payload: ManagerNotifications[K]) => void,
+  ): () => void;
+
+  /** Boots the manager: triggers AUTOCONNECT_AT_BOOT if a paired Fuji exists. */
+  start(): void;
+
+  /** Inject a state-machine event. Used by the store for user actions. */
+  dispatch(event: ConnectionEvent): void;
+}
+```
+
+**Ordering guarantee per reducer commit**:
+
+1. Reducer computes new state.
+2. Internal manager state is updated (timers, listener handles,
+   `currentGeneration`, transient flags like `macosSetupPending` are
+   cleared).
+3. State subscribers run synchronously in the order they registered.
+4. Manager-emitted notifications run synchronously in the order they
+   were enqueued by step 2's logic.
+
+This ordering means a state subscriber that synchronously calls back
+into the manager (e.g. `manager.dispatch()`) will see the post-commit
+state, not a half-applied one. Notification subscribers see the same
+state and can read the store freely.
+
+**The manager never reads store state.** It does not know about
+`macosPersistentDisableConfigured` or any other store flag. Reactions
+that depend on store state (e.g. clearing the persistent macOS flag
+on a repeat collision) live entirely on the store side, in a state
+subscriber. This preserves the §5.2 boundary (Codex M-r4-2).
 
 ## 6. State machine
 
@@ -866,10 +923,11 @@ interface CameraStore {
   disconnect: () => void;
   retry: () => void;
   acknowledgeMacosBeta: () => void;
-  // The manager emits MACOS_SETUP_CONFIRMED on successful reconnect after
-  // a MACOS_SETUP_ATTEMPTED. The store reacts by setting
-  // macosSetupAcknowledged = true. There is no manual "I've run it sets
-  // the flag" path — the flag follows the actual connect.
+  // The manager emits a "setup-confirmed" notification on successful
+  // reconnect after a MACOS_SETUP_ATTEMPTED. The store subscribes to the
+  // notification and sets macosSetupAcknowledged = true. There is no
+  // manual "I've run it sets the flag" path — the flag follows the
+  // actual connect.
   markMacosPersistentDisable: () => void;    // set when the user clicks the
                                              // advanced "I've run launchctl
                                              // disable" path AND a real connect
@@ -920,19 +978,53 @@ The two macOS flags are intentionally separate (Codex NH4):
 
 ### 8.2 Wiring
 
-In `apps/web/src/main.tsx`, executed once at module load:
+In `apps/web/src/main.tsx`, executed once at module load. The order
+matters: notification subscriptions must be registered **before**
+`manager.start()` so the first commit's notifications are not dropped.
 
 ```ts
 const driver = new WebUsbCameraDriver();
 const manager = new ConnectionManager(driver);
 
-manager.subscribe((state) => useCameraStore.setState({ state }));
-manager.onPresetsRead((presets) => useCameraStore.setState({ presets }));
+// 1. State subscriber — mirrors ConnectionState into the store.
+manager.subscribe((state) => {
+  useCameraStore.setState({ state });
+
+  // Store-side reaction to a stale persistent-disable flag (Codex M-r4-2):
+  // the manager does NOT read store state. Instead, the store inspects
+  // its own flag here and self-resets when reality contradicts it.
+  if (
+    state.kind === "error" &&
+    state.reason === "macos-claim-collision" &&
+    useCameraStore.getState().macosPersistentDisableConfigured
+  ) {
+    useCameraStore.getState().resetMacosSetupStatus();
+  }
+});
+
+// 2. Notification subscribers — one per notification type.
+manager.onNotification("setup-confirmed", ({ advanced }) => {
+  useCameraStore.getState().acknowledgeMacosSetup();
+  if (advanced) {
+    useCameraStore.getState().markMacosPersistentDisable();
+  }
+});
+
+manager.onNotification("presets-read", ({ presets }) => {
+  useCameraStore.setState({ presets });
+});
+
+// 3. Boot — may immediately dispatch AUTOCONNECT_AT_BOOT if paired.
 manager.start();
 ```
 
-`manager.start()` triggers `AUTOCONNECT_AT_BOOT` if paired Fuji devices
-exist. Otherwise stays in `idle`.
+`manager.start()` triggers `AUTOCONNECT_AT_BOOT` if paired Fuji
+devices exist. Otherwise stays in `idle`.
+
+The first state subscriber is the only place that reads store state to
+decide on a reaction. This keeps the reaction logic in one place and
+honours the §5.2 boundary: the manager never reads or mutates store
+state directly.
 
 ### 8.3 Components
 
@@ -1006,10 +1098,10 @@ Copy button. The user clicks "I've run it" — this dispatches
 `MACOS_SETUP_ATTEMPTED` to the manager, which transitions
 `error{macos-claim-collision} → connecting{macosSetupPending: true}`.
 
-- If the connect succeeds within ~10 seconds, the manager dispatches
-  `MACOS_SETUP_CONFIRMED` at `connected` entry. The store then sets
-  `macosSetupAcknowledged = true` and the wizard advances to the
-  success step.
+- If the connect succeeds within ~10 seconds, the manager emits the
+  `setup-confirmed` notification at `connected` entry. The store
+  subscribes to the notification and sets `macosSetupAcknowledged =
+  true`, and the wizard advances to the success step.
 - If the connect fails again, the wizard surfaces a "Try again"
   button **plus** "Show advanced option". Neither flag is persisted.
   The user is not lied to about setup being done.
@@ -1033,10 +1125,10 @@ basic command above and re-run it when needed."
 The advanced step has its own "I've run it" button. Click flow:
 
 1. Wizard dispatches `MACOS_SETUP_ATTEMPTED` like Step 1.
-2. On `MACOS_SETUP_CONFIRMED`, the store sets **both**
-   `macosSetupAcknowledged = true` **and**
-   `markMacosPersistentDisable()` (which sets
-   `macosPersistentDisableConfigured = true`).
+2. On the `setup-confirmed` notification with `{ advanced: true }`,
+   the store sets **both** `macosSetupAcknowledged = true` **and**
+   `macosPersistentDisableConfigured = true` (via
+   `markMacosPersistentDisable()`).
 3. On failure, neither flag changes; wizard offers "Try again".
 
 Step 3 — Done: confirmation; reminder of the re-enable command; bullet
@@ -1054,7 +1146,7 @@ explicitly walked through Step 2; running the basic Step 1 only sets
 |---|---|---|
 | false | false | Auto-opens wizard at Step 1 (first-time path) |
 | true | false | Banner with "Re-open setup". On click, wizard opens at Step 1 — the basic killall — because we cannot assume persistent state. Education is suppressed (no beta warning re-shown). |
-| true | true | Manager calls `resetMacosSetupStatus()` automatically — the persistent flag was lying. Banner reads "macOS is holding the camera again" with body explaining that `ptpcamerad` may have been re-enabled by macOS or by the user. On click, wizard opens at Step 2 — the advanced path — but with both flags now cleared, so a new success will repopulate them honestly (Codex M-r3-1). |
+| true | true | The store's state subscriber detects the contradiction (state is `error{macos-claim-collision}` while `macosPersistentDisableConfigured === true`) and calls `resetMacosSetupStatus()` itself — the persistent flag was lying. The manager does not read or know about either flag; the reset is store-side reaction (see §8.2 wiring). Banner reads "macOS is holding the camera again" with body explaining that `ptpcamerad` may have been re-enabled by macOS or by the user. On click, wizard opens at Step 2 — the advanced path — but with both flags now cleared, so a new success will repopulate them honestly (Codex M-r3-1 + M-r4-2). |
 
 ## 9. Failure mode catalog
 
@@ -1397,34 +1489,42 @@ the refactor (Codex L-r3-1).
 - `state-machine.ts`, `classifier.ts`
 - Per-attempt `AbortController`, monotonic `opId`, idempotent
   listener tracking
-- ~30 unit tests, all transitions, classifier coverage
+- **Minimum 40 unit tests** matching §10.2 mandatory coverage
 
 **Step 6 — `WebUsbCameraDriver` + `WebUsbSessionPort`**
 - Wrap `@latent/ptp-fuji-webusb` request flow
 - Guarded `claimWithReset`, USB event subscription with
-  vendor+product+permission filter, `fireCloseSession`, `probe`
+  vendor+product+permission filter, `fireCloseSession`, `probe`,
+  `DriverConnectResult.dispose()`
 - Local `FakeUSBDevice` and `FakeCameraDriver` fixtures in `tests/fakes.ts`
-- ~18 tests
+- **Minimum 25 tests** matching §10.3 mandatory coverage
 
 **Step 7 — `ConnectionManager`**
 - Compose state machine + driver
 - Page-unload handler installation, USB event wiring,
-  `wrapOperation` hook with `opId`, retry timer logic
-- ~15 tests with `FakeCameraDriver`
+  `wrapOperation` hook with `opId`, retry timer logic, notification
+  channel (`onNotification` API + ordering guarantee per §5.3)
+- **Minimum 20 tests with `FakeCameraDriver`**, including notification
+  ordering (state subscriber sees commit before notification fires)
+  and stale `dispose()` race coverage
 
 **Step 8 — Replace store + UI components**
 - Refactor `apps/web/src/stores/camera.ts` to subscribe to manager
+  state AND notifications (`setup-confirmed`, `presets-read`)
+- Add the store-side `macos-claim-collision` reaction that calls
+  `resetMacosSetupStatus()` when the persistent flag is true
 - Decompose `CameraConnect.tsx` into `components/camera/*`
 - Add `ErrorBanner` with all 8 reason variants
 - Migrate i18n keys from `error.<category>` to `camera.error.<reason>`
   in both `en.ts` and `it.ts`
-- ~12 integration tests
+- **Minimum 18 integration tests** matching §10.4 mandatory coverage
 
 **Step 9 — macOS path: beta warning + setup wizard**
 - `MacosBetaWarning.tsx` modal
 - `MacosSetupWizard.tsx` with safer-first default + advanced opt-in
-- Copy buttons, localStorage flags (`macosBetaAcknowledged`, `macosSetupAcknowledged`, `macosPersistentDisableConfigured`), gated on `MACOS_SETUP_CONFIRMED`
-- ~6 component tests
+- Copy buttons, localStorage flags (`macosBetaAcknowledged`, `macosSetupAcknowledged`, `macosPersistentDisableConfigured`), gated on the `setup-confirmed` notification from the manager
+- ~8 component tests covering both wizard paths (basic, advanced),
+  reset action, beta warning gating
 
 **Step 10 — Hardware validation**
 - `docs/qa/hardware-test-plan.md` with 27 items
@@ -1622,3 +1722,30 @@ These are valid concerns, but not part of this design:
   - **L-r3-1**: §11 Step 1 split into Step 1a (PtpFraming validation)
     and Step 1b (FujiCameraSession refactor). Each is its own
     commit so bisection isolates the source of any regression.
+
+- **r5, 2026-05-04**: incorporates Codex external review round 4
+  ("approve with minor edits"). All five edits applied:
+  - **M-r4-1**: §5.3 added — defines `ConnectionManager`'s public
+    surface including `onNotification(type, handler)` API,
+    `ManagerNotifications` map (`setup-confirmed`, `presets-read`),
+    and the four-step ordering guarantee per reducer commit
+    (reducer → internal state → state subscribers → notifications).
+    The §8.2 wiring example now subscribes to notifications before
+    calling `manager.start()` so first-commit notifications are
+    not dropped.
+  - **M-r4-2**: macOS persistent-flag reset moved fully to the
+    store side. The store's state subscriber detects
+    `state.kind === "error" && reason === "macos-claim-collision"`
+    while `macosPersistentDisableConfigured === true` and calls
+    `resetMacosSetupStatus()` itself. The manager never reads or
+    knows about either flag, preserving the §5.2 boundary.
+  - **M-r4-3**: §4 decision-table row for stale-completion cleanup
+    updated from `driver.disconnect()` to `result.dispose()` to
+    match the actual contract.
+  - **M-r4-2 follow-up**: §11 step test counts (Steps 5/6/7/8)
+    realigned with §10's minimums (≥40 / ≥25 / ≥20 / ≥18 / ~8).
+  - **L-r4-1**: residual references to "manager dispatches
+    `MACOS_SETUP_CONFIRMED`" in §8.1 and §8.5 renamed to "manager
+    emits the `setup-confirmed` notification". The §4 row for the
+    setup attempt/confirmation split rewritten to clearly
+    distinguish the state-machine event from the notification.
