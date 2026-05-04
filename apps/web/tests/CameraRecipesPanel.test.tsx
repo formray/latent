@@ -138,6 +138,48 @@ describe("<CameraRecipesPanel />", () => {
     expect(screen.getByRole("complementary")).toHaveTextContent("Missing");
   });
 
+  it("shows color temperature Kelvin when the camera returns the WB temperature property", () => {
+    useCameraStore.setState({
+      state: connectedState(),
+      presets: [
+        preset(1, {
+          decoded: {
+            ...preset(1).decoded!,
+            whiteBalance: {
+              value: 0x8007,
+              label: "Color Temperature",
+              colorTemperatureK: 4550,
+            },
+          },
+        }),
+      ],
+    });
+    render(<CameraRecipesPanel />);
+
+    expect(screen.getAllByText("Color Temperature 4550K").length).toBeGreaterThan(0);
+  });
+
+  it("marks color temperature Kelvin as missing when WB is color temperature but 0xd19c is absent", () => {
+    useCameraStore.setState({
+      state: connectedState(),
+      presets: [
+        preset(1, {
+          missing: ["0xd19c"],
+          decoded: {
+            ...preset(1).decoded!,
+            whiteBalance: {
+              value: 0x8007,
+              label: "Color Temperature",
+            },
+          },
+        }),
+      ],
+    });
+    render(<CameraRecipesPanel />);
+
+    expect(screen.getAllByText("Color Temperature (K missing)").length).toBeGreaterThan(0);
+  });
+
   it("switches the inspector when another slot is selected", () => {
     useCameraStore.setState({
       state: connectedState(),
