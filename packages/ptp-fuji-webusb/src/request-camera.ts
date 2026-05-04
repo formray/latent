@@ -110,6 +110,11 @@ async function claimAndBuildTransport(
       "UsbDisconnect",
       `failed to open/select configuration on Fujifilm device: ${stringifyError(err)}`,
       err,
+      {
+        stage: "setup-config",
+        domException: nameOf(err),
+        platform: detectPlatform(),
+      },
     );
   }
 
@@ -121,6 +126,11 @@ async function claimAndBuildTransport(
       "UsbDisconnect",
       `failed to claim PTP interface (another app may hold it): ${stringifyError(err)}`,
       err,
+      {
+        stage: "claim",
+        domException: nameOf(err),
+        platform: detectPlatform(),
+      },
     );
   }
 
@@ -160,6 +170,11 @@ function pickPtpInterface(device: USBDevice): PtpInterfaceInfo {
     throw new LatentError(
       "UsbDisconnect",
       "device has no active USB configuration",
+      undefined,
+      {
+        stage: "setup-config",
+        platform: detectPlatform(),
+      },
     );
   }
 
@@ -193,6 +208,11 @@ function pickPtpInterface(device: USBDevice): PtpInterfaceInfo {
   throw new LatentError(
     "UsbDisconnect",
     "no PTP interface with bulk IN/OUT endpoints found",
+    undefined,
+    {
+      stage: "endpoint-discovery",
+      platform: detectPlatform(),
+    },
   );
 }
 
@@ -258,4 +278,20 @@ function mapRequestDeviceError(err: unknown): LatentError {
 function stringifyError(err: unknown): string {
   if (err instanceof Error) return err.message;
   return String(err);
+}
+
+function nameOf(err: unknown): string | undefined {
+  if (typeof DOMException !== "undefined" && err instanceof DOMException) {
+    return err.name;
+  }
+  const maybe = err as { name?: unknown } | null;
+  return typeof maybe?.name === "string" ? maybe.name : undefined;
+}
+
+function detectPlatform(): "mac" | "windows" | "linux" | "unknown" {
+  const platform = globalThis.navigator?.platform?.toLowerCase() ?? "";
+  if (platform.includes("mac")) return "mac";
+  if (platform.includes("win")) return "windows";
+  if (platform.includes("linux")) return "linux";
+  return "unknown";
 }

@@ -184,6 +184,67 @@ describe("requestFujiCamera", () => {
     }
   });
 
+  it("wraps open/select failures with stage setup-config", async () => {
+    const { device } = makeMockDevice();
+    device.open.mockRejectedValueOnce(new DOMException("blocked", "NetworkError"));
+    const restore = setNavigator({
+      usb: {
+        requestDevice: vi.fn(async () => device),
+        getDevices: vi.fn(async () => []),
+      },
+    });
+    try {
+      await expect(requestFujiCamera()).rejects.toMatchObject({
+        category: "UsbDisconnect",
+        stage: "setup-config",
+        domException: "NetworkError",
+      });
+    } finally {
+      restore();
+    }
+  });
+
+  it("wraps claim failures with stage claim", async () => {
+    const { device } = makeMockDevice();
+    device.claimInterface.mockRejectedValueOnce(
+      new DOMException("busy", "NetworkError"),
+    );
+    const restore = setNavigator({
+      usb: {
+        requestDevice: vi.fn(async () => device),
+        getDevices: vi.fn(async () => []),
+      },
+    });
+    try {
+      await expect(requestFujiCamera()).rejects.toMatchObject({
+        category: "UsbDisconnect",
+        stage: "claim",
+      });
+    } finally {
+      restore();
+    }
+  });
+
+  it("stores DOMException name on claim failure", async () => {
+    const { device } = makeMockDevice();
+    device.claimInterface.mockRejectedValueOnce(
+      new DOMException("busy", "NetworkError"),
+    );
+    const restore = setNavigator({
+      usb: {
+        requestDevice: vi.fn(async () => device),
+        getDevices: vi.fn(),
+      },
+    });
+    try {
+      await expect(requestFujiCamera()).rejects.toMatchObject({
+        domException: "NetworkError",
+      });
+    } finally {
+      restore();
+    }
+  });
+
   it("wraps claimInterface failure in UsbDisconnect and closes the device", async () => {
     const { device } = makeMockDevice({ failClaim: true });
     const restore = setNavigator({
