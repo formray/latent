@@ -63,6 +63,7 @@ describe("<RawPreviewPanel />", () => {
         firmwareVersion: "3.30",
       },
       rawPreviewStatus: { kind: "idle" },
+      rawPreviewFile: null,
       renderRawPreview,
     });
   });
@@ -119,5 +120,22 @@ describe("<RawPreviewPanel />", () => {
       mode: "ColorTemperature",
       colorTemperatureK: 6500,
     });
+  });
+
+  it("uses a RAF selected from the recipe detail for the workspace render controls", async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], "detail-selected.raf", {
+      type: "image/x-fuji-raf",
+    });
+    useCameraStore.setState({ rawPreviewFile: file });
+
+    render(<RawPreviewPanel />);
+
+    expect(screen.getByText("detail-selected.raf")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Render now" }));
+
+    await waitFor(() => {
+      expect(renderRawPreview).toHaveBeenCalled();
+    });
+    expect(lastRenderCall()?.[0]).toBe(file);
   });
 });

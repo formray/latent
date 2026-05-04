@@ -16,8 +16,7 @@ export const en = {
   "library.import.success": "{n} imported",
   "library.import.error": "Invalid recipe JSON",
   "library.reset": "Factory reset",
-  "library.reset.confirm":
-    "Restore the default recipe library? Imported recipes will be removed.",
+  "library.reset.confirm": "Restore the default recipe library? Imported recipes will be removed.",
   "library.reset.done": "Defaults restored",
 
   // Detail
@@ -38,6 +37,10 @@ export const en = {
   "detail.previewRaf.diagnostic": "Diagnose RAF",
   "detail.previewRaf.diagnostic.title":
     "Render base, film-only, no-WB, and full recipe variants to isolate preview color bugs.",
+  "detail.action.preview.section": "Preview",
+  "detail.action.preview.body": "Render this recipe on a RAF through the connected camera.",
+  "detail.action.file.section": "Recipe file",
+  "detail.action.write.body": "Choose the custom slot to overwrite on the connected camera.",
   "detail.cameraWrite.section": "Write to camera",
   "detail.cameraWrite.slot": "Write C{slot}",
   "detail.cameraWrite.writing": "Writing",

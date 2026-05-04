@@ -42,6 +42,11 @@ export const it: Record<MessageKey, string> = {
   "detail.previewRaf.diagnostic": "Diagnostica RAF",
   "detail.previewRaf.diagnostic.title":
     "Renderizza base, solo film, senza WB e ricetta completa per isolare bug colore della preview.",
+  "detail.action.preview.section": "Preview",
+  "detail.action.preview.body":
+    "Renderizza questa ricetta su un RAF attraverso la fotocamera collegata.",
+  "detail.action.file.section": "File ricetta",
+  "detail.action.write.body": "Scegli lo slot custom da sovrascrivere sulla fotocamera collegata.",
   "detail.cameraWrite.section": "Scrivi su fotocamera",
   "detail.cameraWrite.slot": "Scrivi C{slot}",
   "detail.cameraWrite.writing": "Scrittura",
