@@ -250,6 +250,30 @@ describe("WebUsbCameraDriver connect", () => {
       },
     });
   });
+
+  it("WebUsbSessionPort decodes 0xffff dynamic range as DR Auto", async () => {
+    const fakeSession = session({
+      getPreset: vi.fn(async () => ({
+        slot: 2,
+        name: "DR Auto",
+        settings: [
+          {
+            id: 0xd190,
+            name: "P:DynamicRange%",
+            bytes: new Uint8Array([0xff, 0xff]),
+            value: -1,
+          },
+        ],
+        missing: [],
+      })),
+    });
+    const port = new WebUsbSessionPort(fakeSession);
+    await expect(port.getPreset(2)).resolves.toMatchObject({
+      decoded: {
+        dynamicRange: { value: -1, label: "DR Auto" },
+      },
+    });
+  });
 });
 
 describe("claimWithReset", () => {

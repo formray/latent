@@ -32,13 +32,15 @@ function fakeManager(): {
       stateHandler = handler;
       return () => undefined;
     }),
-    onNotification: vi.fn(<K extends keyof ManagerNotifications>(
-      type: K,
-      handler: (payload: ManagerNotifications[K]) => void,
-    ) => {
-      notificationHandlers[type] = handler as never;
-      return () => undefined;
-    }),
+    onNotification: vi.fn(
+      <K extends keyof ManagerNotifications>(
+        type: K,
+        handler: (payload: ManagerNotifications[K]) => void,
+      ) => {
+        notificationHandlers[type] = handler as never;
+        return () => undefined;
+      },
+    ),
     start: vi.fn(),
     dispatch,
   } as unknown as ConnectionManager;
@@ -201,8 +203,23 @@ describe("<CameraConnect />", () => {
   });
 
   it.each([
-    ["connecting renders ConnectingIndicator with attempt", { kind: "connecting", attempt: 2, abort: new AbortController() } as ConnectionState, /connecting/i],
-    ["reconnecting renders ConnectingIndicator with attempt", { kind: "reconnecting", attempt: 3, abort: new AbortController(), backoffTimer: setTimeout(() => undefined, 0), lastFailure: makeError("cable-unplugged"), lastReason: "cable-unplugged" } as ConnectionState, /3/],
+    [
+      "connecting renders ConnectingIndicator with attempt",
+      { kind: "connecting", attempt: 2, abort: new AbortController() } as ConnectionState,
+      /connecting/i,
+    ],
+    [
+      "reconnecting renders ConnectingIndicator with attempt",
+      {
+        kind: "reconnecting",
+        attempt: 3,
+        abort: new AbortController(),
+        backoffTimer: setTimeout(() => undefined, 0),
+        lastFailure: makeError("cable-unplugged"),
+        lastReason: "cable-unplugged",
+      } as ConnectionState,
+      /3/,
+    ],
   ])("%s", (_name, state, text) => {
     useCameraStore.setState({ state });
     render(<CameraConnect />);
@@ -256,7 +273,52 @@ describe("<CameraConnect />", () => {
   it("presets-read notification populates store", () => {
     const { manager, emitNotification } = fakeManager();
     wireCameraManager(manager);
-    emitNotification("presets-read", { presets: [{ slot: 1, properties: {} }] });
+    emitNotification("presets-read", {
+      presets: [
+        {
+          slot: 1,
+          name: "C1",
+          properties: {
+            "0xd190": { value: -1 },
+            "0xd192": { value: 14 },
+          },
+          decoded: {
+            filmSimulation: { value: 14, label: "Acros + Red" },
+            dynamicRange: { value: -1, label: "DR Auto" },
+            whiteBalance: { value: 2, label: "Auto" },
+            wbShift: { r: -8, b: -8 },
+            highlightTone: 1,
+            shadowTone: 3.5,
+            color: 0,
+            sharpness: 1,
+            noiseReduction: -4,
+            clarity: 0,
+            grainEffect: {
+              value: 259,
+              label: "Strong Large",
+              strength: "Strong",
+              size: "Large",
+            },
+            colorChromeEffect: { value: 2, label: "Strong" },
+            colorChromeEffectBlue: { value: 2, label: "Strong" },
+            smoothSkinEffect: { value: 0, label: "Off" },
+          },
+        },
+      ],
+    });
     expect(useCameraStore.getState().presets).toHaveLength(1);
+    expect(window.__LATENT_CAMERA_STATE__?.decodedPresets).toEqual([
+      expect.objectContaining({
+        slot: 1,
+        name: "C1",
+        propertyCount: 2,
+        film: "Acros + Red",
+        dynamicRange: "DR Auto",
+        wbShiftR: -8,
+        wbShiftB: -8,
+        shadowTone: 3.5,
+        grain: "Strong Large",
+      }),
+    ]);
   });
 });

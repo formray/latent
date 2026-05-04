@@ -136,6 +136,9 @@ function toRawPreset(preset: FujiRawPreset): RawPreset {
     slot: preset.slot,
     ...(preset.name ? { name: preset.name } : {}),
     properties,
+    ...(preset.missing.length > 0
+      ? { missing: preset.missing.map((code) => `0x${code.toString(16)}`) }
+      : {}),
     decoded: decodeRawPreset(preset),
   };
 }
@@ -144,7 +147,7 @@ function decodeRawPreset(preset: FujiRawPreset): DecodedPresetValues {
   const values = translatePresetToUI(preset.settings);
   return {
     filmSimulation: enumValue(values.filmSimulation, FilmSimLabels),
-    dynamicRange: enumValue(values.dynamicRange, DynRangeLabels),
+    dynamicRange: decodeDynamicRange(preset, values.dynamicRange),
     whiteBalance: {
       ...enumValue(values.whiteBalance, WBModeLabels),
       ...(values.wbColorTemp ? { colorTemperatureK: values.wbColorTemp } : {}),
@@ -164,6 +167,19 @@ function decodeRawPreset(preset: FujiRawPreset): DecodedPresetValues {
       ? { monochromaticColor: { warmCool: values.monoWC, greenMagenta: values.monoMG } }
       : {}),
   };
+}
+
+function decodeDynamicRange(preset: FujiRawPreset, translatedValue: number): DecodedPresetEnum {
+  const raw = numericSetting(preset, 0xd190);
+  if (raw === -1 || raw === 0xffff) {
+    return { value: -1, label: "DR Auto" };
+  }
+  return enumValue(translatedValue, DynRangeLabels);
+}
+
+function numericSetting(preset: FujiRawPreset, id: number): number | undefined {
+  const setting = preset.settings.find((candidate) => candidate.id === id);
+  return typeof setting?.value === "number" ? setting.value : undefined;
 }
 
 function enumValue(value: number, labels: Record<number, string>): DecodedPresetEnum {

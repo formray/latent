@@ -10,6 +10,7 @@ export interface RawPreset {
   slot: number;
   name?: string;
   properties: Record<string, unknown>;
+  missing?: string[];
   decoded?: DecodedPresetValues;
 }
 
