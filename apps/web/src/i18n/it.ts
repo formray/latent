@@ -17,6 +17,10 @@ export const it: Record<MessageKey, string> = {
   "library.importJson": "Importa file",
   "library.import.success": "{n} importate",
   "library.import.error": "JSON ricetta non valido",
+  "library.reset": "Ripristina default",
+  "library.reset.confirm":
+    "Ripristinare la libreria ricette di default? Le ricette importate verranno rimosse.",
+  "library.reset.done": "Default ripristinati",
 
   // Detail
   "detail.title": "Dettaglio ricetta",
@@ -25,6 +29,9 @@ export const it: Record<MessageKey, string> = {
   "detail.copyJson": "Copia come JSON",
   "detail.copyJson.copied": "Copiato",
   "detail.downloadJson": "Scarica .json",
+  "detail.delete": "Elimina",
+  "detail.delete.hideDefault": "Nascondi",
+  "detail.delete.confirm": "Rimuovere questa ricetta dalla libreria?",
   "detail.setupWalkthrough": "Configura sulla fotocamera",
   "detail.setupWalkthrough.intro":
     "Segui questi passaggi per inserire la ricetta in uno slot personalizzato della fotocamera.",

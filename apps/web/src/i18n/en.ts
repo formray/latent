@@ -15,6 +15,10 @@ export const en = {
   "library.importJson": "Import file",
   "library.import.success": "{n} imported",
   "library.import.error": "Invalid recipe JSON",
+  "library.reset": "Factory reset",
+  "library.reset.confirm":
+    "Restore the default recipe library? Imported recipes will be removed.",
+  "library.reset.done": "Defaults restored",
 
   // Detail
   "detail.title": "Recipe detail",
@@ -23,6 +27,9 @@ export const en = {
   "detail.copyJson": "Copy as JSON",
   "detail.copyJson.copied": "Copied",
   "detail.downloadJson": "Download .json",
+  "detail.delete": "Delete",
+  "detail.delete.hideDefault": "Hide",
+  "detail.delete.confirm": "Remove this recipe from the library?",
   "detail.setupWalkthrough": "Set up on camera",
   "detail.setupWalkthrough.intro":
     "Follow these steps to enter the recipe in a custom slot on your camera.",

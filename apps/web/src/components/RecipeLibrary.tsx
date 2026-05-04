@@ -38,6 +38,7 @@ export function RecipeLibrary(): JSX.Element {
   const setFilmSimFilter = useRecipesStore((s) => s.setFilmSimFilter);
   const toggleFavoritesOnly = useRecipesStore((s) => s.toggleFavoritesOnly);
   const importRecipes = useRecipesStore((s) => s.importRecipes);
+  const resetRecipeLibrary = useRecipesStore((s) => s.resetRecipeLibrary);
   const selected = useRecipesStore((s) => s.selectedRecipeId);
   const selectRecipe = useRecipesStore((s) => s.selectRecipe);
   const recipes = useRecipesStore((s) => s.recipes);
@@ -84,6 +85,12 @@ export function RecipeLibrary(): JSX.Element {
     } catch {
       setImportStatus(t("library.import.error"));
     }
+  };
+
+  const handleResetLibrary = async (): Promise<void> => {
+    if (!window.confirm(t("library.reset.confirm"))) return;
+    await resetRecipeLibrary();
+    setImportStatus(t("library.reset.done"));
   };
 
   const count = filtered.length;
@@ -159,6 +166,13 @@ export function RecipeLibrary(): JSX.Element {
             onChange={(e) => void handleImportFile(e)}
             aria-label={t("library.importJson")}
           />
+          <button
+            type="button"
+            onClick={() => void handleResetLibrary()}
+            className="rounded-sm border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200"
+          >
+            {t("library.reset")}
+          </button>
           {importStatus && (
             <span className="min-w-0 truncate text-right text-xs text-zinc-500">
               {importStatus}

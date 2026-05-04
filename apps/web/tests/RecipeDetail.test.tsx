@@ -34,7 +34,9 @@ describe("<RecipeDetail />", () => {
     useRecipesStore.setState({
       recipes: [sample],
       loaded: true,
+      loadError: null,
       favorites: new Set(),
+      hiddenDefaultIds: new Set(),
       searchQuery: "",
       filmSimFilter: null,
       favoritesOnly: false,
@@ -102,5 +104,18 @@ describe("<RecipeDetail />", () => {
     expect(
       screen.getByText(/follow these steps/i),
     ).toBeInTheDocument();
+  });
+
+  it("deletes the selected recipe after confirmation", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const deleteRecipe = vi.spyOn(useRecipesStore.getState(), "deleteRecipe");
+
+    render(<RecipeDetail recipe={sample} />);
+    fireEvent.click(screen.getByRole("button", { name: /delete/i }));
+
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(deleteRecipe).toHaveBeenCalledWith(sample.id);
+    confirm.mockRestore();
+    deleteRecipe.mockRestore();
   });
 });
