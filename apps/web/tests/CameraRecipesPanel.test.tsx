@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { ConnectionState, RawPreset } from "@latent/camera-connection";
 import { CameraRecipesPanel } from "../src/components/camera/CameraRecipesPanel";
 import { resetCameraManagerForTests, useCameraStore } from "../src/stores/camera";
+import { useRecipesStore } from "../src/stores/recipes";
 
 function connectedState(): ConnectionState {
   return {
@@ -81,6 +82,16 @@ describe("<CameraRecipesPanel />", () => {
       macosWizardOpen: false,
       macosShowAdvanced: false,
     });
+    useRecipesStore.setState({
+      recipes: [],
+      loaded: true,
+      loadError: null,
+      favorites: new Set(),
+      searchQuery: "",
+      filmSimFilter: null,
+      favoritesOnly: false,
+      selectedRecipeId: null,
+    });
   });
 
   it("does not render before a camera is connected or presets are cached", () => {
@@ -140,5 +151,21 @@ describe("<CameraRecipesPanel />", () => {
     });
     render(<CameraRecipesPanel />);
     expect(screen.getByRole("button", { name: /Default C3/i })).toHaveTextContent("default");
+  });
+
+  it("imports the selected camera slot as a recipe", () => {
+    useCameraStore.setState({
+      state: connectedState(),
+      presets: [preset(2)],
+    });
+    render(<CameraRecipesPanel />);
+
+    fireEvent.click(screen.getByRole("button", { name: /import as recipe/i }));
+
+    const imported = useRecipesStore.getState().recipes[0];
+    expect(imported?.name).toBe("KODAK ULTRAMAX 400");
+    expect(imported?.cameraModel).toBe("X-M5");
+    expect(imported?.dynamicRange).toBe("DRAuto");
+    expect(useRecipesStore.getState().selectedRecipeId).toBe(imported?.id);
   });
 });

@@ -98,4 +98,24 @@ describe("useRecipesStore", () => {
     expect(useRecipesStore.getState().getFilteredRecipes()).toHaveLength(1);
     expect(useRecipesStore.getState().getFilteredRecipes()[0]?.id).toBe(a.id);
   });
+
+  it("imports a camera recipe, selects it, and persists it separately from seed data", () => {
+    const imported = sampleRecipe({
+      id: "44444444-4444-4444-8444-444444444444",
+      name: "Camera C2",
+      tags: ["camera-import", "x-m5", "c2"],
+      dynamicRange: "DRAuto",
+      cameraModel: "X-M5",
+      capabilitySetId: "x-m5-fw1.20",
+    });
+
+    useRecipesStore.getState().setRecipes([sampleRecipe()]);
+    useRecipesStore.getState().importRecipe(imported);
+
+    expect(useRecipesStore.getState().recipes[0]?.name).toBe("Camera C2");
+    expect(useRecipesStore.getState().selectedRecipeId).toBe(imported.id);
+    const stored = localStorage.getItem("latent-imported-recipes-v1");
+    expect(stored).toBeTruthy();
+    expect(JSON.parse(stored ?? "[]")[0]?.name).toBe("Camera C2");
+  });
 });

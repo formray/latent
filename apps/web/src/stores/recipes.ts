@@ -7,6 +7,7 @@ import {
 import { z } from "zod";
 
 const FAVORITES_KEY = "latent-favorites-v1";
+const IMPORTED_RECIPES_KEY = "latent-imported-recipes-v1";
 
 function loadFavorites(): Set<string> {
   try {
@@ -30,6 +31,39 @@ function persistFavorites(favorites: Set<string>): void {
   }
 }
 
+const RecipeFile = z.array(Recipe);
+
+function loadImportedRecipes(): RecipeType[] {
+  try {
+    if (typeof localStorage === "undefined") return [];
+    const raw = localStorage.getItem(IMPORTED_RECIPES_KEY);
+    if (!raw) return [];
+    return RecipeFile.parse(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+}
+
+function persistImportedRecipes(recipes: RecipeType[]): void {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(IMPORTED_RECIPES_KEY, JSON.stringify(recipes));
+  } catch {
+    // ignore quota / privacy-mode failures
+  }
+}
+
+function mergeRecipes(primary: RecipeType[], secondary: RecipeType[]): RecipeType[] {
+  const seen = new Set<string>();
+  const merged: RecipeType[] = [];
+  for (const recipe of [...primary, ...secondary]) {
+    if (seen.has(recipe.id)) continue;
+    seen.add(recipe.id);
+    merged.push(recipe);
+  }
+  return merged;
+}
+
 export type FilmSimulationValue = z.infer<typeof FilmSimulation>;
 
 export interface RecipesState {
@@ -44,6 +78,7 @@ export interface RecipesState {
 
   loadSeedRecipes: () => Promise<void>;
   setRecipes: (recipes: RecipeType[]) => void;
+  importRecipe: (recipe: RecipeType) => void;
   setSearchQuery: (q: string) => void;
   setFilmSimFilter: (sim: FilmSimulationValue | null) => void;
   toggleFavoritesOnly: () => void;
@@ -52,7 +87,7 @@ export interface RecipesState {
   getFilteredRecipes: () => RecipeType[];
 }
 
-const SeedFile = z.array(Recipe);
+const SeedFile = RecipeFile;
 
 export const useRecipesStore = create<RecipesState>((set, get) => ({
   recipes: [],
@@ -71,7 +106,7 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
         default: unknown;
       };
       const validated = SeedFile.parse(mod.default);
-      set({ recipes: validated, loaded: true, loadError: null });
+      set({ recipes: mergeRecipes(loadImportedRecipes(), validated), loaded: true, loadError: null });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       set({ loaded: true, loadError: message, recipes: [] });
@@ -80,6 +115,17 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
 
   setRecipes(recipes) {
     set({ recipes, loaded: true, loadError: null });
+  },
+
+  importRecipe(recipe) {
+    const parsed = Recipe.parse(recipe);
+    const imported = mergeRecipes([parsed], loadImportedRecipes());
+    persistImportedRecipes(imported);
+    set({
+      recipes: mergeRecipes([parsed], get().recipes),
+      loadError: null,
+      selectedRecipeId: parsed.id,
+    });
   },
 
   setSearchQuery(q) {
