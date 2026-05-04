@@ -6,6 +6,7 @@ import { RecipeDetail } from "./components/RecipeDetail";
 import { CameraConnect } from "./components/CameraConnect";
 import { CameraRecipesPanel } from "./components/camera/CameraRecipesPanel";
 import { RawPreviewPanel } from "./components/camera/RawPreviewPanel";
+import { useCameraStore } from "./stores/camera";
 import { useT } from "./i18n";
 
 export function App(): JSX.Element {
@@ -13,6 +14,9 @@ export function App(): JSX.Element {
   const loadSeedRecipes = useRecipesStore((s) => s.loadSeedRecipes);
   const selectedId = useRecipesStore((s) => s.selectedRecipeId);
   const recipes = useRecipesStore((s) => s.recipes);
+  const cameraState = useCameraStore((s) => s.state);
+  const presets = useCameraStore((s) => s.presets);
+  const rawPreviewStatus = useCameraStore((s) => s.rawPreviewStatus);
   const [theme, setTheme] = useState<"dark" | "light">(() => initialTheme());
 
   useEffect(() => {
@@ -63,6 +67,14 @@ export function App(): JSX.Element {
         </div>
       </header>
 
+      <StudioOverview
+        recipeCount={recipes.length}
+        selectedRecipeName={selected?.name ?? null}
+        cameraStatus={cameraStatusLabel(cameraState)}
+        presetCount={presets.length}
+        rawPreviewLabel={rawPreviewLabel(rawPreviewStatus)}
+      />
+
       <div className="studio-stage">
         <CameraRecipesPanel />
         <RawPreviewPanel />
@@ -102,6 +114,82 @@ export function App(): JSX.Element {
   );
 }
 
+function StudioOverview({
+  recipeCount,
+  selectedRecipeName,
+  cameraStatus,
+  presetCount,
+  rawPreviewLabel,
+}: {
+  recipeCount: number;
+  selectedRecipeName: string | null;
+  cameraStatus: string;
+  presetCount: number;
+  rawPreviewLabel: string;
+}): JSX.Element {
+  return (
+    <section className="studio-overview border-b border-zinc-900 px-4 py-6 sm:px-6 lg:py-9">
+      <div className="mx-auto grid max-w-[1800px] gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.42fr)] lg:items-end">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.34em] text-emerald-400">
+            open camera lab
+          </p>
+          <h2 className="mt-3 font-mono text-6xl font-semibold uppercase leading-[0.86] tracking-normal text-zinc-50 sm:text-8xl lg:text-9xl xl:text-[10rem] 2xl:text-[12rem]">
+            Latent
+          </h2>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg">
+            Camera-backed Fujifilm recipes, live RAF rendering, and custom-slot control in one
+            focused workspace.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <OverviewLink href="#raw-preview-panel">Preview on RAF</OverviewLink>
+            <OverviewLink href="#recipe-library">Browse recipes</OverviewLink>
+            <OverviewLink href="#camera-recipes-panel">Read camera</OverviewLink>
+          </div>
+        </div>
+
+        <div className="grid gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/80 sm:grid-cols-2">
+          <OverviewMetric label="Camera" value={cameraStatus} />
+          <OverviewMetric
+            label="Slots read"
+            value={presetCount ? String(presetCount) : "Standby"}
+          />
+          <OverviewMetric label="Library" value={`${recipeCount} recipes`} />
+          <OverviewMetric label="RAF loop" value={rawPreviewLabel} />
+          <div className="bg-zinc-950 p-4 sm:col-span-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-600">
+              selected look
+            </p>
+            <p className="mt-2 truncate text-lg font-medium text-zinc-100">
+              {selectedRecipeName ?? "Choose a recipe"}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function OverviewLink({ href, children }: { href: string; children: string }): JSX.Element {
+  return (
+    <a
+      href={href}
+      className="rounded-md border border-zinc-800 bg-zinc-950/50 px-4 py-2 text-xs font-medium text-zinc-300 transition-colors hover:border-emerald-500/50 hover:text-emerald-300"
+    >
+      {children}
+    </a>
+  );
+}
+
+function OverviewMetric({ label, value }: { label: string; value: string }): JSX.Element {
+  return (
+    <div className="bg-zinc-950 p-4">
+      <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-600">{label}</p>
+      <p className="mt-2 truncate text-sm font-medium text-zinc-100">{value}</p>
+    </div>
+  );
+}
+
 function NavLink({ href, children }: { href: string; children: string }): JSX.Element {
   return (
     <a
@@ -133,4 +221,23 @@ function initialTheme(): "dark" | "light" {
     return "light";
   }
   return "dark";
+}
+
+function cameraStatusLabel(state: ReturnType<typeof useCameraStore.getState>["state"]): string {
+  if (state.kind === "connected" || state.kind === "degraded") {
+    return `${state.cameraModel} · FW ${state.firmwareVersion}`;
+  }
+  if (state.kind === "connecting") return "Connecting";
+  if (state.kind === "reconnecting") return "Reconnecting";
+  if (state.kind === "error") return "Needs attention";
+  return "Not connected";
+}
+
+function rawPreviewLabel(
+  rawPreviewStatus: ReturnType<typeof useCameraStore.getState>["rawPreviewStatus"],
+): string {
+  if (rawPreviewStatus.kind === "rendering") return "Rendering";
+  if (rawPreviewStatus.kind === "success") return rawPreviewStatus.recipeName ?? "Rendered";
+  if (rawPreviewStatus.kind === "error") return "Check preview";
+  return "Ready";
 }
