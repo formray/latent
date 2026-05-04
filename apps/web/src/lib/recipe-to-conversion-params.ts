@@ -68,6 +68,15 @@ export function recipeToConversionParams(recipe: RecipeType): ConversionParams {
   };
 }
 
+export function withoutWhiteBalance(params: ConversionParams): ConversionParams {
+  const rest: ConversionParams = { ...params };
+  delete rest.whiteBalance;
+  delete rest.wbShiftR;
+  delete rest.wbShiftB;
+  delete rest.wbColorTemp;
+  return rest;
+}
+
 function grain(grainEffect: RecipeType["grainEffect"]): number {
   if (grainEffect.strength === "Off") return 0x0000;
   const strength = grainEffect.strength === "Weak" ? 0x0002 : 0x0003;

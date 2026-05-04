@@ -6,6 +6,7 @@ import { useCameraStore } from "../src/stores/camera";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 
 const originalRenderRawPreview = useCameraStore.getState().renderRawPreview;
+const originalRenderRawPreviewDiagnostics = useCameraStore.getState().renderRawPreviewDiagnostics;
 
 const sample: RecipeType = {
   id: "44444444-4444-4444-8444-444444444444",
@@ -49,6 +50,7 @@ describe("<RecipeDetail />", () => {
       state: { kind: "idle" },
       rawPreviewStatus: { kind: "idle" },
       renderRawPreview: originalRenderRawPreview,
+      renderRawPreviewDiagnostics: originalRenderRawPreviewDiagnostics,
     });
   });
 
@@ -136,6 +138,31 @@ describe("<RecipeDetail />", () => {
     });
 
     expect(renderRawPreview).toHaveBeenCalledWith(file, sample);
+  });
+
+  it("starts a diagnostic RAF preview for the current recipe from the detail action", () => {
+    const renderRawPreviewDiagnostics = vi.fn();
+    useCameraStore.setState({
+      state: {
+        kind: "connected",
+        port: {} as never,
+        cameraModel: "X-S20",
+        firmwareVersion: "3.30",
+      },
+      renderRawPreviewDiagnostics,
+    });
+
+    render(<RecipeDetail recipe={sample} />);
+    const file = new File([new Uint8Array([1, 2, 3])], "sample.raf", {
+      type: "image/x-fuji-raf",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /diagnose raf/i }));
+    fireEvent.change(screen.getByLabelText(/raf file for recipe preview/i), {
+      target: { files: [file] },
+    });
+
+    expect(renderRawPreviewDiagnostics).toHaveBeenCalledWith(file, sample);
   });
 
   it("deletes the selected recipe after confirmation", () => {

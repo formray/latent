@@ -73,6 +73,9 @@ export function RawPreviewPanel(): JSX.Element | null {
             <p className="mt-3 font-mono text-xs text-zinc-500">
               Rendering {preview.fileName}
               {selectedRecipe ? ` with ${selectedRecipe.name}` : ""} on camera...
+              {preview.mode === "diagnostic" && preview.currentVariant
+                ? ` ${preview.currentVariant}`
+                : ""}
             </p>
           )}
           {preview.kind === "error" && (
@@ -83,7 +86,28 @@ export function RawPreviewPanel(): JSX.Element | null {
         </div>
 
         <div className="min-h-72 overflow-hidden border border-zinc-900 bg-zinc-950">
-          {preview.kind === "success" && preview.objectUrl ? (
+          {preview.kind === "success" && preview.diagnostics?.length ? (
+            <div className="grid min-h-72 gap-px bg-zinc-900 sm:grid-cols-2 xl:grid-cols-4">
+              {preview.diagnostics.map((variant) => (
+                <figure key={variant.id} className="grid bg-zinc-950">
+                  <div className="flex min-h-64 items-center justify-center">
+                    <img
+                      src={variant.objectUrl}
+                      alt={`${variant.label} RAF render for ${preview.fileName}`}
+                      className="max-h-[420px] w-full object-contain"
+                    />
+                  </div>
+                  <figcaption className="border-t border-zinc-900 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+                    <div className="text-zinc-300">{variant.label}</div>
+                    <div className="mt-1">
+                      JPEG {formatBytes(variant.jpegBytes)} · D185{" "}
+                      {formatBytes(variant.baseProfileBytes)}
+                    </div>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          ) : preview.kind === "success" && preview.objectUrl ? (
             <figure className="grid h-full min-h-72 grid-rows-[1fr_auto]">
               <img
                 src={preview.objectUrl}

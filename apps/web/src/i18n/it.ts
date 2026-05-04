@@ -39,6 +39,9 @@ export const it: Record<MessageKey, string> = {
   "detail.previewRaf.file": "File RAF per preview ricetta",
   "detail.previewRaf.disconnected":
     "Collega una fotocamera per vedere questa ricetta su un file RAF.",
+  "detail.previewRaf.diagnostic": "Diagnostica RAF",
+  "detail.previewRaf.diagnostic.title":
+    "Renderizza base, solo film, senza WB e ricetta completa per isolare bug colore della preview.",
   "detail.cameraWrite.section": "Scrivi su fotocamera",
   "detail.cameraWrite.slot": "Scrivi C{slot}",
   "detail.cameraWrite.writing": "Scrittura",

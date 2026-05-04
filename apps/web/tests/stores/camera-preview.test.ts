@@ -76,6 +76,34 @@ describe("camera store raw preview", () => {
       recipeName: "Preview sample",
     });
   });
+
+  it("renders diagnostic RAF variants for isolating preview color shifts", async () => {
+    const port = fakePort();
+    useCameraStore.setState({
+      state: {
+        kind: "connected",
+        port,
+        cameraModel: "X-S20",
+        firmwareVersion: "3.30",
+      },
+    });
+
+    await useCameraStore.getState().renderRawPreviewDiagnostics(file(), recipe);
+
+    expect(port.renderRawPreview).toHaveBeenCalledTimes(4);
+    expect(port.renderRawPreview).toHaveBeenNthCalledWith(1, new Uint8Array([1, 2, 3, 4]), undefined);
+    expect(vi.mocked(port.renderRawPreview).mock.calls[1]?.[1]).toBeTypeOf("function");
+    expect(useCameraStore.getState().rawPreviewStatus).toMatchObject({
+      kind: "success",
+      recipeName: "Preview sample",
+      diagnostics: [
+        { id: "base", label: "Base RAF" },
+        { id: "film", label: "Film simulation only" },
+        { id: "without-white-balance", label: "Full recipe without WB" },
+        { id: "full", label: "Full recipe" },
+      ],
+    });
+  });
 });
 
 function file(): File {

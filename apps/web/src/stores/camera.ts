@@ -8,9 +8,13 @@ import type {
   RawPreset,
 } from "@latent/camera-connection";
 import { LatentError, patchProfile } from "@latent/ptp-fuji";
+import type { ConversionParams } from "@latent/ptp-fuji";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import { writeRecipeToCameraSlot } from "../lib/recipe-to-camera-preset";
-import { recipeToConversionParams } from "../lib/recipe-to-conversion-params";
+import {
+  recipeToConversionParams,
+  withoutWhiteBalance,
+} from "../lib/recipe-to-conversion-params";
 
 const MACOS_BETA_ACK_KEY = "latent:macos-beta-ack-v1";
 const MACOS_SETUP_ACK_KEY = "latent:macos-setup-ack-v1";
@@ -40,6 +44,7 @@ export interface CameraStore {
   attemptMacosSetup: (advanced: boolean) => void;
   writeRecipeToSlot: (recipe: RecipeType, slot: number) => Promise<void>;
   renderRawPreview: (file: File, recipe?: RecipeType | null) => Promise<void>;
+  renderRawPreviewDiagnostics: (file: File, recipe: RecipeType) => Promise<void>;
   clearRawPreview: () => void;
   isConnected: () => boolean;
   isConnecting: () => boolean;
@@ -54,7 +59,13 @@ export type CameraWriteStatus =
 
 export type RawPreviewStatus =
   | { kind: "idle" }
-  | { kind: "rendering"; fileName: string }
+  | {
+      kind: "rendering";
+      fileName: string;
+      recipeName?: string;
+      mode?: "single" | "diagnostic";
+      currentVariant?: string;
+    }
   | {
       kind: "success";
       fileName: string;
@@ -62,12 +73,27 @@ export type RawPreviewStatus =
       jpegBytes: number;
       baseProfileBytes: number;
       recipeName?: string;
+      diagnostics?: RawPreviewDiagnosticResult[];
     }
   | { kind: "error"; fileName: string; message: string; recipeName?: string };
 
+export interface RawPreviewDiagnosticResult {
+  id: RawPreviewDiagnosticVariantId;
+  label: string;
+  objectUrl: string;
+  jpegBytes: number;
+  baseProfileBytes: number;
+}
+
+export type RawPreviewDiagnosticVariantId =
+  | "base"
+  | "film"
+  | "without-white-balance"
+  | "full";
+
 let manager: ConnectionManager | null = null;
 let unwireManager: Array<() => void> = [];
-let rawPreviewObjectUrl: string | null = null;
+let rawPreviewObjectUrls: string[] = [];
 
 export const useCameraStore = create<CameraStore>((set, get) => {
   const update = (patch: Partial<CameraStore>): void => {
@@ -205,7 +231,14 @@ export const useCameraStore = create<CameraStore>((set, get) => {
         return;
       }
 
-      update({ rawPreviewStatus: { kind: "rendering", fileName: file.name } });
+      update({
+        rawPreviewStatus: {
+          kind: "rendering",
+          fileName: file.name,
+          mode: "single",
+          ...(recipe ? { recipeName: recipe.name } : {}),
+        },
+      });
       try {
         const raf = await fileToBytes(file);
         const profileBuilder = recipe
@@ -215,12 +248,13 @@ export const useCameraStore = create<CameraStore>((set, get) => {
           : undefined;
         const result = await state.port.renderRawPreview(raf, profileBuilder);
         revokeRawPreviewUrl();
-        rawPreviewObjectUrl = createJpegObjectUrl(result.jpeg);
+        const objectUrl = createJpegObjectUrl(result.jpeg);
+        rawPreviewObjectUrls = [objectUrl];
         update({
           rawPreviewStatus: {
             kind: "success",
             fileName: file.name,
-            objectUrl: rawPreviewObjectUrl,
+            objectUrl,
             jpegBytes: result.jpeg.byteLength,
             baseProfileBytes: result.baseProfile.byteLength,
             ...(recipe ? { recipeName: recipe.name } : {}),
@@ -233,6 +267,84 @@ export const useCameraStore = create<CameraStore>((set, get) => {
             fileName: file.name,
             message: err instanceof Error ? err.message : String(err),
             ...(recipe ? { recipeName: recipe.name } : {}),
+          },
+        });
+      }
+    },
+
+    async renderRawPreviewDiagnostics(file: File, recipe: RecipeType) {
+      const { state } = get();
+      if (state.kind !== "connected" && state.kind !== "degraded") {
+        update({
+          rawPreviewStatus: {
+            kind: "error",
+            fileName: file.name,
+            message: "Camera is not connected.",
+            recipeName: recipe.name,
+          },
+        });
+        return;
+      }
+
+      const full = recipeToConversionParams(recipe);
+      const variants = diagnosticVariants(full);
+      const firstVariant = variants[0];
+      const results: RawPreviewDiagnosticResult[] = [];
+
+      revokeRawPreviewUrl();
+      update({
+        rawPreviewStatus: {
+          kind: "rendering",
+          fileName: file.name,
+          recipeName: recipe.name,
+          mode: "diagnostic",
+          ...(firstVariant ? { currentVariant: firstVariant.label } : {}),
+        },
+      });
+
+      try {
+        const raf = await fileToBytes(file);
+        for (const variant of variants) {
+          update({
+            rawPreviewStatus: {
+              kind: "rendering",
+              fileName: file.name,
+              recipeName: recipe.name,
+              mode: "diagnostic",
+              currentVariant: variant.label,
+            },
+          });
+          const result = await state.port.renderRawPreview(raf, variant.buildProfile);
+          const objectUrl = createJpegObjectUrl(result.jpeg);
+          rawPreviewObjectUrls.push(objectUrl);
+          results.push({
+            id: variant.id,
+            label: variant.label,
+            objectUrl,
+            jpegBytes: result.jpeg.byteLength,
+            baseProfileBytes: result.baseProfile.byteLength,
+          });
+        }
+
+        const fullResult = results.at(-1);
+        update({
+          rawPreviewStatus: {
+            kind: "success",
+            fileName: file.name,
+            objectUrl: fullResult?.objectUrl ?? "",
+            jpegBytes: fullResult?.jpegBytes ?? 0,
+            baseProfileBytes: fullResult?.baseProfileBytes ?? 0,
+            recipeName: recipe.name,
+            diagnostics: results,
+          },
+        });
+      } catch (err) {
+        update({
+          rawPreviewStatus: {
+            kind: "error",
+            fileName: file.name,
+            recipeName: recipe.name,
+            message: err instanceof Error ? err.message : String(err),
           },
         });
       }
@@ -399,6 +511,38 @@ function createJpegObjectUrl(jpeg: Uint8Array): string {
   return URL.createObjectURL(new Blob([copy], { type: "image/jpeg" }));
 }
 
+function diagnosticVariants(full: ConversionParams): Array<{
+  id: RawPreviewDiagnosticVariantId;
+  label: string;
+  buildProfile?: (baseProfile: Uint8Array) => Uint8Array;
+}> {
+  const filmSimulation = full.filmSimulation;
+  return [
+    {
+      id: "base",
+      label: "Base RAF",
+    },
+    {
+      id: "film",
+      label: "Film simulation only",
+      buildProfile: (baseProfile) => {
+        if (filmSimulation === undefined) return baseProfile;
+        return patchProfile(baseProfile, { filmSimulation });
+      },
+    },
+    {
+      id: "without-white-balance",
+      label: "Full recipe without WB",
+      buildProfile: (baseProfile) => patchProfile(baseProfile, withoutWhiteBalance(full)),
+    },
+    {
+      id: "full",
+      label: "Full recipe",
+      buildProfile: (baseProfile) => patchProfile(baseProfile, full),
+    },
+  ];
+}
+
 async function fileToBytes(file: File): Promise<Uint8Array> {
   if (typeof file.arrayBuffer === "function") {
     return new Uint8Array(await file.arrayBuffer());
@@ -418,11 +562,12 @@ async function fileToBytes(file: File): Promise<Uint8Array> {
 }
 
 function revokeRawPreviewUrl(): void {
-  if (!rawPreviewObjectUrl) return;
   if (typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
-    URL.revokeObjectURL(rawPreviewObjectUrl);
+    for (const objectUrl of rawPreviewObjectUrls) {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
-  rawPreviewObjectUrl = null;
+  rawPreviewObjectUrls = [];
 }
 
 interface CameraPresetDiagnostics {
