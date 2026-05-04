@@ -167,5 +167,45 @@ describe("<CameraRecipesPanel />", () => {
     expect(imported?.cameraModel).toBe("X-M5");
     expect(imported?.dynamicRange).toBe("DRAuto");
     expect(useRecipesStore.getState().selectedRecipeId).toBe(imported?.id);
+    expect(screen.getByRole("button", { name: /imported/i })).toBeInTheDocument();
+  });
+
+  it("selects the existing imported recipe when the camera slot is already imported", () => {
+    useCameraStore.setState({
+      state: connectedState(),
+      presets: [preset(2)],
+    });
+    useRecipesStore.getState().importRecipe({
+      id: "99999999-9999-4999-8999-999999999999",
+      schemaVersion: 1,
+      name: "KODAK ULTRAMAX 400",
+      description: "Imported from X-M5 custom slot C2.",
+      author: "Camera import",
+      tags: ["camera-import", "x-m5", "c2"],
+      createdAt: "2026-05-04T17:00:00.000Z",
+      capabilitySetId: "x-m5-fw1.00",
+      cameraModel: "X-M5",
+      filmSimulation: "ClassicChrome",
+      dynamicRange: "DRAuto",
+      whiteBalance: { mode: "Auto", shiftR: 1, shiftB: -5 },
+      highlightTone: 1,
+      shadowTone: 1,
+      color: 4,
+      sharpness: 0,
+      noiseReduction: -4,
+      clarity: 3,
+      grainEffect: { strength: "Strong", size: "Large" },
+      colorChromeEffect: "Weak",
+      colorChromeEffectBlue: "Off",
+      smoothSkinEffect: "Off",
+    });
+    useRecipesStore.getState().selectRecipe(null);
+    render(<CameraRecipesPanel />);
+
+    fireEvent.click(screen.getByRole("button", { name: /imported/i }));
+
+    const imported = useRecipesStore.getState().recipes;
+    expect(imported).toHaveLength(1);
+    expect(useRecipesStore.getState().selectedRecipeId).toBe(imported[0]?.id);
   });
 });

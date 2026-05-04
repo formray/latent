@@ -88,11 +88,12 @@ export function cameraPresetToRecipe(
   const fields = presetToRecipeFields(preset);
   const cameraModel = metadata.cameraModel.trim() || "Fujifilm Camera";
   const createdAt = options.createdAt ?? new Date().toISOString();
+  const name = presetName(preset);
   const recipe = {
     ...fields,
     id: options.id ?? createUuid(),
     schemaVersion: 1,
-    name: preset.name?.trim() || `Camera C${preset.slot} Default`,
+    name,
     description: `Imported from ${cameraModel} custom slot C${preset.slot}.`,
     author: "Camera import",
     tags: ["camera-import", cameraModel.toLowerCase(), `c${preset.slot}`],
@@ -101,6 +102,32 @@ export function cameraPresetToRecipe(
     cameraModel,
   };
   return Recipe.parse(recipe);
+}
+
+export function cameraPresetImportKey(
+  preset: RawPreset,
+  metadata: CameraPresetRecipeMetadata,
+): string {
+  const cameraModel = metadata.cameraModel.trim() || "Fujifilm Camera";
+  return cameraImportKeyParts({
+    cameraModel,
+    capabilitySetId: capabilitySetId(cameraModel, metadata.firmwareVersion),
+    slot: `c${preset.slot}`,
+    name: presetName(preset),
+  });
+}
+
+export function recipeCameraImportKey(recipe: RecipeType): string | null {
+  if (recipe.author !== "Camera import") return null;
+  if (!recipe.tags.includes("camera-import")) return null;
+  const slot = recipe.tags.find((tag) => /^c\d+$/i.test(tag));
+  if (!slot) return null;
+  return cameraImportKeyParts({
+    cameraModel: recipe.cameraModel,
+    capabilitySetId: recipe.capabilitySetId,
+    slot,
+    name: recipe.name,
+  });
 }
 
 function presetToRecipeFields(preset: RawPreset): RecipeFields {
@@ -176,6 +203,24 @@ function capabilitySetId(cameraModel: string, firmwareVersion: string | undefine
   const model = cameraModel.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   if (!firmwareVersion) return model || "fujifilm-camera";
   return `${model || "fujifilm-camera"}-fw${firmwareVersion}`;
+}
+
+function presetName(preset: RawPreset): string {
+  return preset.name?.trim() || `Camera C${preset.slot} Default`;
+}
+
+function cameraImportKeyParts(parts: {
+  cameraModel: string;
+  capabilitySetId: string;
+  slot: string;
+  name: string;
+}): string {
+  return [
+    parts.cameraModel.trim().toLowerCase(),
+    parts.capabilitySetId.trim().toLowerCase(),
+    parts.slot.trim().toLowerCase(),
+    parts.name.trim().toLowerCase(),
+  ].join("|");
 }
 
 function createUuid(): string {

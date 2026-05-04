@@ -112,6 +112,7 @@ export const it: Record<MessageKey, string> = {
   "camera.recipes.empty": "Collega una fotocamera per leggere gli slot custom.",
   "camera.recipes.inspector": "ispettore slot",
   "camera.recipes.import": "Importa come ricetta",
+  "camera.recipes.imported": "Importata",
   "camera.recipes.importDisabled":
     "L'import sarà abilitato dopo la verifica della UI in sola lettura.",
   "camera.recipes.properties": "Proprietà",

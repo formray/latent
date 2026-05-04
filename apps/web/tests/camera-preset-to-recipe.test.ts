@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { RawPreset } from "@latent/camera-connection";
 import {
+  cameraPresetImportKey,
   cameraPresetToRecipe,
   canImportCameraPreset,
+  recipeCameraImportKey,
 } from "../src/lib/camera-preset-to-recipe";
 
 function preset(overrides: Partial<RawPreset> = {}): RawPreset {
@@ -55,5 +57,19 @@ describe("cameraPresetToRecipe", () => {
     const check = canImportCameraPreset(preset({ missing: ["0xd192"] }));
     expect(check.ok).toBe(false);
     expect(check.reason).toMatch(/missing 1 camera properties/i);
+  });
+
+  it("uses the same stable import key for a camera preset and its imported recipe", () => {
+    const metadata = { cameraModel: "X-M5", firmwareVersion: "1.20" };
+    const recipe = cameraPresetToRecipe(
+      preset(),
+      metadata,
+      {
+        id: "99999999-9999-4999-8999-999999999999",
+        createdAt: "2026-05-04T17:00:00.000Z",
+      },
+    );
+
+    expect(recipeCameraImportKey(recipe)).toBe(cameraPresetImportKey(preset(), metadata));
   });
 });

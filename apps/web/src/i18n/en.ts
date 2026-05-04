@@ -106,6 +106,7 @@ export const en = {
   "camera.recipes.empty": "Connect a camera to read custom slots.",
   "camera.recipes.inspector": "slot inspector",
   "camera.recipes.import": "Import as recipe",
+  "camera.recipes.imported": "Imported",
   "camera.recipes.importDisabled": "Import will be enabled after the read-only UI is verified.",
   "camera.recipes.properties": "Properties",
   "camera.recipes.missing": "Missing",
