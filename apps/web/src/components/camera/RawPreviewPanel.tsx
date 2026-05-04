@@ -58,6 +58,20 @@ const WHITE_BALANCE_OPTIONS: RecipeType["whiteBalance"]["mode"][] = [
   "ColorTemperature",
 ];
 
+const WHITE_BALANCE_OPTION_LABELS: Record<RecipeType["whiteBalance"]["mode"], string> = {
+  Auto: "Auto",
+  AutoWhitePriority: "White Priority",
+  AutoAmbiencePriority: "Ambience Priority",
+  Daylight: "Daylight",
+  Shade: "Shade",
+  Fluorescent1: "Fluorescent 1",
+  Fluorescent2: "Fluorescent 2",
+  Fluorescent3: "Fluorescent 3",
+  Incandescent: "Incandescent",
+  Underwater: "Underwater",
+  ColorTemperature: "Color Temperature",
+};
+
 const TRI_OPTIONS: Array<NonNullable<RecipeType["smoothSkinEffect"]>> = ["Off", "Weak", "Strong"];
 
 export function RawPreviewPanel(): JSX.Element | null {
@@ -334,6 +348,18 @@ function RecipeControls({
   const updateWhiteBalance = (patch: Partial<RecipeType["whiteBalance"]>): void => {
     onChange({ ...recipe, whiteBalance: { ...recipe.whiteBalance, ...patch } });
   };
+  const updateWhiteBalanceMode = (mode: RecipeType["whiteBalance"]["mode"]): void => {
+    onChange({
+      ...recipe,
+      whiteBalance: {
+        ...recipe.whiteBalance,
+        mode,
+        ...(mode === "ColorTemperature" && typeof recipe.whiteBalance.colorTemperatureK !== "number"
+          ? { colorTemperatureK: 6500 }
+          : {}),
+      },
+    });
+  };
 
   return (
     <div className="mt-5 space-y-5">
@@ -357,16 +383,9 @@ function RecipeControls({
         value={recipe.whiteBalance.mode}
         options={WHITE_BALANCE_OPTIONS.map((value) => ({
           value,
-          label: describeWhiteBalance({
-            mode: value,
-            shiftR: recipe.whiteBalance.shiftR,
-            shiftB: recipe.whiteBalance.shiftB,
-            colorTemperatureK: recipe.whiteBalance.colorTemperatureK,
-          }),
+          label: WHITE_BALANCE_OPTION_LABELS[value],
         }))}
-        onChange={(value) =>
-          updateWhiteBalance({ mode: value as RecipeType["whiteBalance"]["mode"] })
-        }
+        onChange={(value) => updateWhiteBalanceMode(value as RecipeType["whiteBalance"]["mode"])}
       />
       {recipe.whiteBalance.mode === "ColorTemperature" && (
         <RangeControl
