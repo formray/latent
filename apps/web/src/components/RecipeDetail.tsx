@@ -23,12 +23,14 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const t = useT();
   const locale = detectLocale();
   const rafInputRef = useRef<HTMLInputElement | null>(null);
+  const rafPreviewModeRef = useRef<"single" | "diagnostic">("single");
   const isFavorite = useRecipesStore((s) => s.favorites.has(recipe.id));
   const toggleFavorite = useRecipesStore((s) => s.toggleFavorite);
   const deleteRecipe = useRecipesStore((s) => s.deleteRecipe);
   const cameraConnected = useCameraStore((s) => s.isConnected());
   const rawPreviewStatus = useCameraStore((s) => s.rawPreviewStatus);
   const renderRawPreview = useCameraStore((s) => s.renderRawPreview);
+  const renderRawPreviewDiagnostics = useCameraStore((s) => s.renderRawPreviewDiagnostics);
   const writeStatus = useCameraStore((s) => s.writeStatus);
   const writeRecipeToSlot = useCameraStore((s) => s.writeRecipeToSlot);
   const [copied, setCopied] = useState(false);
@@ -65,8 +67,17 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
       block: "start",
       behavior: "smooth",
     });
-    void renderRawPreview(file, recipe);
+    if (rafPreviewModeRef.current === "diagnostic") {
+      void renderRawPreviewDiagnostics(file, recipe);
+    } else {
+      void renderRawPreview(file, recipe);
+    }
     event.currentTarget.value = "";
+  };
+
+  const openRafPicker = (mode: "single" | "diagnostic"): void => {
+    rafPreviewModeRef.current = mode;
+    rafInputRef.current?.click();
   };
 
   return (
@@ -93,7 +104,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
             <button
               type="button"
               disabled={!cameraConnected || rawPreviewStatus.kind === "rendering"}
-              onClick={() => rafInputRef.current?.click()}
+              onClick={() => openRafPicker("single")}
               title={
                 cameraConnected
                   ? t("detail.previewRaf.title")
@@ -109,6 +120,26 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
               {rawPreviewStatus.kind === "rendering"
                 ? t("detail.previewRaf.rendering")
                 : t("detail.previewRaf")}
+            </button>
+            <button
+              type="button"
+              disabled={!cameraConnected || rawPreviewStatus.kind === "rendering"}
+              onClick={() => openRafPicker("diagnostic")}
+              title={
+                cameraConnected
+                  ? t("detail.previewRaf.diagnostic.title")
+                  : t("detail.previewRaf.disconnected")
+              }
+              className={clsx(
+                "rounded-sm border px-3 py-1.5 text-xs font-medium transition-colors",
+                cameraConnected && rawPreviewStatus.kind !== "rendering"
+                  ? "border-sky-500/50 bg-sky-500/10 text-sky-300 hover:bg-sky-500/15"
+                  : "cursor-not-allowed border-zinc-900 text-zinc-700",
+              )}
+            >
+              {rawPreviewStatus.kind === "rendering"
+                ? t("detail.previewRaf.rendering")
+                : t("detail.previewRaf.diagnostic")}
             </button>
             <button
               type="button"

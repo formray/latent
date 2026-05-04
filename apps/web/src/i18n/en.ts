@@ -35,6 +35,9 @@ export const en = {
   "detail.previewRaf.title": "Choose a RAF and render it with this recipe on the connected camera.",
   "detail.previewRaf.file": "RAF file for recipe preview",
   "detail.previewRaf.disconnected": "Connect a camera to preview this recipe on a RAF file.",
+  "detail.previewRaf.diagnostic": "Diagnose RAF",
+  "detail.previewRaf.diagnostic.title":
+    "Render base, film-only, no-WB, and full recipe variants to isolate preview color bugs.",
   "detail.cameraWrite.section": "Write to camera",
   "detail.cameraWrite.slot": "Write C{slot}",
   "detail.cameraWrite.writing": "Writing",
