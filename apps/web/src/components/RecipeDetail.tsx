@@ -81,18 +81,23 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   };
 
   return (
-    <article className="flex flex-col gap-6 px-8 py-8">
-      <header className="flex flex-col gap-2 border-b border-zinc-900 pb-6">
-        <div className="flex items-start justify-between gap-4">
+    <article className="mx-auto flex w-full max-w-6xl flex-col gap-7 px-4 py-5 sm:px-8 sm:py-8">
+      <header className="flex flex-col gap-5 border-b border-zinc-900 pb-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0">
             <p className="font-mono text-xs uppercase tracking-wider text-zinc-500">
               {humanFilmSim(recipe.filmSimulation)}
             </p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-50">
+            <h2 className="mt-1 max-w-3xl text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
               {recipe.name}
             </h2>
+            {recipe.description && (
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                {recipe.description}
+              </p>
+            )}
           </div>
-          <div className="flex flex-shrink-0 items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
             <input
               ref={rafInputRef}
               type="file"
@@ -106,12 +111,10 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
               disabled={!cameraConnected || rawPreviewStatus.kind === "rendering"}
               onClick={() => openRafPicker("single")}
               title={
-                cameraConnected
-                  ? t("detail.previewRaf.title")
-                  : t("detail.previewRaf.disconnected")
+                cameraConnected ? t("detail.previewRaf.title") : t("detail.previewRaf.disconnected")
               }
               className={clsx(
-                "rounded-sm border px-3 py-1.5 text-xs font-medium transition-colors",
+                "rounded-full border px-4 py-2 text-xs font-medium transition-colors",
                 cameraConnected && rawPreviewStatus.kind !== "rendering"
                   ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15"
                   : "cursor-not-allowed border-zinc-900 text-zinc-700",
@@ -131,7 +134,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
                   : t("detail.previewRaf.disconnected")
               }
               className={clsx(
-                "rounded-sm border px-3 py-1.5 text-xs font-medium transition-colors",
+                "rounded-full border px-4 py-2 text-xs font-medium transition-colors",
                 cameraConnected && rawPreviewStatus.kind !== "rendering"
                   ? "border-sky-500/50 bg-sky-500/10 text-sky-300 hover:bg-sky-500/15"
                   : "cursor-not-allowed border-zinc-900 text-zinc-700",
@@ -146,34 +149,32 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
               onClick={() => toggleFavorite(recipe.id)}
               aria-pressed={isFavorite}
               className={clsx(
-                "rounded-sm border px-3 py-1.5 text-xs transition-colors",
+                "rounded-full border px-4 py-2 text-xs transition-colors",
                 isFavorite
                   ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
                   : "border-zinc-800 text-zinc-400 hover:border-zinc-700",
               )}
             >
-              {isFavorite
-                ? t("detail.favourite.remove")
-                : t("detail.favourite.add")}
+              {isFavorite ? t("detail.favourite.remove") : t("detail.favourite.add")}
             </button>
             <button
               type="button"
               onClick={() => void handleCopy()}
-              className="rounded-sm border border-zinc-800 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+              className="rounded-full border border-zinc-800 px-4 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
             >
               {copied ? t("detail.copyJson.copied") : t("detail.copyJson")}
             </button>
             <button
               type="button"
               onClick={() => downloadRecipeJson(recipe)}
-              className="rounded-sm border border-zinc-800 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+              className="rounded-full border border-zinc-800 px-4 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
             >
               {t("detail.downloadJson")}
             </button>
             <button
               type="button"
               onClick={handleDelete}
-              className="rounded-sm border border-red-950/80 px-3 py-1.5 text-xs text-red-300 transition-colors hover:border-red-800 hover:bg-red-950/30"
+              className="rounded-full border border-red-950/80 px-4 py-2 text-xs text-red-300 transition-colors hover:border-red-800 hover:bg-red-950/30"
             >
               {recipe.tags.includes("latent-default")
                 ? t("detail.delete.hideDefault")
@@ -181,11 +182,6 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
             </button>
           </div>
         </div>
-        {recipe.description && (
-          <p className="max-w-2xl text-sm leading-relaxed text-zinc-400">
-            {recipe.description}
-          </p>
-        )}
       </header>
 
       <section aria-labelledby="params-heading" className="flex flex-col gap-3">
@@ -195,9 +191,12 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
         >
           {t("detail.parameters.section")}
         </h3>
-        <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-t border-zinc-900 pt-4 sm:grid-cols-2">
+        <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-t border-zinc-900 pt-4 sm:grid-cols-2 xl:grid-cols-3">
           <Param label={t("param.filmSimulation")} value={humanFilmSim(recipe.filmSimulation)} />
-          <Param label={t("param.dynamicRange")} value={describeDynamicRange(recipe.dynamicRange)} />
+          <Param
+            label={t("param.dynamicRange")}
+            value={describeDynamicRange(recipe.dynamicRange)}
+          />
           <Param
             label={t("param.whiteBalance")}
             value={describeWhiteBalance(recipe.whiteBalance)}
@@ -206,41 +205,17 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
             label={t("param.whiteBalance.shift")}
             value={describeWhiteBalanceShift(recipe.whiteBalance)}
           />
-          <Param
-            label={t("param.highlightTone")}
-            value={signedNumber(recipe.highlightTone)}
-          />
-          <Param
-            label={t("param.shadowTone")}
-            value={signedNumber(recipe.shadowTone)}
-          />
+          <Param label={t("param.highlightTone")} value={signedNumber(recipe.highlightTone)} />
+          <Param label={t("param.shadowTone")} value={signedNumber(recipe.shadowTone)} />
           <Param label={t("param.color")} value={signedNumber(recipe.color)} />
-          <Param
-            label={t("param.sharpness")}
-            value={signedNumber(recipe.sharpness)}
-          />
-          <Param
-            label={t("param.noiseReduction")}
-            value={signedNumber(recipe.noiseReduction)}
-          />
+          <Param label={t("param.sharpness")} value={signedNumber(recipe.sharpness)} />
+          <Param label={t("param.noiseReduction")} value={signedNumber(recipe.noiseReduction)} />
           <Param label={t("param.clarity")} value={signedNumber(recipe.clarity)} />
-          <Param
-            label={t("param.grainEffect")}
-            value={describeGrain(recipe.grainEffect)}
-          />
-          <Param
-            label={t("param.colorChromeEffect")}
-            value={recipe.colorChromeEffect}
-          />
-          <Param
-            label={t("param.colorChromeEffectBlue")}
-            value={recipe.colorChromeEffectBlue}
-          />
+          <Param label={t("param.grainEffect")} value={describeGrain(recipe.grainEffect)} />
+          <Param label={t("param.colorChromeEffect")} value={recipe.colorChromeEffect} />
+          <Param label={t("param.colorChromeEffectBlue")} value={recipe.colorChromeEffectBlue} />
           {recipe.smoothSkinEffect && (
-            <Param
-              label={t("param.smoothSkinEffect")}
-              value={recipe.smoothSkinEffect}
-            />
+            <Param label={t("param.smoothSkinEffect")} value={recipe.smoothSkinEffect} />
           )}
           {recipe.monochromaticColor && (
             <Param
@@ -261,10 +236,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
           {t("detail.metadata.section")}
         </h3>
         <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-t border-zinc-900 pt-4 sm:grid-cols-2">
-          <Param
-            label={t("detail.metadata.author")}
-            value={recipe.author ?? "—"}
-          />
+          <Param label={t("detail.metadata.author")} value={recipe.author ?? "—"} />
           <Param
             label={t("detail.metadata.camera")}
             value={`${recipe.cameraModel} (${recipe.capabilitySetId})`}
@@ -287,7 +259,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
         >
           {t("detail.cameraWrite.section")}
         </h3>
-        <div className="flex flex-wrap items-center gap-2 border-t border-zinc-900 pt-4">
+        <div className="grid grid-cols-2 gap-2 border-t border-zinc-900 pt-4 sm:grid-cols-4">
           {[1, 2, 3, 4].map((slot) => {
             const writing =
               writeStatus.kind === "writing" &&
@@ -300,7 +272,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
                 disabled={!cameraConnected || writeStatus.kind === "writing"}
                 onClick={() => handleWrite(slot)}
                 className={clsx(
-                  "rounded-sm border px-3 py-1.5 font-mono text-xs transition-colors",
+                  "rounded-full border px-4 py-3 font-mono text-xs transition-colors",
                   cameraConnected
                     ? "border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/20"
                     : "cursor-not-allowed border-zinc-900 text-zinc-700",
@@ -334,7 +306,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
           type="button"
           onClick={() => setShowWalkthrough((v) => !v)}
           aria-expanded={showWalkthrough}
-          className="self-start rounded-sm border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-700"
+          className="self-start rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700"
         >
           {t("detail.setupWalkthrough")}
         </button>
@@ -344,13 +316,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   );
 }
 
-function Param({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}): JSX.Element {
+function Param({ label, value }: { label: string; value: string }): JSX.Element {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-zinc-900/40 pb-2">
       <dt className="text-xs text-zinc-500">{label}</dt>
@@ -371,9 +337,7 @@ function Walkthrough({ recipe }: { recipe: RecipeType }): JSX.Element {
   ];
   return (
     <div className="flex flex-col gap-2 rounded-sm border border-zinc-900 bg-zinc-900/40 p-4">
-      <p className="text-xs leading-relaxed text-zinc-400">
-        {t("detail.setupWalkthrough.intro")}
-      </p>
+      <p className="text-xs leading-relaxed text-zinc-400">{t("detail.setupWalkthrough.intro")}</p>
       <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm text-zinc-300">
         {steps.map((s, i) => (
           <li key={i} className="leading-relaxed">

@@ -47,6 +47,7 @@ export function CameraRecipesPanel(): JSX.Element | null {
 
   return (
     <section
+      id="camera-recipes-panel"
       aria-label={t("camera.recipes.title")}
       className="border-b border-zinc-900 bg-[#070707]"
     >
@@ -179,12 +180,10 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
     );
   }
 
-  const cameraModel = state.kind === "connected" || state.kind === "degraded"
-    ? state.cameraModel
-    : "Fujifilm Camera";
-  const firmwareVersion = state.kind === "connected" || state.kind === "degraded"
-    ? state.firmwareVersion
-    : undefined;
+  const cameraModel =
+    state.kind === "connected" || state.kind === "degraded" ? state.cameraModel : "Fujifilm Camera";
+  const firmwareVersion =
+    state.kind === "connected" || state.kind === "degraded" ? state.firmwareVersion : undefined;
   const importMetadata = {
     cameraModel,
     ...(firmwareVersion ? { firmwareVersion } : {}),
@@ -196,7 +195,8 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
     (recipe) => recipeCameraImportKey(recipe) === existingImportKey,
   );
   const existingImportMatches =
-    existingImport !== undefined && cameraPresetMatchesRecipe(preset, importMetadata, existingImport);
+    existingImport !== undefined &&
+    cameraPresetMatchesRecipe(preset, importMetadata, existingImport);
   const handleImport = (): void => {
     if (!importCheck.ok) return;
     if (existingImport && existingImportMatches) {
@@ -338,13 +338,7 @@ function Th({ children }: { children: ReactNode }): JSX.Element {
   return <th className="px-3 py-2 text-left font-medium">{children}</th>;
 }
 
-function Td({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}): JSX.Element {
+function Td({ children, className }: { children: ReactNode; className?: string }): JSX.Element {
   return <td className={clsx("max-w-56 truncate px-3 py-2 align-top", className)}>{children}</td>;
 }
 
@@ -406,7 +400,8 @@ function rawPropertyName(value: unknown): string {
 
 function rawPropertyValue(value: unknown): string {
   if (!isRawProperty(value)) return String(value);
-  if (typeof value.value === "number" || typeof value.value === "string") return String(value.value);
+  if (typeof value.value === "number" || typeof value.value === "string")
+    return String(value.value);
   return "--";
 }
 
