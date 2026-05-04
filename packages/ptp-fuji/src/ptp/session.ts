@@ -60,6 +60,10 @@ export class FujiCameraSession {
       void this.options;
       this._state = "open";
     } catch (err) {
+      if (err instanceof LatentError && err.category === "PtpSessionAlreadyOpen") {
+        this._state = "open";
+        return;
+      }
       this._state = "closed";
       throw err;
     }

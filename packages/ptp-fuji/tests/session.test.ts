@@ -91,6 +91,25 @@ describe("FujiCameraSession", () => {
     expect(s.state).toBe("closed");
   });
 
+  it("adopts an already-open camera session after a page refresh", async () => {
+    const t = new FakeTransport();
+    t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x1e, 0x20, 1, 0, 0, 0]));
+    t.enqueue(packContainer({
+      type: ContainerType.Data,
+      code: 0x1001,
+      transactionId: 2,
+      params: [],
+      data: deviceInfoPayload(),
+    }));
+    t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x01, 0x20, 2, 0, 0, 0]));
+    const s = new FujiCameraSession(t);
+    await s.open();
+    expect(s.state).toBe("open");
+    await expect(s.getDeviceInfo()).resolves.toMatchObject({
+      model: "X-S20",
+    });
+  });
+
   it("close always closes transport after response failure", async () => {
     const t = new FakeTransport();
     t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x01, 0x20, 1, 0, 0, 0]));
