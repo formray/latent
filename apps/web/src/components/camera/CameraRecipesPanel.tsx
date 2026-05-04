@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useEffect, useMemo, useState, type JSX, type ReactNode } from "react";
-import type { RawPreset } from "@latent/camera-connection";
+import type { DecodedPresetValues, RawPreset } from "@latent/camera-connection";
 import { useCameraStore } from "../../stores/camera";
 import { useRecipesStore } from "../../stores/recipes";
 import {
@@ -10,16 +10,16 @@ import {
   canImportCameraPreset,
   recipeCameraImportKey,
 } from "../../lib/camera-preset-to-recipe";
-import { useT } from "../../i18n";
+import { useT, type MessageKey } from "../../i18n";
 
 const PARAMETER_COLUMNS = [
-  ["H", "highlightTone"],
-  ["S", "shadowTone"],
-  ["Color", "color"],
-  ["Sharp", "sharpness"],
-  ["NR", "noiseReduction"],
-  ["Clarity", "clarity"],
-] as const;
+  ["param.highlightTone", "highlightTone"],
+  ["param.shadowTone", "shadowTone"],
+  ["param.color", "color"],
+  ["param.sharpness", "sharpness"],
+  ["param.noiseReduction", "noiseReduction"],
+  ["param.clarity", "clarity"],
+] as const satisfies ReadonlyArray<readonly [MessageKey, keyof DecodedPresetValues]>;
 
 export function CameraRecipesPanel(): JSX.Element | null {
   const t = useT();
@@ -239,17 +239,19 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
       </div>
 
       <div className="mt-6 grid grid-cols-3 gap-px bg-zinc-900 font-mono text-xs sm:grid-cols-4">
-        <QTile label="DR" value={d.dynamicRange.label} strong />
-        <QTile label="WB" value={d.whiteBalance.label} />
-        <QTile label="R" value={signed(d.wbShift.r)} />
-        <QTile label="B" value={signed(d.wbShift.b)} />
-        {PARAMETER_COLUMNS.map(([label, key]) => (
-          <QTile key={key} label={label} value={formatNumber(d[key])} />
+        <QTile label={t("param.dynamicRange")} value={d.dynamicRange.label} strong />
+        <QTile label={t("param.whiteBalance")} value={d.whiteBalance.label} />
+        <QTile
+          label={t("param.whiteBalance.shift")}
+          value={`R ${signed(d.wbShift.r)} · B ${signed(d.wbShift.b)}`}
+        />
+        {PARAMETER_COLUMNS.map(([labelKey, key]) => (
+          <QTile key={key} label={t(labelKey)} value={formatNumber(d[key])} />
         ))}
-        <QTile label="Grain" value={d.grainEffect.label} strong />
-        <QTile label="CCR" value={d.colorChromeEffect.label} />
-        <QTile label="CCB" value={d.colorChromeEffectBlue.label} />
-        <QTile label="Skin" value={d.smoothSkinEffect.label} />
+        <QTile label={t("param.grainEffect")} value={d.grainEffect.label} strong />
+        <QTile label={t("param.colorChromeEffect")} value={d.colorChromeEffect.label} />
+        <QTile label={t("param.colorChromeEffectBlue")} value={d.colorChromeEffectBlue.label} />
+        <QTile label={t("param.smoothSkinEffect")} value={d.smoothSkinEffect.label} />
         <QTile label={t("camera.recipes.properties")} value={String(propertyCount(preset))} />
         <QTile label={t("camera.recipes.missing")} value={String(preset.missing?.length ?? 0)} />
       </div>

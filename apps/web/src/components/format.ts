@@ -42,18 +42,29 @@ export function signedNumber(n: number): string {
   return n > 0 ? `+${n}` : `${n}`;
 }
 
+export function describeDynamicRange(value: RecipeType["dynamicRange"]): string {
+  if (value === "DRAuto") return "DR Auto";
+  if (value === "DR100") return "DR 100%";
+  if (value === "DR200") return "DR 200%";
+  return "DR 400%";
+}
+
 export function describeWhiteBalance(wb: RecipeType["whiteBalance"]): string {
   if (wb.mode === "ColorTemperature" && typeof wb.colorTemperatureK === "number") {
     return `${wb.colorTemperatureK}K`;
   }
-  if (wb.mode === "AutoWhitePriority") return "Auto White Priority";
-  if (wb.mode === "AutoAmbiencePriority") return "Auto Ambience Priority";
+  if (wb.mode === "AutoWhitePriority") return "White Priority";
+  if (wb.mode === "AutoAmbiencePriority") return "Ambience Priority";
   return wb.mode;
 }
 
 export function describeGrain(grain: RecipeType["grainEffect"]): string {
   if (grain.strength === "Off") return "Off";
-  return `${grain.strength} · ${grain.size}`;
+  return `${grain.strength} ${grain.size}`;
+}
+
+export function describeWhiteBalanceShift(wb: RecipeType["whiteBalance"]): string {
+  return `R ${signedNumber(wb.shiftR)} · B ${signedNumber(wb.shiftB)}`;
 }
 
 export function formatDate(iso: string, locale: string): string {
