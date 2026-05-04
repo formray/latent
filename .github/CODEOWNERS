@@ -1,0 +1,7 @@
+# CODEOWNERS — auto-assigned reviewers
+#
+# Single-maintainer phase: everything routes to the founder. As additional
+# regular committers join (see GOVERNANCE.md), this file grows with
+# narrower path scopes.
+
+* @giuseppe-albrizio
