@@ -531,7 +531,7 @@ function RecipeCommandPanel({
         <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">
           {t("detail.action.file.section")}
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={onToggleFavorite}
@@ -547,6 +547,15 @@ function RecipeCommandPanel({
           </button>
           <button
             type="button"
+            onClick={onDelete}
+            className="rounded-md border border-red-950/80 px-3 py-2 text-xs text-red-300 transition-colors hover:border-red-800 hover:bg-red-950/30"
+          >
+            {recipe.tags.includes("latent-default")
+              ? t("detail.delete.hideDefault")
+              : t("detail.delete")}
+          </button>
+          <button
+            type="button"
             onClick={onCopy}
             className="rounded-md border border-zinc-800 px-3 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
           >
@@ -558,15 +567,6 @@ function RecipeCommandPanel({
             className="rounded-md border border-zinc-800 px-3 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
           >
             {t("detail.downloadJson")}
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="rounded-md border border-red-950/80 px-3 py-2 text-xs text-red-300 transition-colors hover:border-red-800 hover:bg-red-950/30"
-          >
-            {recipe.tags.includes("latent-default")
-              ? t("detail.delete.hideDefault")
-              : t("detail.delete")}
           </button>
         </div>
       </div>
