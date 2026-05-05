@@ -128,6 +128,32 @@ describe("<RawPreviewPanel />", () => {
     });
   });
 
+  it("auto-renders again when the Kelvin slider changes", async () => {
+    useRecipesStore.setState({
+      recipes: [sample],
+      selectedRecipeId: sample.id,
+    });
+    const file = new File([new Uint8Array([1, 2, 3])], "sample.raf", {
+      type: "image/x-fuji-raf",
+    });
+    useCameraStore.setState({ rawPreviewFile: file });
+
+    render(<RawPreviewPanel />);
+    renderRawPreview.mockClear();
+    fireEvent.change(screen.getByLabelText("Kelvin"), { target: { value: "7200" } });
+
+    await waitFor(
+      () => {
+        expect(renderRawPreview).toHaveBeenCalled();
+      },
+      { timeout: 1200 },
+    );
+    expect(lastRenderCall()?.[1]?.whiteBalance).toMatchObject({
+      mode: "ColorTemperature",
+      colorTemperatureK: 7200,
+    });
+  });
+
   it("uses a RAF selected from the recipe detail for the workspace render controls", async () => {
     const file = new File([new Uint8Array([1, 2, 3])], "detail-selected.raf", {
       type: "image/x-fuji-raf",

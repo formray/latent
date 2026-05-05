@@ -81,6 +81,20 @@ describe("<RecipeDetail />", () => {
     expect(screen.getByText("editorial, neutral")).toBeInTheDocument();
   });
 
+  it("renames the selected recipe from the detail header", () => {
+    const renameRecipe = vi.spyOn(useRecipesStore.getState(), "renameRecipe");
+    render(<RecipeDetail recipe={sample} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /rename/i }));
+    fireEvent.change(screen.getByLabelText(/recipe name/i), {
+      target: { value: "Midnight Negative" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save name/i }));
+
+    expect(renameRecipe).toHaveBeenCalledWith(sample.id, "Midnight Negative");
+    renameRecipe.mockRestore();
+  });
+
   it("copy-as-JSON button writes the recipe JSON to the clipboard", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });

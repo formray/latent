@@ -92,6 +92,22 @@ describe("cameraPresetToRecipe", () => {
     expect(recipeCameraImportKey(recipe)).toBe(cameraPresetImportKey(preset(), metadata));
   });
 
+  it("keeps the camera import key stable when the user renames an imported recipe", () => {
+    const metadata = { cameraModel: "X-M5", firmwareVersion: "1.20" };
+    const recipe = cameraPresetToRecipe(
+      preset(),
+      metadata,
+      {
+        id: "99999999-9999-4999-8999-999999999999",
+        createdAt: "2026-05-04T17:00:00.000Z",
+      },
+    );
+    const renamed = { ...recipe, name: "My Camera Backup" };
+
+    expect(recipeCameraImportKey(renamed)).toBe(cameraPresetImportKey(preset(), metadata));
+    expect(cameraPresetMatchesRecipe(preset(), metadata, renamed)).toBe(true);
+  });
+
   it("detects when an existing import no longer matches the camera slot", () => {
     const metadata = { cameraModel: "X-M5", firmwareVersion: "1.20" };
     const recipe = cameraPresetToRecipe(
