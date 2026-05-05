@@ -79,8 +79,17 @@ html {
   background-color: rgb(248 245 238 / 0.92) !important;
 }
 
+.theme-light .bg-zinc-950\/80,
+.theme-light .bg-zinc-950\/85 {
+  background-color: rgb(248 245 238 / 0.88) !important;
+}
+
 .theme-light .bg-zinc-900 {
   background-color: #ebe5d9 !important;
+}
+
+.theme-light .bg-zinc-900\/80 {
+  background-color: rgb(235 229 217 / 0.84) !important;
 }
 
 .theme-light .bg-zinc-900\/40,
@@ -125,6 +134,10 @@ html {
   border-color: #ded6c7 !important;
 }
 
+.theme-light .border-zinc-800\/80 {
+  border-color: rgb(119 109 95 / 0.3) !important;
+}
+
 .theme-light .border-emerald-500\/30,
 .theme-light .border-emerald-500\/40,
 .theme-light .border-emerald-500\/50,
@@ -139,6 +152,10 @@ html {
 
 .theme-light .bg-emerald-500\/10 {
   background-color: rgb(4 120 87 / 0.1) !important;
+}
+
+.theme-light .bg-emerald-500\/15 {
+  background-color: rgb(4 120 87 / 0.14) !important;
 }
 
 .theme-light .hover\:bg-emerald-500\/15:hover {

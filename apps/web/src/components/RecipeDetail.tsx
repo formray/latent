@@ -81,7 +81,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   };
 
   return (
-    <article className="mx-auto flex w-full max-w-6xl flex-col gap-7 px-4 py-5 sm:px-8 sm:py-8">
+    <article className="flex w-full max-w-none flex-col gap-7 px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
       <header className="flex flex-col gap-5 border-b border-zinc-900 pb-6">
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,440px)] xl:items-start">
           <div className="min-w-0">
