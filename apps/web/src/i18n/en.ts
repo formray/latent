@@ -45,10 +45,27 @@ export const en = {
   "detail.cameraWrite.slot": "Write C{slot}",
   "detail.cameraWrite.writing": "Writing",
   "detail.cameraWrite.confirm":
-    "Write this recipe to camera slot C{slot}? Latent will back up the current slot and verify after writing.",
+    "Write this recipe to camera slot C{slot}? Latent will verify the slot after writing.",
+  "detail.cameraWrite.confirmWithBackup":
+    "Write this recipe to camera slot C{slot}? Backup available: {backup}. Latent will verify the slot after writing.",
+  "detail.cameraWrite.confirmWithoutBackup":
+    "Write this recipe to camera slot C{slot}? No imported backup was found for this slot. Continue only if this slot is safe to overwrite.",
+  "detail.cameraWrite.backedUp": "backup",
+  "detail.cameraWrite.noBackup": "no backup",
   "detail.cameraWrite.success": "Wrote C{slot} and verified {n} properties.",
+  "detail.cameraWrite.lastSuccess": "Last write: C{slot} restored from {recipe}.",
   "detail.cameraWrite.error": "Write failed: {message}",
+  "detail.cameraWrite.lastError": "Last write failed on C{slot}: {message}",
   "detail.cameraWrite.disconnected": "Connect a camera to write this recipe to a custom slot.",
+  "detail.cameraSafety.camera.ok": "Camera is online.",
+  "detail.cameraSafety.camera.missing": "Connect a camera before writing.",
+  "detail.cameraSafety.backup.ok": "Restore points found for {slots}.",
+  "detail.cameraSafety.backup.missing":
+    "No one-click restore point yet. Import this camera slot, or export a JSON backup before writing.",
+  "detail.cameraSafety.readBack": "Latent reads the slot back after writing.",
+  "detail.cameraRestore.section": "One-click restore",
+  "detail.cameraRestore.slot": "Restore C{slot}",
+  "detail.cameraRestore.confirm": "Restore camera slot C{slot} from backup \"{backup}\"?",
   "detail.setupWalkthrough": "Set up on camera",
   "detail.setupWalkthrough.intro":
     "Follow these steps to enter the recipe in a custom slot on your camera.",
@@ -141,6 +158,7 @@ export const en = {
   "camera.recipes.imported": "Imported",
   "camera.recipes.updateImport": "Update recipe",
   "camera.recipes.importDisabled": "Import will be enabled after the read-only UI is verified.",
+  "camera.recipes.exportBackup": "Export backup",
   "camera.recipes.properties": "Properties",
   "camera.recipes.missing": "Missing",
   "camera.recipes.mode": "Mode",
