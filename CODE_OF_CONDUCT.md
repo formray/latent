@@ -40,9 +40,7 @@ Examples of unacceptable behavior include:
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may
-be reported to the maintainers at **conduct@latent.photo** (placeholder
-until the domain is live; in the meantime use the address listed in
-`SECURITY.md`).
+be reported to the maintainers at **admin@formray.io**.
 
 All complaints will be reviewed and investigated promptly and fairly.
 All maintainers are obligated to respect the privacy and security of

@@ -5,8 +5,7 @@
 If you've found a security issue in Latent, please **do not open a public
 GitHub issue**. Email the details to:
 
-- **security@latent.photo** (placeholder until the domain is live)
-- In the meantime: **giuseppe@skeldon.it**
+- **admin@formray.io**
 
 You should expect an acknowledgement within 72 hours and a status update
 within 7 days. We aim to ship a fix within 30 days for high-severity

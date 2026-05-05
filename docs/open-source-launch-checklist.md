@@ -42,8 +42,7 @@ Use this before making the repository public or announcing it broadly.
 - [x] MIT licenses for reusable packages.
 - [x] filmkit attribution in `packages/ptp-fuji/NOTICE`.
 - [x] Fujifilm non-affiliation notice in README.
-- [ ] Confirm final public contact emails or replace placeholders with a
-      working address before launch.
+- [x] Public contact email uses `admin@formray.io`.
 - [ ] Confirm trademark policy ADR before V1.0.0.
 
 ## Release Safety
