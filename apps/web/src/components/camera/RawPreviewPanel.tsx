@@ -127,8 +127,6 @@ export function RawPreviewPanel(): JSX.Element | null {
     return () => window.clearTimeout(timer);
   }, [activeRecipe, autoRender, connected, draftSignature, loadedFile, queueRender]);
 
-  if (!connected && preview.kind === "idle") return null;
-
   const onFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const file = event.currentTarget.files?.[0];
     if (!file) return;

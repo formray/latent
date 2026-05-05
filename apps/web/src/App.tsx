@@ -9,6 +9,8 @@ import { RawPreviewPanel } from "./components/camera/RawPreviewPanel";
 import { useCameraStore } from "./stores/camera";
 import { useT } from "./i18n";
 
+type Workspace = "camera" | "raf" | "library";
+
 export function App(): JSX.Element {
   const t = useT();
   const loadSeedRecipes = useRecipesStore((s) => s.loadSeedRecipes);
@@ -18,6 +20,7 @@ export function App(): JSX.Element {
   const presets = useCameraStore((s) => s.presets);
   const rawPreviewStatus = useCameraStore((s) => s.rawPreviewStatus);
   const [theme, setTheme] = useState<"dark" | "light">(() => initialTheme());
+  const [workspace, setWorkspace] = useState<Workspace>(() => initialWorkspace());
 
   useEffect(() => {
     void loadSeedRecipes();
@@ -26,6 +29,13 @@ export function App(): JSX.Element {
   useEffect(() => {
     localStorage.setItem("latent-theme-v1", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const syncWorkspace = (): void => setWorkspace(workspaceFromHash(window.location.hash));
+    syncWorkspace();
+    window.addEventListener("hashchange", syncWorkspace);
+    return () => window.removeEventListener("hashchange", syncWorkspace);
+  }, []);
 
   const selected = recipes.find((r) => r.id === selectedId) ?? null;
   const themeLabel = theme === "dark" ? "Light" : "Dark";
@@ -40,7 +50,7 @@ export function App(): JSX.Element {
     >
       <header className="sticky top-0 z-40 border-b border-zinc-900 bg-zinc-950/90 px-4 py-3 backdrop-blur-xl sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <a href="#recipe-workspace" className="flex min-w-0 items-baseline gap-3">
+          <a href="#library" className="flex min-w-0 items-baseline gap-3">
             <h1 className="text-lg font-semibold tracking-tight text-zinc-50">Latent</h1>
             <span className="hidden text-xs text-zinc-500 sm:inline">{t("app.tagline")}</span>
           </a>
@@ -48,10 +58,15 @@ export function App(): JSX.Element {
             aria-label="Workspace"
             className="order-3 flex w-full gap-1 overflow-x-auto font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:order-none sm:w-auto"
           >
-            <NavLink href="#camera-recipes-panel">Camera</NavLink>
-            <NavLink href="#raw-preview-panel">RAF</NavLink>
-            <NavLink href="#recipe-library">Library</NavLink>
-            <NavLink href="#recipe-detail">Recipe</NavLink>
+            <NavLink href="#camera" active={workspace === "camera"}>
+              Camera
+            </NavLink>
+            <NavLink href="#raf" active={workspace === "raf"}>
+              RAF
+            </NavLink>
+            <NavLink href="#library" active={workspace === "library"}>
+              Library
+            </NavLink>
           </nav>
           <div className="flex items-center gap-2">
             <button
@@ -75,34 +90,55 @@ export function App(): JSX.Element {
         rawPreviewLabel={rawPreviewLabel(rawPreviewStatus)}
       />
 
-      <div className="studio-stage">
-        <CameraRecipesPanel />
-        <RawPreviewPanel />
-      </div>
+      <WorkspaceIntro workspace={workspace} />
 
-      <main
-        id="recipe-workspace"
-        className="grid min-h-[70vh] flex-1 overflow-hidden border-t border-zinc-900 lg:grid-cols-[minmax(320px,440px)_minmax(0,1fr)]"
-      >
-        <section
-          id="recipe-library"
-          aria-label={t("library.title")}
-          className="max-h-[72vh] border-b border-zinc-900 lg:max-h-none lg:overflow-y-auto lg:border-b-0 lg:border-r"
+      {workspace === "camera" && (
+        <main id="camera-workspace" className="workspace-shell">
+          <CameraRecipesPanel />
+        </main>
+      )}
+
+      {workspace === "raf" && (
+        <main
+          id="raf-workspace"
+          className="workspace-shell grid min-h-[72vh] overflow-hidden border-t border-zinc-900 xl:grid-cols-[minmax(300px,390px)_minmax(0,1fr)]"
         >
-          <RecipeLibrary />
-        </section>
-        <section
-          id="recipe-detail"
-          aria-label={t("detail.title")}
-          className="min-h-[70vh] overflow-y-auto"
+          <section
+            id="raf-recipe-library"
+            aria-label={t("library.title")}
+            className="max-h-[42vh] border-b border-zinc-900 xl:max-h-none xl:overflow-y-auto xl:border-b-0 xl:border-r"
+          >
+            <RecipeLibrary />
+          </section>
+          <RawPreviewPanel />
+        </main>
+      )}
+
+      {workspace === "library" && (
+        <main
+          id="recipe-workspace"
+          className="workspace-shell grid min-h-[72vh] flex-1 overflow-hidden border-t border-zinc-900 lg:grid-cols-[minmax(320px,440px)_minmax(0,1fr)]"
         >
-          {selected ? (
-            <RecipeDetail recipe={selected} />
-          ) : (
-            <EmptyDetail message={t("detail.empty")} />
-          )}
-        </section>
-      </main>
+          <section
+            id="recipe-library"
+            aria-label={t("library.title")}
+            className="max-h-[72vh] border-b border-zinc-900 lg:max-h-none lg:overflow-y-auto lg:border-b-0 lg:border-r"
+          >
+            <RecipeLibrary />
+          </section>
+          <section
+            id="recipe-detail"
+            aria-label={t("detail.title")}
+            className="min-h-[70vh] overflow-y-auto"
+          >
+            {selected ? (
+              <RecipeDetail recipe={selected} />
+            ) : (
+              <EmptyDetail message={t("detail.empty")} />
+            )}
+          </section>
+        </main>
+      )}
 
       <footer className="border-t border-zinc-900 px-4 py-3 text-xs text-zinc-500 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -142,9 +178,9 @@ function StudioOverview({
             focused workspace.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
-            <OverviewLink href="#raw-preview-panel">Preview on RAF</OverviewLink>
-            <OverviewLink href="#recipe-library">Browse recipes</OverviewLink>
-            <OverviewLink href="#camera-recipes-panel">Read camera</OverviewLink>
+            <OverviewLink href="#raf">Preview on RAF</OverviewLink>
+            <OverviewLink href="#library">Browse recipes</OverviewLink>
+            <OverviewLink href="#camera">Read camera</OverviewLink>
           </div>
         </div>
 
@@ -190,15 +226,79 @@ function OverviewMetric({ label, value }: { label: string; value: string }): JSX
   );
 }
 
-function NavLink({ href, children }: { href: string; children: string }): JSX.Element {
+function WorkspaceIntro({ workspace }: { workspace: Workspace }): JSX.Element {
+  const content = {
+    camera: {
+      label: "camera",
+      title: "Read custom slots directly from the body.",
+      body: "Use this workspace when the camera is the source of truth: connect, read C1-C4, inspect raw properties, and import verified recipes.",
+    },
+    raf: {
+      label: "raf lab",
+      title: "Choose a recipe, keep a RAF loaded, iterate fast.",
+      body: "The library stays beside the camera renderer so selecting a look and previewing it are one continuous action.",
+    },
+    library: {
+      label: "library",
+      title: "Browse, edit, export, and write recipes.",
+      body: "This is the archive view: inspect parameters, manage JSON files, and send a selected recipe to a camera slot.",
+    },
+  } satisfies Record<Workspace, { label: string; title: string; body: string }>;
+  const selected = content[workspace];
+
+  return (
+    <section className="border-b border-zinc-900 px-4 py-4 sm:px-6">
+      <div className="mx-auto flex max-w-[1800px] flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-emerald-400">
+            {selected.label}
+          </p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-50">
+            {selected.title}
+          </h2>
+        </div>
+        <p className="max-w-2xl text-sm leading-6 text-zinc-500">{selected.body}</p>
+      </div>
+    </section>
+  );
+}
+
+function NavLink({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: string;
+}): JSX.Element {
   return (
     <a
       href={href}
-      className="rounded-full border border-transparent px-3 py-1.5 transition-colors hover:border-zinc-800 hover:bg-zinc-900 hover:text-zinc-200"
+      aria-current={active ? "page" : undefined}
+      className={clsx(
+        "rounded-md border px-3 py-1.5 transition-colors hover:border-zinc-800 hover:bg-zinc-900 hover:text-zinc-200",
+        active ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" : "border-transparent",
+      )}
     >
       {children}
     </a>
   );
+}
+
+function initialWorkspace(): Workspace {
+  if (typeof window === "undefined") return "library";
+  return workspaceFromHash(window.location.hash);
+}
+
+function workspaceFromHash(hash: string): Workspace {
+  if (hash === "#camera" || hash === "#camera-recipes-panel" || hash === "#camera-workspace") {
+    return "camera";
+  }
+  if (hash === "#raf" || hash === "#raw-preview-panel" || hash === "#raf-workspace") {
+    return "raf";
+  }
+  return "library";
 }
 
 function EmptyDetail({ message }: { message: string }): JSX.Element {
