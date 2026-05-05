@@ -123,7 +123,7 @@ describe("camera store raw preview", () => {
 
     await useCameraStore.getState().renderRawPreviewDiagnostics(file(), recipe);
 
-    expect(port.renderRawPreview).toHaveBeenCalledTimes(11);
+    expect(port.renderRawPreview).toHaveBeenCalledTimes(13);
     expect(port.renderRawPreview).toHaveBeenNthCalledWith(
       1,
       new Uint8Array([1, 2, 3, 4]),
@@ -144,9 +144,20 @@ describe("camera store raw preview", () => {
         { id: "film-color", label: "Film + color" },
         { id: "film-chrome", label: "Film + chrome" },
         { id: "film-texture", label: "Film + texture" },
+        { id: "wb-kelvin-2500", label: "Full recipe 2500K" },
+        { id: "wb-kelvin-10000", label: "Full recipe 10000K" },
         { id: "full", label: "Full recipe" },
       ],
     });
+
+    const lowKelvinBuilder = vi.mocked(port.renderRawPreview).mock.calls[10]?.[1];
+    const highKelvinBuilder = vi.mocked(port.renderRawPreview).mock.calls[11]?.[1];
+    const lowKelvinProfile = lowKelvinBuilder?.(baseProfile());
+    const highKelvinProfile = highKelvinBuilder?.(baseProfile());
+    expect(readD185Field(lowKelvinProfile, 12)).toBe(0x8007);
+    expect(readD185Field(lowKelvinProfile, 15)).toBe(2500);
+    expect(readD185Field(highKelvinProfile, 12)).toBe(0x8007);
+    expect(readD185Field(highKelvinProfile, 15)).toBe(10000);
   });
 });
 
