@@ -2,9 +2,9 @@
   {
     "id": "f802c137-99c2-4058-8174-c35396bcd79d",
     "schemaVersion": 1,
-    "name": "Silver Screen Mono",
+    "name": "Silver Screen Protocol",
     "description": "Curated Latent default from the Black & White collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -38,9 +38,9 @@
   {
     "id": "d5f1c816-cac7-4f04-8481-42d8cca58ab3",
     "schemaVersion": 1,
-    "name": "Field Note Mono",
+    "name": "Field Note Circuit",
     "description": "Curated Latent default from the Black & White collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -74,9 +74,9 @@
   {
     "id": "e4799829-b6f5-4c10-83cd-f45b45c452dd",
     "schemaVersion": 1,
-    "name": "Yellow Filter Punch",
+    "name": "Yellow Filter Voltage",
     "description": "Curated Latent default from the Black & White collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -110,9 +110,9 @@
   {
     "id": "306ce0a5-1714-476c-82f3-476ecad51f25",
     "schemaVersion": 1,
-    "name": "Grit Print Mono",
+    "name": "Grit Print Signal",
     "description": "Curated Latent default from the Black & White collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -146,9 +146,9 @@
   {
     "id": "8d7ef39c-f03a-4e95-858f-c1d3c820faf6",
     "schemaVersion": 1,
-    "name": "Shadow Chrome Mono",
+    "name": "Shadow Chrome Relay",
     "description": "Curated Latent default from the Black & White collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -183,9 +183,9 @@
   {
     "id": "2bc08839-3eb7-4691-87eb-31b094e5a454",
     "schemaVersion": 1,
-    "name": "Vintage Drift",
+    "name": "Vintage Drift Signal",
     "description": "Curated Latent default from the Vintage Vibes collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -219,9 +219,9 @@
   {
     "id": "1dee9bce-794e-4150-89ad-abc6eeb516d2",
     "schemaVersion": 1,
-    "name": "Metro Chrome",
+    "name": "Metro Chrome Neon",
     "description": "Curated Latent default from the New York collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -256,9 +256,9 @@
   {
     "id": "02384f20-6277-4473-8844-1302c265685d",
     "schemaVersion": 1,
-    "name": "Boardwalk Chrome",
+    "name": "Boardwalk Chrome Grid",
     "description": "Curated Latent default from the New York collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -293,9 +293,9 @@
   {
     "id": "ddbb1696-7084-428e-830a-dde0a242b939",
     "schemaVersion": 1,
-    "name": "Gotham Negative",
+    "name": "Gotham Negative Pulse",
     "description": "Curated Latent default from the New York collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -329,9 +329,9 @@
   {
     "id": "8f65b63b-c7e8-4c4e-818d-cb7d786547e0",
     "schemaVersion": 1,
-    "name": "Night Shadow Mono",
+    "name": "Night Shadow Circuit",
     "description": "Curated Latent default from the New York collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -365,9 +365,9 @@
   {
     "id": "1003dd17-b27e-410e-86ad-8983c5f7d966",
     "schemaVersion": 1,
-    "name": "City Portrait Drift",
+    "name": "City Portrait Glitch",
     "description": "Curated Latent default from the New York collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -401,9 +401,9 @@
   {
     "id": "87296880-25e2-4db2-8dea-59123c168a52",
     "schemaVersion": 1,
-    "name": "Bronze Titanium",
+    "name": "Bronze Titanium Core",
     "description": "Curated Latent default from the New York collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -437,9 +437,9 @@
   {
     "id": "0b2a61a6-8933-48a0-8216-8f4fb9331b55",
     "schemaVersion": 1,
-    "name": "Retro Daylight Pop",
+    "name": "Retro Daylight Pulse",
     "description": "Curated Latent default from the Seoul collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -473,9 +473,9 @@
   {
     "id": "c375191f-9fff-468f-8ac3-7a6a87f87a36",
     "schemaVersion": 1,
-    "name": "Seoul Chrome",
+    "name": "Seoul Chrome Grid",
     "description": "Curated Latent default from the Seoul collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -509,9 +509,9 @@
   {
     "id": "0af2b01a-b981-4799-8e2b-656b95fd6955",
     "schemaVersion": 1,
-    "name": "Seoul Negative",
+    "name": "Seoul Negative Signal",
     "description": "Curated Latent default from the Seoul collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -545,9 +545,9 @@
   {
     "id": "5f449549-a876-4ac8-88f0-d3b9150b495e",
     "schemaVersion": 1,
-    "name": "Soft 800 Color",
+    "name": "Soft 800 Circuit",
     "description": "Curated Latent default from the Seoul collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -582,9 +582,9 @@
   {
     "id": "69f99a3f-eddc-4661-8c0b-166fa1154925",
     "schemaVersion": 1,
-    "name": "Seoul Shadow Mono",
+    "name": "Seoul Shadow Relay",
     "description": "Curated Latent default from the Seoul collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -618,9 +618,9 @@
   {
     "id": "9779e8c1-7794-412a-892b-fa4c2d92fc6c",
     "schemaVersion": 1,
-    "name": "Sandstorm Chrome",
+    "name": "Sandstorm Chrome Static",
     "description": "Curated Latent default from the Cinematic collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -654,9 +654,9 @@
   {
     "id": "0c2d1b74-1467-41e3-8c87-1269869f8b4e",
     "schemaVersion": 1,
-    "name": "Cream Cinema Negative",
+    "name": "Cream Cinema Ghost",
     "description": "Curated Latent default from the Cinematic collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -691,9 +691,9 @@
   {
     "id": "71bf087e-98e2-4dee-8b73-64035cf1e879",
     "schemaVersion": 1,
-    "name": "Low-Key Vivid",
+    "name": "Low-Key Vivid Pulse",
     "description": "Curated Latent default from the Cinematic collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -728,9 +728,9 @@
   {
     "id": "e6ca3912-902b-484d-8c86-2f38883171d9",
     "schemaVersion": 1,
-    "name": "Cinema Negative Push",
+    "name": "Cinema Negative Overdrive",
     "description": "Curated Latent default from the Cinematic collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -764,9 +764,9 @@
   {
     "id": "f84b2c38-aa8d-4ff4-8896-fd6826e00d19",
     "schemaVersion": 1,
-    "name": "Golden Negative",
+    "name": "Golden Negative Signal",
     "description": "Curated Latent default from the Cinematic collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -800,9 +800,9 @@
   {
     "id": "364ad2f8-5e71-49c9-8e03-49f4d76d08e0",
     "schemaVersion": 1,
-    "name": "Street Sand Chrome",
+    "name": "Street Sand Grid",
     "description": "Curated Latent default from the Street collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -836,9 +836,9 @@
   {
     "id": "42ce4fca-65ce-4c52-800d-0d94a7ffbf08",
     "schemaVersion": 1,
-    "name": "Street Negative",
+    "name": "Street Negative Pulse",
     "description": "Curated Latent default from the Street collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -872,9 +872,9 @@
   {
     "id": "a8804ea0-0ee5-4b23-8a2c-981dd40630c5",
     "schemaVersion": 1,
-    "name": "Street Slide Chrome",
+    "name": "Street Slide Circuit",
     "description": "Curated Latent default from the Street collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -908,9 +908,9 @@
   {
     "id": "300d51e1-a258-46bb-83c3-687b91b36fdd",
     "schemaVersion": 1,
-    "name": "Street Grit Mono",
+    "name": "Street Grit Signal",
     "description": "Curated Latent default from the Street collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -944,9 +944,9 @@
   {
     "id": "d43ec6e3-cf62-46f3-83f5-a6a71e9556e4",
     "schemaVersion": 1,
-    "name": "Urban Portrait Chrome",
+    "name": "Urban Portrait Neon",
     "description": "Curated Latent default from the Street collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -980,9 +980,9 @@
   {
     "id": "9f59473b-43f1-48ba-89b8-a1255500a5a1",
     "schemaVersion": 1,
-    "name": "Street Titanium",
+    "name": "Street Titanium Core",
     "description": "Curated Latent default from the Street collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1016,9 +1016,9 @@
   {
     "id": "131ab551-60d5-44a2-89c7-af90c875d173",
     "schemaVersion": 1,
-    "name": "Superior 800",
+    "name": "Superior 800 Grid",
     "description": "Curated Latent default from the Superior 800 collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1052,9 +1052,9 @@
   {
     "id": "c8a56e43-6a6a-402a-894f-7b55bf32dd24",
     "schemaVersion": 1,
-    "name": "Film Chrome",
+    "name": "Film Chrome Signal",
     "description": "Curated Latent default from the Film collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1089,9 +1089,9 @@
   {
     "id": "42330799-1c28-459f-86dd-0e41f796b470",
     "schemaVersion": 1,
-    "name": "Cinema 400D",
+    "name": "Cinema 400D Overdrive",
     "description": "Curated Latent default from the Film collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1125,9 +1125,9 @@
   {
     "id": "d3bc6380-6677-47bf-8e77-d6bf3a802ba8",
     "schemaVersion": 1,
-    "name": "Film Slide Chrome",
+    "name": "Film Slide Neon",
     "description": "Curated Latent default from the Film collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1161,9 +1161,9 @@
   {
     "id": "375e4cc1-3576-4dc2-8f2d-425c51ef93c1",
     "schemaVersion": 1,
-    "name": "Film Golden Negative",
+    "name": "Film Golden Ghost",
     "description": "Curated Latent default from the Film collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1197,9 +1197,9 @@
   {
     "id": "de056603-c72d-49ee-86fe-9fde1b57a60c",
     "schemaVersion": 1,
-    "name": "Rangefinder Daylight",
+    "name": "Rangefinder Daylight Grid",
     "description": "Curated Latent default from the Film collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1233,9 +1233,9 @@
   {
     "id": "0672e18d-1e6c-4e74-8638-e242375678b2",
     "schemaVersion": 1,
-    "name": "Film 800 Color",
+    "name": "Film 800 Signal",
     "description": "Curated Latent default from the Film collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1269,9 +1269,9 @@
   {
     "id": "2837a532-f794-4802-8f98-fb7dd8700a9c",
     "schemaVersion": 1,
-    "name": "Film Urban Portrait",
+    "name": "Film Urban Neon",
     "description": "Curated Latent default from the Film collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1305,9 +1305,9 @@
   {
     "id": "645d2ede-2239-4889-8282-01182902508b",
     "schemaVersion": 1,
-    "name": "Teal Night Chrome",
+    "name": "Teal Night Protocol",
     "description": "Curated Latent default from the Favorites collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1342,9 +1342,9 @@
   {
     "id": "45a43736-02db-4ad3-82f9-297f3d26a84e",
     "schemaVersion": 1,
-    "name": "Favorite Negative Chrome",
+    "name": "Favorite Negative Signal",
     "description": "Curated Latent default from the Favorites collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1378,9 +1378,9 @@
   {
     "id": "8864b482-b0b4-4837-830c-b7fbe6ef75c3",
     "schemaVersion": 1,
-    "name": "Bright Retro Favorite",
+    "name": "Bright Retro Pulse",
     "description": "Curated Latent default from the Favorites collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1414,9 +1414,9 @@
   {
     "id": "8afd29e6-7efa-4aee-8508-96de0007a0d9",
     "schemaVersion": 1,
-    "name": "Favorite Shadow Mono",
+    "name": "Favorite Shadow Relay",
     "description": "Curated Latent default from the Favorites collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1450,9 +1450,9 @@
   {
     "id": "83d2dc8a-bc54-482f-86a8-24972d96a141",
     "schemaVersion": 1,
-    "name": "Fuji Punk Negative",
+    "name": "Fuji Punk Protocol",
     "description": "Curated Latent default from the Favorites collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1487,9 +1487,9 @@
   {
     "id": "951f4d04-bc25-481e-8f58-dd92c4971f52",
     "schemaVersion": 1,
-    "name": "Portrait 400 Chrome",
+    "name": "Portrait 400 Neon",
     "description": "Curated Latent default from the Favorites collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1524,9 +1524,9 @@
   {
     "id": "048191c2-0a3c-46fb-8738-1587b6bd0566",
     "schemaVersion": 1,
-    "name": "Sakura Chrome",
+    "name": "Sakura Chrome Circuit",
     "description": "Curated Latent default from the Favorites collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1560,9 +1560,9 @@
   {
     "id": "fefb59c6-1203-4f62-8178-dad6c7175ce7",
     "schemaVersion": 1,
-    "name": "Seattle Chrome Film",
+    "name": "Seattle Chrome Grid",
     "description": "Curated Latent default from the Seattle collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1597,9 +1597,9 @@
   {
     "id": "bef2c7b8-4c65-4557-838b-bd58ec6efc44",
     "schemaVersion": 1,
-    "name": "Seattle Chrome",
+    "name": "Seattle Chrome Neon",
     "description": "Curated Latent default from the Seattle collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1633,9 +1633,9 @@
   {
     "id": "be2a548c-cac8-4756-822b-eebd793b6042",
     "schemaVersion": 1,
-    "name": "Seattle Negative",
+    "name": "Seattle Negative Pulse",
     "description": "Curated Latent default from the Seattle collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1669,9 +1669,9 @@
   {
     "id": "c02761f2-6cc3-410f-8b5f-15eb5d319d24",
     "schemaVersion": 1,
-    "name": "Seattle Slide Chrome",
+    "name": "Seattle Slide Circuit",
     "description": "Curated Latent default from the Seattle collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1705,9 +1705,9 @@
   {
     "id": "fb5d67d6-536a-4076-873d-58b6a60a4fdb",
     "schemaVersion": 1,
-    "name": "Seattle Rangefinder",
+    "name": "Seattle Rangefinder Grid",
     "description": "Curated Latent default from the Seattle collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",
@@ -1741,9 +1741,9 @@
   {
     "id": "20ba0a41-8834-49f3-8f22-912fe84e361b",
     "schemaVersion": 1,
-    "name": "Seattle 800 Color",
+    "name": "Seattle 800 Signal",
     "description": "Curated Latent default from the Seattle collaboration set.",
-    "author": "Latent / Casey Herzawg",
+    "author": "Latent Collective",
     "tags": [
       "latent-default",
       "collaboration",

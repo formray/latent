@@ -179,7 +179,7 @@ describe("useRecipesStore", () => {
     const oldHtmlImport = sampleRecipe({
       id: "f802c137-99c2-4058-8174-c35396bcd79d",
       name: "Cinematic B&W",
-      author: "Casey Herzawg",
+      author: "Latent Collective",
       tags: ["fujifilm-recipes", "black-white", "acros-r-filter"],
       filmSimulation: "AcrosR",
     });
@@ -187,7 +187,7 @@ describe("useRecipesStore", () => {
 
     await useRecipesStore.getState().loadSeedRecipes();
 
-    expect(useRecipesStore.getState().recipes[0]?.name).toBe("Silver Screen Mono");
+    expect(useRecipesStore.getState().recipes[0]?.name).toBe("Silver Screen Protocol");
     expect(localStorage.getItem("latent-imported-recipes-v1")).toBe("[]");
   });
 
@@ -197,7 +197,7 @@ describe("useRecipesStore", () => {
     const duplicateDefault = sampleRecipe({
       id: "f802c137-99c2-4058-8174-c35396bcd79d",
       name: "Cinematic B&W",
-      author: "Casey Herzawg",
+      author: "Latent Collective",
       tags: ["fujifilm-recipes", "black-white", "acros-r-filter"],
       filmSimulation: "AcrosR",
     });
@@ -205,7 +205,7 @@ describe("useRecipesStore", () => {
     useRecipesStore.getState().importRecipe(duplicateDefault);
 
     expect(useRecipesStore.getState().recipes).toHaveLength(before);
-    expect(useRecipesStore.getState().recipes[0]?.name).toBe("Silver Screen Mono");
+    expect(useRecipesStore.getState().recipes[0]?.name).toBe("Silver Screen Protocol");
     expect(localStorage.getItem("latent-imported-recipes-v1")).toBeNull();
   });
 

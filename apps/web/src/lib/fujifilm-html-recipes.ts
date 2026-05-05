@@ -80,7 +80,7 @@ function sourceRecipeToRecipe(source: SourceRecipe, index: number): RecipeType {
     schemaVersion: 1,
     name: source.name,
     description: `Imported from Fujifilm Recipes HTML pack "${source.pack}".`,
-    author: "Casey Herzawg",
+    author: "Latent Collective",
     tags: [
       "fujifilm-recipes",
       slug(source.pack),
