@@ -92,7 +92,7 @@ export function RecipeLibrary(): JSX.Element {
   const countLabel = count === 1 ? t("library.count.one") : t("library.count.other", { n: count });
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="sticky top-0 z-20 flex flex-col gap-4 border-b border-zinc-900 bg-zinc-950/95 px-4 py-4 backdrop-blur sm:px-5">
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -180,7 +180,7 @@ export function RecipeLibrary(): JSX.Element {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {!loaded && <p className="px-5 py-8 text-sm text-zinc-500">{t("library.empty.loading")}</p>}
         {loaded && filtered.length === 0 && (
           <p className="px-5 py-8 text-sm text-zinc-500">{t("library.empty.noResults")}</p>

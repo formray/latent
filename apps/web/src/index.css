@@ -61,15 +61,7 @@ html {
 }
 
 .workspace-shell {
-  border-inline: 1px solid rgb(39 39 42 / 0.72);
-}
-
-@media (min-width: 1280px) {
-  .workspace-shell,
-  #recipe-workspace {
-    margin-inline: auto;
-    max-width: 1800px;
-  }
+  width: 100%;
 }
 
 .theme-light ::selection {

@@ -131,7 +131,7 @@ export function App(): JSX.Element {
           <section
             id="raf-recipe-library"
             aria-label={t("library.title")}
-            className="max-h-[42vh] border-b border-zinc-900 xl:max-h-none xl:overflow-y-auto xl:border-b-0 xl:border-r"
+            className="max-h-[42vh] border-b border-zinc-900 xl:sticky xl:top-[57px] xl:h-[calc(100svh-57px)] xl:max-h-none xl:overflow-hidden xl:border-b-0 xl:border-r"
           >
             <RecipeLibrary />
           </section>
@@ -147,7 +147,7 @@ export function App(): JSX.Element {
           <section
             id="recipe-library"
             aria-label={t("library.title")}
-            className="max-h-[72vh] border-b border-zinc-900 lg:max-h-none lg:overflow-y-auto lg:border-b-0 lg:border-r"
+            className="max-h-[72vh] border-b border-zinc-900 lg:sticky lg:top-[57px] lg:h-[calc(100svh-57px)] lg:max-h-none lg:overflow-hidden lg:border-b-0 lg:border-r"
           >
             <RecipeLibrary />
           </section>
@@ -190,7 +190,7 @@ function StudioOverview({
 }): JSX.Element {
   return (
     <section className="studio-overview border-b border-zinc-900 px-4 py-5 sm:px-6 lg:py-9">
-      <div className="mx-auto grid max-w-[1800px] gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.42fr)] lg:items-end">
+      <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.42fr)] lg:items-end">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.34em] text-emerald-400">
             open camera lab
@@ -202,7 +202,7 @@ function StudioOverview({
             Camera-backed Fujifilm recipes, live RAF rendering, and custom-slot control in one
             focused workspace.
           </p>
-          <div className="mt-6 grid gap-2 sm:flex sm:flex-wrap">
+          <div className="mt-6 grid gap-2 md:hidden">
             <OverviewLink href="#raf">Preview on RAF</OverviewLink>
             <OverviewLink href="#library">Browse recipes</OverviewLink>
             <OverviewLink href="#camera">Read camera</OverviewLink>
@@ -273,7 +273,7 @@ function WorkspaceIntro({ workspace }: { workspace: Workspace }): JSX.Element {
 
   return (
     <section className="border-b border-zinc-900 px-4 py-4 sm:px-6">
-      <div className="mx-auto flex max-w-[1800px] flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex w-full flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-emerald-400">
             {selected.label}
