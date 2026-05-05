@@ -21,6 +21,7 @@ export function App(): JSX.Element {
   const rawPreviewStatus = useCameraStore((s) => s.rawPreviewStatus);
   const [theme, setTheme] = useState<"dark" | "light">(() => initialTheme());
   const [workspace, setWorkspace] = useState<Workspace>(() => initialWorkspace());
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     void loadSeedRecipes();
@@ -31,7 +32,10 @@ export function App(): JSX.Element {
   }, [theme]);
 
   useEffect(() => {
-    const syncWorkspace = (): void => setWorkspace(workspaceFromHash(window.location.hash));
+    const syncWorkspace = (): void => {
+      setWorkspace(workspaceFromHash(window.location.hash));
+      setMobileMenuOpen(false);
+    };
     syncWorkspace();
     window.addEventListener("hashchange", syncWorkspace);
     return () => window.removeEventListener("hashchange", syncWorkspace);
@@ -49,14 +53,14 @@ export function App(): JSX.Element {
       )}
     >
       <header className="sticky top-0 z-40 border-b border-zinc-900 bg-zinc-950/90 px-4 py-3 backdrop-blur-xl sm:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <a href="#library" className="flex min-w-0 items-baseline gap-3">
             <h1 className="text-lg font-semibold tracking-tight text-zinc-50">Latent</h1>
             <span className="hidden text-xs text-zinc-500 sm:inline">{t("app.tagline")}</span>
           </a>
           <nav
             aria-label="Workspace"
-            className="order-3 flex w-full gap-1 overflow-x-auto font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:order-none sm:w-auto"
+            className="hidden gap-1 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 md:flex"
           >
             <NavLink href="#camera" active={workspace === "camera"}>
               Camera
@@ -68,7 +72,7 @@ export function App(): JSX.Element {
               Library
             </NavLink>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 md:flex">
             <button
               type="button"
               onClick={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
@@ -79,7 +83,28 @@ export function App(): JSX.Element {
             </button>
             <CameraConnect />
           </div>
+          <div className="flex items-center gap-2 md:hidden">
+            <span className="max-w-[9rem] truncate font-mono text-[10px] uppercase tracking-wider text-emerald-400">
+              {cameraStatusLabel(cameraState)}
+            </span>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((value) => !value)}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-workspace-menu"
+              className="rounded-md border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-200 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+            >
+              Menu
+            </button>
+          </div>
         </div>
+        {mobileMenuOpen && (
+          <MobileMenu
+            workspace={workspace}
+            themeLabel={themeLabel}
+            onToggleTheme={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
+          />
+        )}
       </header>
 
       <StudioOverview
@@ -164,20 +189,20 @@ function StudioOverview({
   rawPreviewLabel: string;
 }): JSX.Element {
   return (
-    <section className="studio-overview border-b border-zinc-900 px-4 py-6 sm:px-6 lg:py-9">
+    <section className="studio-overview border-b border-zinc-900 px-4 py-5 sm:px-6 lg:py-9">
       <div className="mx-auto grid max-w-[1800px] gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.42fr)] lg:items-end">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.34em] text-emerald-400">
             open camera lab
           </p>
-          <h2 className="mt-3 font-mono text-6xl font-semibold uppercase leading-[0.86] tracking-normal text-zinc-50 sm:text-8xl lg:text-9xl xl:text-[10rem] 2xl:text-[12rem]">
+          <h2 className="mt-3 font-mono text-5xl font-semibold uppercase leading-[0.86] tracking-normal text-zinc-50 sm:text-8xl lg:text-9xl xl:text-[10rem] 2xl:text-[12rem]">
             Latent
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg">
             Camera-backed Fujifilm recipes, live RAF rendering, and custom-slot control in one
             focused workspace.
           </p>
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-6 grid gap-2 sm:flex sm:flex-wrap">
             <OverviewLink href="#raf">Preview on RAF</OverviewLink>
             <OverviewLink href="#library">Browse recipes</OverviewLink>
             <OverviewLink href="#camera">Read camera</OverviewLink>
@@ -260,6 +285,72 @@ function WorkspaceIntro({ workspace }: { workspace: Workspace }): JSX.Element {
         <p className="max-w-2xl text-sm leading-6 text-zinc-500">{selected.body}</p>
       </div>
     </section>
+  );
+}
+
+function MobileMenu({
+  workspace,
+  themeLabel,
+  onToggleTheme,
+}: {
+  workspace: Workspace;
+  themeLabel: string;
+  onToggleTheme: () => void;
+}): JSX.Element {
+  return (
+    <div
+      id="mobile-workspace-menu"
+      className="mt-3 grid gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 md:hidden"
+    >
+      <MobileMenuLink href="#camera" active={workspace === "camera"} label="Camera">
+        Read camera slots
+      </MobileMenuLink>
+      <MobileMenuLink href="#raf" active={workspace === "raf"} label="RAF Lab">
+        Preview recipes on RAF
+      </MobileMenuLink>
+      <MobileMenuLink href="#library" active={workspace === "library"} label="Library">
+        Browse and write recipes
+      </MobileMenuLink>
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        className="flex items-center justify-between bg-zinc-950 px-4 py-3 text-left text-sm text-zinc-200"
+      >
+        <span>Theme</span>
+        <span className="font-mono text-xs uppercase tracking-wider text-zinc-500">
+          Switch to {themeLabel}
+        </span>
+      </button>
+      <div className="bg-zinc-950 px-4 py-3">
+        <CameraConnect />
+      </div>
+    </div>
+  );
+}
+
+function MobileMenuLink({
+  href,
+  active,
+  label,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  label: string;
+  children: string;
+}): JSX.Element {
+  return (
+    <a
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={clsx(
+        "flex items-center justify-between bg-zinc-950 px-4 py-3 text-sm transition-colors hover:bg-zinc-900",
+        active ? "text-emerald-300" : "text-zinc-200",
+      )}
+    >
+      <span className="font-medium">{label}</span>
+      <span className="text-xs text-zinc-500">{children}</span>
+    </a>
   );
 }
 
