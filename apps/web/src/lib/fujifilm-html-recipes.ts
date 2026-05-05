@@ -49,8 +49,7 @@ function extractRecipesArray(html: string): string {
 
 function parseSourceRecipes(source: string): SourceRecipe[] {
   const entries: SourceRecipe[] = [];
-  const entryRe =
-    /\{\s*pack:"([^"]+)",name:"([^"]+)",sim:"([^"]+)",settings:\{([\s\S]*?)\}\s*\}/g;
+  const entryRe = /\{\s*pack:"([^"]+)",name:"([^"]+)",sim:"([^"]+)",settings:\{([\s\S]*?)\}\s*\}/g;
   for (const match of source.matchAll(entryRe)) {
     entries.push({
       pack: match[1]!,
@@ -75,22 +74,22 @@ function parseSettings(source: string): Record<string, string> {
 function sourceRecipeToRecipe(source: SourceRecipe, index: number): RecipeType {
   const settings = source.settings;
   const whiteBalance = parseWhiteBalance(settings["White Balance"], settings["WB Shift"]);
+  const exposureCompensation = parseExposureCompensation(settings["Exposure Compensation"]);
+  const dRangePriority = parseDRangePriority(settings["D Range Priority"]);
   const recipe = {
     id: stableUuid(`${source.pack}:${source.name}:${index}`),
     schemaVersion: 1,
     name: source.name,
     description: `Imported from Fujifilm Recipes HTML pack "${source.pack}".`,
     author: "Latent Collective",
-    tags: [
-      "fujifilm-recipes",
-      slug(source.pack),
-      slug(source.sim),
-    ].filter(Boolean),
+    tags: ["fujifilm-recipes", slug(source.pack), slug(source.sim)].filter(Boolean),
     createdAt: "2026-05-04T00:00:00.000Z",
     capabilitySetId: "fujifilm-recipes-html",
     cameraModel: "Fujifilm",
     filmSimulation: parseFilmSimulation(settings["Film Simulation"] ?? source.sim),
+    ...(exposureCompensation !== undefined ? { exposureCompensation } : {}),
     dynamicRange: parseDynamicRange(settings["Dynamic Range"]),
+    ...(dRangePriority !== undefined ? { dRangePriority } : {}),
     whiteBalance,
     highlightTone: parseSignedNumber(settings["Highlight Tone"], 0),
     shadowTone: parseSignedNumber(settings["Shadow Tone"], 0),
@@ -107,6 +106,35 @@ function sourceRecipeToRecipe(source: SourceRecipe, index: number): RecipeType {
     smoothSkinEffect: "Off",
   };
   return Recipe.parse(recipe);
+}
+
+function parseExposureCompensation(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "off" || normalized === "none") return undefined;
+  const mixed = normalized.match(/([+-]?\d+)\s+(\d+)\/(\d+)/);
+  if (mixed) {
+    const sign = mixed[1]!.startsWith("-") ? -1 : 1;
+    return Number(mixed[1]) + sign * (Number(mixed[2]) / Number(mixed[3]));
+  }
+  const fraction = normalized.match(/([+-]?)(\d+)\/(\d+)/);
+  if (fraction) {
+    const sign = fraction[1] === "-" ? -1 : 1;
+    return sign * (Number(fraction[2]) / Number(fraction[3]));
+  }
+  const decimal = normalized.match(/[+-]?\d+(?:\.\d+)?/);
+  if (!decimal) return undefined;
+  return Number(decimal[0]);
+}
+
+function parseDRangePriority(value: string | undefined): RecipeType["dRangePriority"] | undefined {
+  const normalized = value?.toLowerCase() ?? "";
+  if (!normalized) return undefined;
+  if (normalized.includes("strong")) return "Strong";
+  if (normalized.includes("weak")) return "Weak";
+  if (normalized.includes("auto")) return "Auto";
+  if (normalized.includes("off")) return "Off";
+  return undefined;
 }
 
 function parseFilmSimulation(value: string): RecipeType["filmSimulation"] {
@@ -156,12 +184,14 @@ function parseWhiteBalance(
     };
   }
   const normalized = mode.toLowerCase();
-  if (normalized.includes("daylight")) return { mode: "Daylight", shiftR: shift.r, shiftB: shift.b };
+  if (normalized.includes("daylight"))
+    return { mode: "Daylight", shiftR: shift.r, shiftB: shift.b };
   if (normalized.includes("shade")) return { mode: "Shade", shiftR: shift.r, shiftB: shift.b };
   if (normalized.includes("incandescent")) {
     return { mode: "Incandescent", shiftR: shift.r, shiftB: shift.b };
   }
-  if (normalized.includes("underwater")) return { mode: "Underwater", shiftR: shift.r, shiftB: shift.b };
+  if (normalized.includes("underwater"))
+    return { mode: "Underwater", shiftR: shift.r, shiftB: shift.b };
   return { mode: "Auto", shiftR: shift.r, shiftB: shift.b };
 }
 
@@ -203,7 +233,10 @@ function parseGrain(value: string | undefined): RecipeType["grainEffect"] {
   return { strength, size };
 }
 
-function parseTriState(value: string | undefined, fallback: "Off" | "Weak" | "Strong"): "Off" | "Weak" | "Strong" {
+function parseTriState(
+  value: string | undefined,
+  fallback: "Off" | "Weak" | "Strong",
+): "Off" | "Weak" | "Strong" {
   const normalized = value?.toLowerCase() ?? "";
   if (normalized.includes("strong")) return "Strong";
   if (normalized.includes("weak")) return "Weak";
@@ -217,11 +250,16 @@ function clampInt(value: number, min: number, max: number): number {
 }
 
 function slug(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 function stableUuid(input: string): string {
-  const hex = cyrb128(input).map((part) => part.toString(16).padStart(8, "0")).join("");
+  const hex = cyrb128(input)
+    .map((part) => part.toString(16).padStart(8, "0"))
+    .join("");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 

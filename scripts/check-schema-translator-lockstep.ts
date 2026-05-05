@@ -15,11 +15,14 @@ interface CameraModelsJson {
 
 // The canonical schema field list. Keep this in sync with packages/recipe-schema/src/recipe.ts.
 // If you add a Recipe field, add it here AND to writableSlotProperties of every applicable
-// capability set, AND add a translator round-trip test in packages/recipe-schema/tests/.
+// capability set unless it is explicitly preview-only, AND add a translator round-trip test
+// in packages/recipe-schema/tests/.
 const RECIPE_LOOK_FIELDS = [
   "filmSimulation",
   "monochromaticColor",
+  "exposureCompensation",
   "dynamicRange",
+  "dRangePriority",
   "whiteBalance",
   "highlightTone",
   "shadowTone",
@@ -48,13 +51,22 @@ async function main(): Promise<void> {
       // in writableSlotProperties OR an explicit absence rationale.
       if (!w.has(field)) {
         // Hardcoded allowed absences: optional features
-        if (field === "monochromaticColor" || field === "smoothSkinEffect") continue;
+        if (
+          field === "monochromaticColor" ||
+          field === "smoothSkinEffect" ||
+          field === "exposureCompensation" ||
+          field === "dRangePriority"
+        ) {
+          continue;
+        }
         errors.push(`${setId}: writableSlotProperties missing required field "${field}"`);
       }
     }
     for (const w_field of set.writableSlotProperties) {
       if (!RECIPE_LOOK_FIELDS.includes(w_field)) {
-        errors.push(`${setId}: writableSlotProperties contains "${w_field}" which is not a Recipe field`);
+        errors.push(
+          `${setId}: writableSlotProperties contains "${w_field}" which is not a Recipe field`,
+        );
       }
     }
   }
@@ -64,7 +76,11 @@ async function main(): Promise<void> {
     for (const e of errors) console.error("  - " + e);
     process.exit(1);
   }
-  console.log("Schema↔translator lockstep OK across", Object.keys(json.capabilitySets).length, "capability set(s)");
+  console.log(
+    "Schema↔translator lockstep OK across",
+    Object.keys(json.capabilitySets).length,
+    "capability set(s)",
+  );
 }
 
 await main();

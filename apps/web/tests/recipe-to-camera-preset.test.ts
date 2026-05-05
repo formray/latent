@@ -99,6 +99,19 @@ describe("recipeToPresetWritePlan", () => {
     expect(bytes(plan.properties.find((item) => item.code === 0xd18e)!.value)).toEqual([7, 0]);
   });
 
+  it("does not write preview-only exposure or D Range Priority fields to custom slots", () => {
+    const plan = recipeToPresetWritePlan(
+      sampleRecipe({ exposureCompensation: 2, dRangePriority: "Strong" }),
+      2,
+    );
+
+    expect(
+      plan.properties.some((item) =>
+        ["Exposure compensation", "D Range Priority"].includes(item.label),
+      ),
+    ).toBe(false);
+  });
+
   it("skips Smooth Skin Effect when the camera slot does not expose D198 and the recipe leaves it Off", () => {
     const base = preset();
     delete base.properties["0xd198"];

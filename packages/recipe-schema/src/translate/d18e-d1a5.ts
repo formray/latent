@@ -4,24 +4,26 @@ import type { Recipe } from "../recipe.js";
 // D18E..D1A5 (24 properties). Numbers represent encoded camera values.
 export interface CameraProperties {
   filmSimulation: string;
+  exposureCompensation?: number;
   dynamicRange: "DRAuto" | "DR100" | "DR200" | "DR400";
+  dRangePriority?: "Off" | "Auto" | "Weak" | "Strong";
   wbMode: string;
   wbColorTemperatureK?: number;
   wbShiftR: number;
   wbShiftB: number;
-  highlightTone: number;     // *10 encoding (e.g. +1.5 → 15)
-  shadowTone: number;        // *10 encoding
-  color: number;             // *10 encoding
-  sharpness: number;         // *10 encoding
-  noiseReduction: number;    // proprietary lookup, see filmkit
-  clarity: number;           // *10 encoding
+  highlightTone: number; // *10 encoding (e.g. +1.5 → 15)
+  shadowTone: number; // *10 encoding
+  color: number; // *10 encoding
+  sharpness: number; // *10 encoding
+  noiseReduction: number; // proprietary lookup, see filmkit
+  clarity: number; // *10 encoding
   grainStrength: "Off" | "Weak" | "Strong";
   grainSize: "Small" | "Large";
   colorChromeEffect: "Off" | "Weak" | "Strong";
   colorChromeEffectBlue: "Off" | "Weak" | "Strong";
   smoothSkinEffect?: "Off" | "Weak" | "Strong";
-  monoWC?: number;           // monochromaticColor warmCool, X-S20 D193
-  monoMG?: number;           // monochromaticColor greenMagenta, X-S20 D194
+  monoWC?: number; // monochromaticColor warmCool, X-S20 D193
+  monoMG?: number; // monochromaticColor greenMagenta, X-S20 D194
 }
 
 export function recipeToCameraProperties(r: Recipe): CameraProperties {
@@ -45,6 +47,12 @@ export function recipeToCameraProperties(r: Recipe): CameraProperties {
   if (r.whiteBalance.colorTemperatureK !== undefined) {
     out.wbColorTemperatureK = r.whiteBalance.colorTemperatureK;
   }
+  if (r.exposureCompensation !== undefined) {
+    out.exposureCompensation = r.exposureCompensation;
+  }
+  if (r.dRangePriority !== undefined) {
+    out.dRangePriority = r.dRangePriority;
+  }
   if (r.smoothSkinEffect !== undefined) {
     out.smoothSkinEffect = r.smoothSkinEffect;
   }
@@ -55,12 +63,25 @@ export function recipeToCameraProperties(r: Recipe): CameraProperties {
   return out;
 }
 
-type RecipeFields = Pick<Recipe,
-  | "filmSimulation" | "dynamicRange" | "whiteBalance"
-  | "highlightTone" | "shadowTone" | "color" | "sharpness"
-  | "noiseReduction" | "clarity" | "grainEffect"
-  | "colorChromeEffect" | "colorChromeEffectBlue"
-  | "smoothSkinEffect" | "monochromaticColor">;
+type RecipeFields = Pick<
+  Recipe,
+  | "filmSimulation"
+  | "exposureCompensation"
+  | "dynamicRange"
+  | "dRangePriority"
+  | "whiteBalance"
+  | "highlightTone"
+  | "shadowTone"
+  | "color"
+  | "sharpness"
+  | "noiseReduction"
+  | "clarity"
+  | "grainEffect"
+  | "colorChromeEffect"
+  | "colorChromeEffectBlue"
+  | "smoothSkinEffect"
+  | "monochromaticColor"
+>;
 
 export function cameraPropertiesToRecipeFields(p: CameraProperties): RecipeFields {
   const whiteBalance: Recipe["whiteBalance"] = {
@@ -88,6 +109,12 @@ export function cameraPropertiesToRecipeFields(p: CameraProperties): RecipeField
   };
   if (p.smoothSkinEffect !== undefined) {
     result.smoothSkinEffect = p.smoothSkinEffect;
+  }
+  if (p.exposureCompensation !== undefined) {
+    result.exposureCompensation = p.exposureCompensation;
+  }
+  if (p.dRangePriority !== undefined) {
+    result.dRangePriority = p.dRangePriority;
   }
   if (p.monoWC !== undefined && p.monoMG !== undefined) {
     result.monochromaticColor = { warmCool: p.monoWC, greenMagenta: p.monoMG };

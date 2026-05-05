@@ -44,9 +44,14 @@ describe("parseFujifilmRecipesHtml", () => {
     const recipe = parseFujifilmRecipesHtml(html)[1]!;
     expect(recipe.filmSimulation).toBe("ClassicNegative");
     expect(recipe.dynamicRange).toBe("DR400");
+    expect(recipe.exposureCompensation).toBeCloseTo(1 / 3);
     expect(recipe.highlightTone).toBe(-0.5);
     expect(recipe.grainEffect).toEqual({ strength: "Weak", size: "Small" });
     expect(recipe.colorChromeEffectBlue).toBe("Weak");
+  });
+
+  it("preserves D Range Priority for RAF preview metadata", () => {
+    expect(parseFujifilmRecipesHtml(html)[0]?.dRangePriority).toBe("Off");
   });
 
   it("is selected by the generic recipe import parser for HTML files", () => {

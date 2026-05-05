@@ -27,6 +27,10 @@ describe("Capability matrix loader", () => {
     const matrix = await loadCapabilityMatrix();
     const xs20 = getCapabilitySet(matrix, "x-s20-fw1.10");
     const w = xs20?.writableSlotProperties ?? [];
+    expect(xs20?.supports.exposureCompensationPreview).toBe(true);
+    expect(xs20?.supports.dRangePriorityPreview).toBe(true);
+    expect(xs20?.parameterRanges.exposureCompensation).toMatchObject({ min: -5, max: 5 });
+    expect(w).not.toContain("exposureCompensation");
     expect(w).not.toContain("dRangePriority");
     expect(w).not.toContain("longExposureNR");
     expect(w).not.toContain("lensModulationOptimizer");
