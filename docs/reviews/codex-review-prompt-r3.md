@@ -29,7 +29,7 @@ These are settled. If you still disagree, mention briefly under "Challenged lock
 2. **R2 review output (your prior R2 output):** `docs/superpowers/codex-review-output-r2.md`
 3. **R2 review prompt (for context):** `docs/superpowers/codex-review-prompt-r2.md`
 4. **R1 artifacts (for full lineage):** `codex-review-prompt-r1.md` + `codex-review-output-r1.md` in same folder
-5. **Formray engineering guidelines:** `Formray engineering guidelines (private reference at the time)` (12, 13, 15, 16 most relevant)
+5. **Formray engineering guidelines:** private reference at the time (12, 13, 15, 16 most relevant)
 
 # Tasks
 
@@ -47,6 +47,7 @@ Cover: NB1, NH1-NH4, NM1-NM7, NL1-NL3, plus the schema-sanity-vs-Fuji-docs verif
 ## Task 2: New regressions introduced by R3 (use BLOCKER/HIGH/MEDIUM/LOW)
 
 R3 made significant changes to:
+
 - **§5 schema** — trimmed (removed `dRangePriority`, `longExposureNR`, `lensModulationOptimizer`, several WB modes); added `monochromaticColor: true` for X-S20 capability set
 - **§6.3 push** — transactional verified backup with read-all + verify-count + verify-critical-fields gate
 - **§6.4 preview cleanup** — narrowed to positively-identified handles only
@@ -84,6 +85,7 @@ j. **Changelog accuracy** — does §17 R2→R3 changelog accurately reflect wha
 ## Task 3: Schema sanity (R3 trim)
 
 You flagged in R2 that filmkit doesn't actually write certain fields. R3 removed them. Verify:
+
 - The R3 retained set (`filmSimulation`, `monochromaticColor`, `dynamicRange`, `whiteBalance` [reduced enum], `highlightTone`, `shadowTone`, `color`, `sharpness`, `noiseReduction`, `clarity`, `grainEffect`, `colorChromeEffect`, `colorChromeEffectBlue`, `smoothSkinEffect`) — are ALL of these confirmed slot-writable via filmkit's translator?
 - The reduced WB enum (`Auto`, `AutoAmbiencePriority`, `Daylight`, `Shade`, `Fluorescent1-3`, `Incandescent`, `Underwater`, `ColorTemperature`) — does this match filmkit's actual supported enum?
 - `monochromaticColor: true` for X-S20 — is this verified writable, or just plausible?
