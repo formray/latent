@@ -10,10 +10,7 @@ import {
   canImportCameraPreset,
   recipeCameraImportKey,
 } from "../../lib/camera-preset-to-recipe";
-import {
-  createCameraBackupBundle,
-  downloadCameraBackupBundle,
-} from "../../lib/camera-backup";
+import { createCameraBackupBundle, downloadCameraBackupBundle } from "../../lib/camera-backup";
 import { useT, type MessageKey } from "../../i18n";
 
 const PARAMETER_COLUMNS = [
@@ -58,8 +55,8 @@ export function CameraRecipesPanel(): JSX.Element | null {
     >
       <div className="grid gap-px bg-zinc-900 xl:grid-cols-[minmax(0,1.1fr)_minmax(420px,0.9fr)]">
         <div className="bg-zinc-950">
-          <header className="flex flex-wrap items-start justify-between gap-4 px-6 py-5">
-            <div>
+          <header className="flex min-w-0 flex-col items-start justify-between gap-4 px-4 py-5 sm:flex-row sm:px-6">
+            <div className="min-w-0">
               <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-emerald-400">
                 {isCameraAlive(state.kind)
                   ? t("camera.recipes.verified")
@@ -70,18 +67,16 @@ export function CameraRecipesPanel(): JSX.Element | null {
               </h2>
               <p className="mt-1 text-sm text-zinc-500">{cameraLabel}</p>
             </div>
-            <div className="flex flex-col items-end gap-2 text-right">
-              <div className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
+            <div className="flex w-full min-w-0 flex-col items-start gap-3 text-left sm:w-auto sm:items-end sm:text-right">
+              <div className="flex max-w-full flex-wrap gap-x-3 gap-y-1 font-mono text-[11px] uppercase tracking-wider text-zinc-500 sm:block">
                 <div>{t("camera.recipes.slotsRead", { n: presets.length })}</div>
-                <div className="mt-1 text-emerald-400">{t("camera.recipes.readOnly")}</div>
+                <div className="text-emerald-400 sm:mt-1">{t("camera.recipes.readOnly")}</div>
               </div>
               <button
                 type="button"
                 disabled={presets.length === 0}
                 onClick={() =>
-                  downloadCameraBackupBundle(
-                    createCameraBackupBundle(presets, cameraMetadata),
-                  )
+                  downloadCameraBackupBundle(createCameraBackupBundle(presets, cameraMetadata))
                 }
                 className={clsx(
                   "rounded-full border px-3 py-1.5 text-xs transition-colors",
@@ -139,7 +134,7 @@ function CameraSlotCard({
       type="button"
       onClick={onSelect}
       className={clsx(
-        "group flex h-full min-h-40 w-full flex-col justify-between bg-zinc-950 p-4 text-left transition-colors",
+        "group flex h-full min-h-40 w-full min-w-0 flex-col justify-between bg-zinc-950 p-4 text-left transition-colors",
         "hover:bg-zinc-900/70 focus:outline-none focus:ring-2 focus:ring-emerald-400/70 focus:ring-inset",
         selected && "bg-zinc-900",
         defaultSlot && !selected && "opacity-60",
@@ -147,16 +142,16 @@ function CameraSlotCard({
       aria-pressed={selected}
     >
       <div>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center justify-between gap-3">
           <span
             className={clsx(
-              "font-mono text-xs uppercase tracking-[0.25em]",
+              "min-w-0 font-mono text-xs uppercase tracking-[0.25em]",
               selected ? "text-emerald-300" : "text-zinc-500",
             )}
           >
             C{preset.slot}
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-600">
+          <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-zinc-600">
             {preset.missing?.length
               ? `${preset.missing.length} missing`
               : defaultSlot
@@ -293,7 +288,9 @@ function cameraRecipeMetadata(state: ConnectionState): {
 
 function Chip({ children }: { children: ReactNode }): JSX.Element {
   return (
-    <span className="bg-zinc-900 px-2 py-1 text-zinc-300 group-hover:bg-zinc-800">{children}</span>
+    <span className="max-w-full break-words bg-zinc-900 px-2 py-1 text-zinc-300 group-hover:bg-zinc-800">
+      {children}
+    </span>
   );
 }
 
