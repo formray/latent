@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useEffect, useMemo, useState, type JSX, type ReactNode } from "react";
-import type { DecodedPresetValues, RawPreset } from "@latent/camera-connection";
+import type { ConnectionState, DecodedPresetValues, RawPreset } from "@latent/camera-connection";
 import { useCameraStore } from "../../stores/camera";
 import { useRecipesStore } from "../../stores/recipes";
 import {
@@ -10,6 +10,10 @@ import {
   canImportCameraPreset,
   recipeCameraImportKey,
 } from "../../lib/camera-preset-to-recipe";
+import {
+  createCameraBackupBundle,
+  downloadCameraBackupBundle,
+} from "../../lib/camera-backup";
 import { useT, type MessageKey } from "../../i18n";
 
 const PARAMETER_COLUMNS = [
@@ -31,6 +35,7 @@ export function CameraRecipesPanel(): JSX.Element | null {
     state.kind === "connected" || state.kind === "degraded"
       ? `${state.cameraModel} · FW ${state.firmwareVersion}`
       : t("camera.recipes.awaiting");
+  const cameraMetadata = cameraRecipeMetadata(state);
 
   const selected = useMemo(() => {
     if (presets.length === 0) return null;
@@ -65,9 +70,28 @@ export function CameraRecipesPanel(): JSX.Element | null {
               </h2>
               <p className="mt-1 text-sm text-zinc-500">{cameraLabel}</p>
             </div>
-            <div className="text-right font-mono text-[11px] uppercase tracking-wider text-zinc-500">
-              <div>{t("camera.recipes.slotsRead", { n: presets.length })}</div>
-              <div className="mt-1 text-emerald-400">{t("camera.recipes.readOnly")}</div>
+            <div className="flex flex-col items-end gap-2 text-right">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
+                <div>{t("camera.recipes.slotsRead", { n: presets.length })}</div>
+                <div className="mt-1 text-emerald-400">{t("camera.recipes.readOnly")}</div>
+              </div>
+              <button
+                type="button"
+                disabled={presets.length === 0}
+                onClick={() =>
+                  downloadCameraBackupBundle(
+                    createCameraBackupBundle(presets, cameraMetadata),
+                  )
+                }
+                className={clsx(
+                  "rounded-full border px-3 py-1.5 text-xs transition-colors",
+                  presets.length > 0
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15"
+                    : "cursor-not-allowed border-zinc-900 text-zinc-700",
+                )}
+              >
+                {t("camera.recipes.exportBackup")}
+              </button>
             </div>
           </header>
 
@@ -180,14 +204,7 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
     );
   }
 
-  const cameraModel =
-    state.kind === "connected" || state.kind === "degraded" ? state.cameraModel : "Fujifilm Camera";
-  const firmwareVersion =
-    state.kind === "connected" || state.kind === "degraded" ? state.firmwareVersion : undefined;
-  const importMetadata = {
-    cameraModel,
-    ...(firmwareVersion ? { firmwareVersion } : {}),
-  };
+  const importMetadata = cameraRecipeMetadata(state);
   const importCheck = canImportCameraPreset(preset);
   const importDisabledReason = importCheck.reason ?? t("camera.recipes.importDisabled");
   const existingImportKey = cameraPresetImportKey(preset, importMetadata);
@@ -259,6 +276,19 @@ function CameraRecipeInspector({ preset }: { preset: RawPreset | null }): JSX.El
       <RawPropertiesTable preset={preset} />
     </aside>
   );
+}
+
+function cameraRecipeMetadata(state: ConnectionState): {
+  cameraModel: string;
+  firmwareVersion?: string;
+} {
+  if (state.kind !== "connected" && state.kind !== "degraded") {
+    return { cameraModel: "Fujifilm Camera" };
+  }
+  return {
+    cameraModel: state.cameraModel,
+    firmwareVersion: state.firmwareVersion,
+  };
 }
 
 function Chip({ children }: { children: ReactNode }): JSX.Element {

@@ -33,6 +33,16 @@ const sample: RecipeType = {
   smoothSkinEffect: "Weak",
 };
 
+const cameraBackup: RecipeType = {
+  ...sample,
+  id: "55555555-5555-4555-8555-555555555555",
+  name: "Original Camera C3",
+  description: "Imported from X-S20 custom slot C3.",
+  author: "Camera import",
+  tags: ["camera-import", "x-s20", "c3"],
+  createdAt: "2026-05-04T07:00:00.000Z",
+};
+
 describe("<RecipeDetail />", () => {
   beforeEach(() => {
     useRecipesStore.setState({
@@ -163,6 +173,74 @@ describe("<RecipeDetail />", () => {
     });
 
     expect(renderRawPreviewDiagnostics).toHaveBeenCalledWith(file, sample);
+  });
+
+  it("shows write safety state and labels slots with available backups", () => {
+    useRecipesStore.setState({
+      recipes: [sample, cameraBackup],
+    });
+    useCameraStore.setState({
+      state: {
+        kind: "connected",
+        port: {} as never,
+        cameraModel: "X-S20",
+        firmwareVersion: "3.30",
+      },
+    });
+
+    render(<RecipeDetail recipe={sample} />);
+
+    expect(screen.getByText(/camera is online/i)).toBeInTheDocument();
+    expect(screen.getByText(/restore points found for C3/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /write C3 backup/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /write C1 no backup/i })).toBeInTheDocument();
+  });
+
+  it("restores a camera slot from an imported backup recipe", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const writeRecipeToSlot = vi.fn().mockResolvedValue(undefined);
+    useRecipesStore.setState({
+      recipes: [sample, cameraBackup],
+    });
+    useCameraStore.setState({
+      state: {
+        kind: "connected",
+        port: {} as never,
+        cameraModel: "X-S20",
+        firmwareVersion: "3.30",
+      },
+      writeRecipeToSlot,
+    });
+
+    render(<RecipeDetail recipe={sample} />);
+    fireEvent.click(screen.getByRole("button", { name: /restore C3/i }));
+
+    expect(confirm).toHaveBeenCalledWith(
+      'Restore camera slot C3 from backup "Original Camera C3"?',
+    );
+    expect(writeRecipeToSlot).toHaveBeenCalledWith(cameraBackup, 3);
+    confirm.mockRestore();
+  });
+
+  it("warns before writing when the target slot has no imported backup", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const writeRecipeToSlot = vi.fn().mockResolvedValue(undefined);
+    useCameraStore.setState({
+      state: {
+        kind: "connected",
+        port: {} as never,
+        cameraModel: "X-S20",
+        firmwareVersion: "3.30",
+      },
+      writeRecipeToSlot,
+    });
+
+    render(<RecipeDetail recipe={sample} />);
+    fireEvent.click(screen.getByRole("button", { name: /write C1 no backup/i }));
+
+    expect(confirm.mock.calls[0]?.[0]).toContain("No imported backup was found");
+    expect(writeRecipeToSlot).not.toHaveBeenCalled();
+    confirm.mockRestore();
   });
 
   it("deletes the selected recipe after confirmation", () => {

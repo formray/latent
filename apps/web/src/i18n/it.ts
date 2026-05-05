@@ -51,11 +51,28 @@ export const it: Record<MessageKey, string> = {
   "detail.cameraWrite.slot": "Scrivi C{slot}",
   "detail.cameraWrite.writing": "Scrittura",
   "detail.cameraWrite.confirm":
-    "Scrivere questa ricetta nello slot C{slot}? Latent farà backup dello slot attuale e verificherà dopo la scrittura.",
+    "Scrivere questa ricetta nello slot C{slot}? Latent verificherà lo slot dopo la scrittura.",
+  "detail.cameraWrite.confirmWithBackup":
+    "Scrivere questa ricetta nello slot C{slot}? Backup disponibile: {backup}. Latent verificherà lo slot dopo la scrittura.",
+  "detail.cameraWrite.confirmWithoutBackup":
+    "Scrivere questa ricetta nello slot C{slot}? Non è stato trovato un backup importato per questo slot. Continua solo se lo slot può essere sovrascritto.",
+  "detail.cameraWrite.backedUp": "backup",
+  "detail.cameraWrite.noBackup": "no backup",
   "detail.cameraWrite.success": "C{slot} scritto e {n} proprietà verificate.",
+  "detail.cameraWrite.lastSuccess": "Ultima scrittura: C{slot} ripristinato da {recipe}.",
   "detail.cameraWrite.error": "Scrittura non riuscita: {message}",
+  "detail.cameraWrite.lastError": "Ultima scrittura non riuscita su C{slot}: {message}",
   "detail.cameraWrite.disconnected":
     "Collega una fotocamera per scrivere questa ricetta in uno slot custom.",
+  "detail.cameraSafety.camera.ok": "Fotocamera online.",
+  "detail.cameraSafety.camera.missing": "Collega una fotocamera prima di scrivere.",
+  "detail.cameraSafety.backup.ok": "Punti di ripristino trovati per {slots}.",
+  "detail.cameraSafety.backup.missing":
+    "Nessun ripristino immediato disponibile. Importa questo slot, oppure esporta un backup JSON prima di scrivere.",
+  "detail.cameraSafety.readBack": "Latent rilegge lo slot dopo la scrittura.",
+  "detail.cameraRestore.section": "Ripristino immediato",
+  "detail.cameraRestore.slot": "Ripristina C{slot}",
+  "detail.cameraRestore.confirm": "Ripristinare lo slot C{slot} dal backup \"{backup}\"?",
   "detail.setupWalkthrough": "Configura sulla fotocamera",
   "detail.setupWalkthrough.intro":
     "Segui questi passaggi per inserire la ricetta in uno slot personalizzato della fotocamera.",
@@ -153,6 +170,7 @@ export const it: Record<MessageKey, string> = {
   "camera.recipes.updateImport": "Aggiorna ricetta",
   "camera.recipes.importDisabled":
     "L'import sarà abilitato dopo la verifica della UI in sola lettura.",
+  "camera.recipes.exportBackup": "Esporta backup",
   "camera.recipes.properties": "Proprietà",
   "camera.recipes.missing": "Mancanti",
   "camera.recipes.mode": "Modalità",

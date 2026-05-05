@@ -1,8 +1,10 @@
-import { useRef, useState, type ChangeEvent, type JSX } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type JSX } from "react";
 import clsx from "clsx";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import { useRecipesStore } from "../stores/recipes";
 import { useCameraStore, type CameraWriteStatus, type RawPreviewStatus } from "../stores/camera";
+import type { CameraSlotBackup } from "../lib/camera-slot-backups";
+import { findCameraSlotBackups } from "../lib/camera-slot-backups";
 import { detectLocale, useT } from "../i18n";
 import {
   describeDynamicRange,
@@ -29,6 +31,8 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const isFavorite = useRecipesStore((s) => s.favorites.has(recipe.id));
   const toggleFavorite = useRecipesStore((s) => s.toggleFavorite);
   const deleteRecipe = useRecipesStore((s) => s.deleteRecipe);
+  const recipes = useRecipesStore((s) => s.recipes);
+  const cameraState = useCameraStore((s) => s.state);
   const cameraConnected = useCameraStore((s) => s.isConnected());
   const rawPreviewStatus = useCameraStore((s) => s.rawPreviewStatus);
   const renderRawPreview = useCameraStore((s) => s.renderRawPreview);
@@ -37,6 +41,10 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const writeRecipeToSlot = useCameraStore((s) => s.writeRecipeToSlot);
   const [copied, setCopied] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const slotBackups = useMemo(
+    () => findCameraSlotBackups(recipes, cameraState),
+    [recipes, cameraState],
+  );
 
   const handleCopy = async (): Promise<void> => {
     const json = serializeRecipeJson(recipe);
@@ -58,8 +66,28 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   };
 
   const handleWrite = (slot: number): void => {
-    if (!window.confirm(t("detail.cameraWrite.confirm", { slot }))) return;
+    const backup = slotBackups.find((entry) => entry.slot === slot);
+    const confirmKey = backup
+      ? "detail.cameraWrite.confirmWithBackup"
+      : "detail.cameraWrite.confirmWithoutBackup";
+    if (
+      !window.confirm(
+        t(confirmKey, {
+          slot,
+          backup: backup?.recipe.name ?? "",
+        }),
+      )
+    ) {
+      return;
+    }
     void writeRecipeToSlot(recipe, slot);
+  };
+
+  const handleRestore = (slot: number, backup: RecipeType): void => {
+    if (!window.confirm(t("detail.cameraRestore.confirm", { slot, backup: backup.name }))) {
+      return;
+    }
+    void writeRecipeToSlot(backup, slot);
   };
 
   const handlePreviewFile = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -221,6 +249,8 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
             onDownload={() => downloadRecipeJson(recipe)}
             onDelete={handleDelete}
             onWrite={handleWrite}
+            onRestore={handleRestore}
+            slotBackups={slotBackups}
           />
         </aside>
       </div>
@@ -251,6 +281,8 @@ function RecipeCommandPanel({
   onDownload,
   onDelete,
   onWrite,
+  onRestore,
+  slotBackups,
 }: {
   recipe: RecipeType;
   copied: boolean;
@@ -265,10 +297,16 @@ function RecipeCommandPanel({
   onDownload: () => void;
   onDelete: () => void;
   onWrite: (slot: number) => void;
+  onRestore: (slot: number, backup: RecipeType) => void;
+  slotBackups: CameraSlotBackup[];
 }): JSX.Element {
   const t = useT();
   const previewDisabled = !cameraConnected || rawPreviewStatus.kind === "rendering";
   const writeDisabled = !cameraConnected || writeStatus.kind === "writing";
+  const backupBySlot = new Map(slotBackups.map((entry) => [entry.slot, entry.recipe]));
+  const backedUpSlots = slotBackups.map((entry) => `C${entry.slot}`).join(", ");
+  const activeWriteForCurrentRecipe =
+    writeStatus.kind !== "idle" && writeStatus.recipeName === recipe.name;
 
   return (
     <div className="grid gap-px overflow-hidden rounded-lg border border-zinc-900 bg-zinc-900">
@@ -344,8 +382,28 @@ function RecipeCommandPanel({
         <p className="mt-1 text-xs leading-5 text-zinc-500">
           {cameraConnected ? t("detail.action.write.body") : t("detail.cameraWrite.disconnected")}
         </p>
+        <div className="mt-4 grid gap-2 rounded-md border border-zinc-900 bg-zinc-900/30 p-3 text-xs">
+          <SafetyRow
+            ok={cameraConnected}
+            text={
+              cameraConnected
+                ? t("detail.cameraSafety.camera.ok")
+                : t("detail.cameraSafety.camera.missing")
+            }
+          />
+          <SafetyRow
+            ok={slotBackups.length > 0}
+            text={
+              slotBackups.length > 0
+                ? t("detail.cameraSafety.backup.ok", { slots: backedUpSlots })
+                : t("detail.cameraSafety.backup.missing")
+            }
+          />
+          <SafetyRow ok text={t("detail.cameraSafety.readBack")} />
+        </div>
         <div className="mt-4 grid grid-cols-4 gap-2">
           {[1, 2, 3, 4].map((slot) => {
+            const backup = backupBySlot.get(slot);
             const writing =
               writeStatus.kind === "writing" &&
               writeStatus.slot === slot &&
@@ -363,12 +421,46 @@ function RecipeCommandPanel({
                     : "cursor-not-allowed border-zinc-900 text-zinc-700",
                 )}
               >
-                {writing ? t("detail.cameraWrite.writing") : t("detail.cameraWrite.slot", { slot })}
+                <span className="block">
+                  {writing
+                    ? t("detail.cameraWrite.writing")
+                    : t("detail.cameraWrite.slot", { slot })}
+                </span>
+                <span className="mt-1 block text-[10px] normal-case tracking-normal opacity-60">
+                  {backup
+                    ? t("detail.cameraWrite.backedUp")
+                    : t("detail.cameraWrite.noBackup")}
+                </span>
               </button>
             );
           })}
         </div>
-        {writeStatus.kind === "success" && writeStatus.recipeName === recipe.name && (
+        {slotBackups.length > 0 && (
+          <div className="mt-3 border-t border-zinc-900 pt-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+              {t("detail.cameraRestore.section")}
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {slotBackups.map(({ slot, recipe: backup }) => (
+                <button
+                  key={slot}
+                  type="button"
+                  disabled={writeDisabled}
+                  onClick={() => onRestore(slot, backup)}
+                  className={clsx(
+                    "rounded-md border px-3 py-2 text-xs transition-colors",
+                    !writeDisabled
+                      ? "border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                      : "cursor-not-allowed border-zinc-900 text-zinc-700",
+                  )}
+                >
+                  {t("detail.cameraRestore.slot", { slot })}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {writeStatus.kind === "success" && activeWriteForCurrentRecipe && (
           <p className="mt-3 text-xs text-emerald-400">
             {t("detail.cameraWrite.success", {
               slot: writeStatus.slot,
@@ -376,9 +468,25 @@ function RecipeCommandPanel({
             })}
           </p>
         )}
-        {writeStatus.kind === "error" && writeStatus.recipeName === recipe.name && (
+        {writeStatus.kind === "error" && activeWriteForCurrentRecipe && (
           <p className="mt-3 text-xs text-red-300">
             {t("detail.cameraWrite.error", { message: writeStatus.message })}
+          </p>
+        )}
+        {writeStatus.kind === "success" && !activeWriteForCurrentRecipe && (
+          <p className="mt-3 text-xs text-emerald-400">
+            {t("detail.cameraWrite.lastSuccess", {
+              slot: writeStatus.slot,
+              recipe: writeStatus.recipeName,
+            })}
+          </p>
+        )}
+        {writeStatus.kind === "error" && !activeWriteForCurrentRecipe && (
+          <p className="mt-3 text-xs text-red-300">
+            {t("detail.cameraWrite.lastError", {
+              slot: writeStatus.slot,
+              message: writeStatus.message,
+            })}
           </p>
         )}
       </div>
@@ -426,6 +534,21 @@ function RecipeCommandPanel({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SafetyRow({ ok, text }: { ok: boolean; text: string }): JSX.Element {
+  return (
+    <div className="flex items-center gap-2 text-zinc-400">
+      <span
+        className={clsx(
+          "size-1.5 rounded-full",
+          ok ? "bg-emerald-400" : "bg-amber-400",
+        )}
+        aria-hidden="true"
+      />
+      <span>{text}</span>
     </div>
   );
 }

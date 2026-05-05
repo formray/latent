@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ConnectionState, RawPreset } from "@latent/camera-connection";
 import { CameraRecipesPanel } from "../src/components/camera/CameraRecipesPanel";
@@ -129,6 +129,25 @@ describe("<CameraRecipesPanel />", () => {
     expect(screen.getByRole("complementary")).toHaveTextContent("0xd190");
     expect(screen.getByRole("complementary")).toHaveTextContent("P:DynamicRange%");
     expect(screen.getByRole("complementary")).toHaveTextContent("64 00");
+  });
+
+  it("exports a camera backup bundle from the read slots", () => {
+    const createObjectURL = vi.fn(() => "blob:camera-backup");
+    const revokeObjectURL = vi.fn();
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    useCameraStore.setState({
+      state: connectedState(),
+      presets: [preset(1), preset(2)],
+    });
+
+    render(<CameraRecipesPanel />);
+    fireEvent.click(screen.getByRole("button", { name: /export backup/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:camera-backup");
+    click.mockRestore();
   });
 
   it("shows missing raw properties in the inspector", () => {
