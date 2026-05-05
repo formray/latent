@@ -82,21 +82,113 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
 
   return (
     <article className="flex w-full max-w-none flex-col gap-7 px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
-      <header className="flex flex-col gap-5 border-b border-zinc-900 pb-6">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,440px)] xl:items-start">
-          <div className="min-w-0">
-            <p className="font-mono text-xs uppercase tracking-wider text-zinc-500">
-              {humanFilmSim(recipe.filmSimulation)}
-            </p>
-            <h2 className="mt-1 max-w-3xl text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
-              {recipe.name}
-            </h2>
-            {recipe.description && (
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                {recipe.description}
-              </p>
-            )}
-          </div>
+      <header className="min-w-0 border-b border-zinc-900 pb-6">
+        <p className="font-mono text-xs uppercase tracking-wider text-zinc-500">
+          {humanFilmSim(recipe.filmSimulation)}
+        </p>
+        <h2 className="mt-1 max-w-3xl text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
+          {recipe.name}
+        </h2>
+        {recipe.description && (
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
+            {recipe.description}
+          </p>
+        )}
+      </header>
+
+      <div className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] xl:items-start">
+        <div className="min-w-0 space-y-7">
+          <section aria-labelledby="params-heading" className="flex flex-col gap-3">
+            <h3
+              id="params-heading"
+              className="text-xs font-medium uppercase tracking-wider text-zinc-500"
+            >
+              {t("detail.parameters.section")}
+            </h3>
+            <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-t border-zinc-900 pt-4 md:grid-cols-2">
+              <Param
+                label={t("param.filmSimulation")}
+                value={humanFilmSim(recipe.filmSimulation)}
+              />
+              <Param
+                label={t("param.dynamicRange")}
+                value={describeDynamicRange(recipe.dynamicRange)}
+              />
+              <Param
+                label={t("param.whiteBalance")}
+                value={describeWhiteBalance(recipe.whiteBalance)}
+              />
+              <Param
+                label={t("param.whiteBalance.shift")}
+                value={describeWhiteBalanceShift(recipe.whiteBalance)}
+              />
+              <Param label={t("param.highlightTone")} value={signedNumber(recipe.highlightTone)} />
+              <Param label={t("param.shadowTone")} value={signedNumber(recipe.shadowTone)} />
+              <Param label={t("param.color")} value={signedNumber(recipe.color)} />
+              <Param label={t("param.sharpness")} value={signedNumber(recipe.sharpness)} />
+              <Param
+                label={t("param.noiseReduction")}
+                value={signedNumber(recipe.noiseReduction)}
+              />
+              <Param label={t("param.clarity")} value={signedNumber(recipe.clarity)} />
+              <Param label={t("param.grainEffect")} value={describeGrain(recipe.grainEffect)} />
+              <Param label={t("param.colorChromeEffect")} value={recipe.colorChromeEffect} />
+              <Param
+                label={t("param.colorChromeEffectBlue")}
+                value={recipe.colorChromeEffectBlue}
+              />
+              {recipe.smoothSkinEffect && (
+                <Param label={t("param.smoothSkinEffect")} value={recipe.smoothSkinEffect} />
+              )}
+              {recipe.monochromaticColor && (
+                <Param
+                  label={t("param.monochromaticColor")}
+                  value={`WC ${signedNumber(
+                    recipe.monochromaticColor.warmCool,
+                  )} · MG ${signedNumber(recipe.monochromaticColor.greenMagenta)}`}
+                />
+              )}
+            </dl>
+          </section>
+
+          <section aria-labelledby="meta-heading" className="flex flex-col gap-3">
+            <h3
+              id="meta-heading"
+              className="text-xs font-medium uppercase tracking-wider text-zinc-500"
+            >
+              {t("detail.metadata.section")}
+            </h3>
+            <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-t border-zinc-900 pt-4 md:grid-cols-2">
+              <Param label={t("detail.metadata.author")} value={recipe.author ?? "—"} />
+              <Param
+                label={t("detail.metadata.camera")}
+                value={`${recipe.cameraModel} (${recipe.capabilitySetId})`}
+              />
+              <Param
+                label={t("detail.metadata.created")}
+                value={formatDate(recipe.createdAt, locale)}
+              />
+              <Param
+                label={t("detail.metadata.tags")}
+                value={recipe.tags?.length ? recipe.tags.join(", ") : "—"}
+              />
+            </dl>
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => setShowWalkthrough((v) => !v)}
+              aria-expanded={showWalkthrough}
+              className="self-start rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700"
+            >
+              {t("detail.setupWalkthrough")}
+            </button>
+            {showWalkthrough && <Walkthrough recipe={recipe} />}
+          </section>
+        </div>
+
+        <aside className="xl:sticky xl:top-[82px] xl:self-start">
           <input
             ref={rafInputRef}
             type="file"
@@ -120,88 +212,8 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
             onDelete={handleDelete}
             onWrite={handleWrite}
           />
-        </div>
-      </header>
-
-      <section aria-labelledby="params-heading" className="flex flex-col gap-3">
-        <h3
-          id="params-heading"
-          className="text-xs font-medium uppercase tracking-wider text-zinc-500"
-        >
-          {t("detail.parameters.section")}
-        </h3>
-        <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-t border-zinc-900 pt-4 sm:grid-cols-2 xl:grid-cols-3">
-          <Param label={t("param.filmSimulation")} value={humanFilmSim(recipe.filmSimulation)} />
-          <Param
-            label={t("param.dynamicRange")}
-            value={describeDynamicRange(recipe.dynamicRange)}
-          />
-          <Param
-            label={t("param.whiteBalance")}
-            value={describeWhiteBalance(recipe.whiteBalance)}
-          />
-          <Param
-            label={t("param.whiteBalance.shift")}
-            value={describeWhiteBalanceShift(recipe.whiteBalance)}
-          />
-          <Param label={t("param.highlightTone")} value={signedNumber(recipe.highlightTone)} />
-          <Param label={t("param.shadowTone")} value={signedNumber(recipe.shadowTone)} />
-          <Param label={t("param.color")} value={signedNumber(recipe.color)} />
-          <Param label={t("param.sharpness")} value={signedNumber(recipe.sharpness)} />
-          <Param label={t("param.noiseReduction")} value={signedNumber(recipe.noiseReduction)} />
-          <Param label={t("param.clarity")} value={signedNumber(recipe.clarity)} />
-          <Param label={t("param.grainEffect")} value={describeGrain(recipe.grainEffect)} />
-          <Param label={t("param.colorChromeEffect")} value={recipe.colorChromeEffect} />
-          <Param label={t("param.colorChromeEffectBlue")} value={recipe.colorChromeEffectBlue} />
-          {recipe.smoothSkinEffect && (
-            <Param label={t("param.smoothSkinEffect")} value={recipe.smoothSkinEffect} />
-          )}
-          {recipe.monochromaticColor && (
-            <Param
-              label={t("param.monochromaticColor")}
-              value={`WC ${signedNumber(
-                recipe.monochromaticColor.warmCool,
-              )} · MG ${signedNumber(recipe.monochromaticColor.greenMagenta)}`}
-            />
-          )}
-        </dl>
-      </section>
-
-      <section aria-labelledby="meta-heading" className="flex flex-col gap-3">
-        <h3
-          id="meta-heading"
-          className="text-xs font-medium uppercase tracking-wider text-zinc-500"
-        >
-          {t("detail.metadata.section")}
-        </h3>
-        <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-t border-zinc-900 pt-4 sm:grid-cols-2">
-          <Param label={t("detail.metadata.author")} value={recipe.author ?? "—"} />
-          <Param
-            label={t("detail.metadata.camera")}
-            value={`${recipe.cameraModel} (${recipe.capabilitySetId})`}
-          />
-          <Param
-            label={t("detail.metadata.created")}
-            value={formatDate(recipe.createdAt, locale)}
-          />
-          <Param
-            label={t("detail.metadata.tags")}
-            value={recipe.tags?.length ? recipe.tags.join(", ") : "—"}
-          />
-        </dl>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <button
-          type="button"
-          onClick={() => setShowWalkthrough((v) => !v)}
-          aria-expanded={showWalkthrough}
-          className="self-start rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700"
-        >
-          {t("detail.setupWalkthrough")}
-        </button>
-        {showWalkthrough && <Walkthrough recipe={recipe} />}
-      </section>
+        </aside>
+      </div>
     </article>
   );
 }
@@ -249,7 +261,7 @@ function RecipeCommandPanel({
   const writeDisabled = !cameraConnected || writeStatus.kind === "writing";
 
   return (
-    <aside className="grid gap-px overflow-hidden rounded-lg border border-zinc-900 bg-zinc-900">
+    <div className="grid gap-px overflow-hidden rounded-lg border border-zinc-900 bg-zinc-900">
       <div className="bg-zinc-950 p-4">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -404,7 +416,7 @@ function RecipeCommandPanel({
           </button>
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
 
