@@ -1,4 +1,4 @@
-import { useMemo, useState, type JSX } from "react";
+import { useMemo, useState, type JSX, type ReactNode } from "react";
 import clsx from "clsx";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import {
@@ -13,11 +13,7 @@ import {
   isMonochromeFilmSimulation,
   presetInput,
   recipeToCreatorInput,
-  type CreatorDRangePriority,
-  type CreatorGrainSize,
-  type CreatorGrainStrength,
   type CreatorPresetId,
-  type CreatorTriState,
   type CreatorWhiteBalanceMode,
   type RecipeCreatorInput,
 } from "../lib/recipe-creator";
@@ -85,8 +81,11 @@ export function RecipeCreator(): JSX.Element {
   };
 
   return (
-    <div className="grid min-h-[72vh] gap-px bg-zinc-900 lg:grid-cols-[minmax(340px,430px)_minmax(0,1fr)]">
-      <section className="bg-zinc-950 px-4 py-5 sm:px-6 lg:py-7" aria-labelledby="creator-heading">
+    <div className="grid min-h-[72vh] min-w-0 gap-px bg-zinc-900 lg:grid-cols-[minmax(330px,410px)_minmax(0,1fr)]">
+      <section
+        className="min-w-0 bg-zinc-950 px-4 py-5 sm:px-6 lg:sticky lg:top-[57px] lg:max-h-[calc(100svh-57px)] lg:overflow-y-auto lg:py-7"
+        aria-labelledby="creator-heading"
+      >
         <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-emerald-400">
           creator
         </p>
@@ -96,12 +95,11 @@ export function RecipeCreator(): JSX.Element {
         >
           Build a recipe
         </h2>
-        <p className="mt-3 text-sm leading-6 text-zinc-500">
-          Start from an intent or duplicate the selected look, then edit every schema-backed Fuji
-          setting before saving it to the library.
+        <p className="mt-3 max-w-full break-words text-sm leading-6 text-zinc-500">
+          Start from an intent or duplicate a selected look, then save a validated Fuji recipe.
         </p>
 
-        <div className="mt-6 space-y-7">
+        <div className="mt-6 min-w-0 space-y-7">
           <fieldset>
             <legend className="text-xs font-medium uppercase tracking-wider text-zinc-500">
               Intent
@@ -114,14 +112,14 @@ export function RecipeCreator(): JSX.Element {
                   onClick={() => applyPreset(preset.id)}
                   aria-pressed={input.presetId === preset.id && !input.parentRecipeId}
                   className={clsx(
-                    "rounded-md border px-3 py-3 text-left transition-colors",
+                    "w-full min-w-0 rounded-md border px-3 py-3 text-left transition-colors",
                     input.presetId === preset.id && !input.parentRecipeId
                       ? "border-emerald-500/50 bg-emerald-500/10"
                       : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700",
                   )}
                 >
                   <span className="block text-sm font-medium text-zinc-100">{preset.label}</span>
-                  <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                  <span className="mt-1 block whitespace-normal break-words text-xs leading-5 text-zinc-500">
                     {preset.description}
                   </span>
                 </button>
@@ -140,6 +138,9 @@ export function RecipeCreator(): JSX.Element {
             >
               Duplicate selected{selectedRecipe ? `: ${selectedRecipe.name}` : ""}
             </button>
+            <p className="mt-2 text-xs leading-5 text-zinc-600">
+              Duplicates keep the source as parent metadata and create a new library entry.
+            </p>
           </fieldset>
 
           <EditorSection title="Identity">
@@ -186,7 +187,7 @@ export function RecipeCreator(): JSX.Element {
         </div>
       </section>
 
-      <section className="min-w-0 bg-zinc-950 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+      <section className="min-w-0 overflow-hidden bg-zinc-950 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
         <div className="flex flex-col gap-5 border-b border-zinc-900 pb-6 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <p className="font-mono text-xs uppercase tracking-wider text-zinc-500">
@@ -195,11 +196,11 @@ export function RecipeCreator(): JSX.Element {
             <h3 className="mt-1 text-3xl font-semibold tracking-tight text-zinc-50">
               {draftRecipe.name}
             </h3>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-500">
+            <p className="mt-3 max-w-2xl break-words text-sm leading-6 text-zinc-500">
               {draftRecipe.description}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2 md:max-w-[22rem] md:justify-end">
             <button
               type="button"
               onClick={() => createRecipe()}
@@ -224,14 +225,14 @@ export function RecipeCreator(): JSX.Element {
             <button
               type="button"
               onClick={() => void copyJson()}
-              className="rounded-md border border-zinc-800 px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+              className="rounded-md border border-zinc-800 px-3 py-2 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-200"
             >
               Copy JSON
             </button>
             <button
               type="button"
               onClick={() => downloadRecipeJson(draftRecipe)}
-              className="rounded-md border border-zinc-800 px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+              className="rounded-md border border-zinc-800 px-3 py-2 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-200"
             >
               Download JSON
             </button>
@@ -262,7 +263,7 @@ export function RecipeCreator(): JSX.Element {
                   format={humanFilmSim}
                   onChange={(filmSimulation) =>
                     updateInput({
-                      filmSimulation: filmSimulation as RecipeType["filmSimulation"],
+                      filmSimulation,
                     })
                   }
                 />
@@ -271,18 +272,14 @@ export function RecipeCreator(): JSX.Element {
                   value={input.dynamicRange}
                   options={CREATOR_DYNAMIC_RANGES}
                   format={describeDynamicRange}
-                  onChange={(dynamicRange) =>
-                    updateInput({ dynamicRange: dynamicRange as RecipeType["dynamicRange"] })
-                  }
+                  onChange={(dynamicRange) => updateInput({ dynamicRange })}
                 />
                 <SelectField
                   label="D-range priority"
                   value={input.dRangePriority}
                   options={CREATOR_D_RANGE_PRIORITIES}
                   format={describeDRangePriority}
-                  onChange={(dRangePriority) =>
-                    updateInput({ dRangePriority: dRangePriority as CreatorDRangePriority })
-                  }
+                  onChange={(dRangePriority) => updateInput({ dRangePriority })}
                 />
                 <NumberField
                   label="Exposure compensation"
@@ -302,9 +299,7 @@ export function RecipeCreator(): JSX.Element {
                   value={input.whiteBalanceMode}
                   options={CREATOR_WHITE_BALANCE_MODES}
                   format={formatWhiteBalanceMode}
-                  onChange={(whiteBalanceMode) =>
-                    updateInput({ whiteBalanceMode: whiteBalanceMode as CreatorWhiteBalanceMode })
-                  }
+                  onChange={(whiteBalanceMode) => updateInput({ whiteBalanceMode })}
                 />
                 <NumberField
                   label="Kelvin"
@@ -334,6 +329,10 @@ export function RecipeCreator(): JSX.Element {
                   onChange={(shiftB) => updateInput({ shiftB })}
                 />
               </div>
+              <UiNote>
+                RAF preview currently reflects WB shift reliably. Kelvin is kept for camera/export
+                metadata, but should not be used as the only visual proof in RAF.
+              </UiNote>
             </EditorSection>
 
             <EditorSection title="Tone and texture">
@@ -396,44 +395,34 @@ export function RecipeCreator(): JSX.Element {
                   label="Grain strength"
                   value={input.grainStrength}
                   options={CREATOR_TRI_STATES}
-                  onChange={(grainStrength) =>
-                    updateInput({ grainStrength: grainStrength as CreatorGrainStrength })
-                  }
+                  onChange={(grainStrength) => updateInput({ grainStrength })}
                 />
                 <SelectField
                   label="Grain size"
                   value={input.grainSize}
                   options={CREATOR_GRAIN_SIZES}
                   disabled={input.grainStrength === "Off"}
-                  onChange={(grainSize) =>
-                    updateInput({ grainSize: grainSize as CreatorGrainSize })
-                  }
+                  onChange={(grainSize) => updateInput({ grainSize })}
                 />
                 <SelectField
                   label="Color chrome"
                   value={input.colorChromeEffect}
                   options={CREATOR_TRI_STATES}
                   disabled={isMono}
-                  onChange={(colorChromeEffect) =>
-                    updateInput({ colorChromeEffect: colorChromeEffect as CreatorTriState })
-                  }
+                  onChange={(colorChromeEffect) => updateInput({ colorChromeEffect })}
                 />
                 <SelectField
                   label="Color chrome blue"
                   value={input.colorChromeEffectBlue}
                   options={CREATOR_TRI_STATES}
                   disabled={isMono}
-                  onChange={(colorChromeEffectBlue) =>
-                    updateInput({ colorChromeEffectBlue: colorChromeEffectBlue as CreatorTriState })
-                  }
+                  onChange={(colorChromeEffectBlue) => updateInput({ colorChromeEffectBlue })}
                 />
                 <SelectField
                   label="Smooth skin"
                   value={input.smoothSkinEffect}
                   options={CREATOR_TRI_STATES}
-                  onChange={(smoothSkinEffect) =>
-                    updateInput({ smoothSkinEffect: smoothSkinEffect as CreatorTriState })
-                  }
+                  onChange={(smoothSkinEffect) => updateInput({ smoothSkinEffect })}
                 />
               </div>
               {isMono && (
@@ -458,10 +447,16 @@ export function RecipeCreator(): JSX.Element {
                   />
                 </div>
               )}
+              {isMono && (
+                <UiNote>
+                  Color Chrome and Color are disabled for monochrome simulations; mono color uses
+                  Fuji warm/cool and green/magenta instead.
+                </UiNote>
+              )}
             </EditorSection>
           </div>
 
-          <aside className="space-y-8">
+          <aside className="space-y-8 xl:sticky xl:top-24 xl:max-h-[calc(100svh-7rem)] xl:overflow-y-auto xl:pr-1">
             <section aria-labelledby="creator-params-heading">
               <h4
                 id="creator-params-heading"
@@ -528,18 +523,20 @@ export function RecipeCreator(): JSX.Element {
   );
 }
 
-function EditorSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}): JSX.Element {
+function EditorSection({ title, children }: { title: string; children: ReactNode }): JSX.Element {
   return (
     <section className="space-y-4">
       <h4 className="text-xs font-medium uppercase tracking-wider text-zinc-500">{title}</h4>
       <div className="space-y-4 border-t border-zinc-900 pt-4">{children}</div>
     </section>
+  );
+}
+
+function UiNote({ children }: { children: ReactNode }): JSX.Element {
+  return (
+    <p className="rounded-md border border-zinc-900 bg-zinc-900/30 px-3 py-2 text-xs leading-5 text-zinc-500">
+      {children}
+    </p>
   );
 }
 
@@ -555,7 +552,7 @@ function InputField({
   onChange: (value: string) => void;
 }): JSX.Element {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">{label}</span>
       <input
         type="text"
@@ -580,7 +577,7 @@ function TextareaField({
   onChange: (value: string) => void;
 }): JSX.Element {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">{label}</span>
       <textarea
         value={value}
@@ -609,7 +606,7 @@ function SelectField<T extends string>({
   onChange: (value: T) => void;
 }): JSX.Element {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">{label}</span>
       <select
         value={value}
@@ -645,7 +642,7 @@ function NumberField({
   onChange: (value: number) => void;
 }): JSX.Element {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">{label}</span>
       <input
         type="number"
@@ -679,7 +676,7 @@ function RangeField({
   onChange: (value: number) => void;
 }): JSX.Element {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="flex items-center justify-between gap-3">
         <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">{label}</span>
         <span className="font-mono text-xs text-zinc-400">{signedNumber(value)}</span>

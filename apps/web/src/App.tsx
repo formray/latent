@@ -49,7 +49,7 @@ export function App(): JSX.Element {
     <div
       data-theme={theme}
       className={clsx(
-        "latent-app min-h-screen bg-zinc-950 text-zinc-100",
+        "latent-app min-h-screen overflow-x-hidden bg-zinc-950 text-zinc-100",
         "pb-28 md:pb-0",
         theme === "light" ? "theme-light" : "theme-dark",
       )}
@@ -88,7 +88,7 @@ export function App(): JSX.Element {
             </button>
             <CameraConnect />
           </div>
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="hidden items-center gap-2 sm:flex md:hidden">
             <span className="max-w-[9rem] truncate font-mono text-[10px] uppercase tracking-wider text-emerald-400">
               {cameraStatusLabel(cameraState)}
             </span>
@@ -163,7 +163,7 @@ export function App(): JSX.Element {
       <footer className="border-t border-zinc-900 px-4 py-3 text-xs text-zinc-500 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span>{t("footer.license")}</span>
-          <span className="font-mono text-zinc-600">v0.0.0 · phase 3-base</span>
+          <span className="font-mono text-zinc-600">v0.1.0 · hardware alpha</span>
         </div>
       </footer>
 
@@ -193,13 +193,13 @@ function StudioOverview({
   rawPreviewLabel: string;
 }): JSX.Element {
   return (
-    <section className="studio-overview border-b border-zinc-900 px-4 py-5 sm:px-6 lg:py-9">
+    <section className="studio-overview hidden border-b border-zinc-900 px-4 py-5 sm:px-6 md:block lg:py-6">
       <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.42fr)] lg:items-end">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.34em] text-emerald-400">
             open camera lab
           </p>
-          <h2 className="mt-3 font-mono text-5xl font-semibold uppercase leading-[0.86] tracking-normal text-zinc-50 sm:text-7xl lg:text-8xl xl:text-[9rem] 2xl:text-[10.5rem]">
+          <h2 className="mt-3 font-mono text-5xl font-semibold uppercase leading-[0.86] tracking-normal text-zinc-50 sm:text-6xl lg:text-7xl xl:text-8xl">
             Latent
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg">
@@ -249,7 +249,7 @@ function WorkspaceIntro({ workspace }: { workspace: Workspace }): JSX.Element {
     raf: {
       label: "raf lab",
       title: "Choose a recipe, keep a RAF loaded, iterate fast.",
-      body: "The library stays beside the camera renderer so selecting a look and previewing it are one continuous action.",
+      body: "The library stays beside the renderer. WB shift is preview-safe; Kelvin is tracked as a current RAF limitation.",
     },
     library: {
       label: "library",
@@ -258,8 +258,8 @@ function WorkspaceIntro({ workspace }: { workspace: Workspace }): JSX.Element {
     },
     create: {
       label: "creator",
-      title: "Build a validated recipe from a photographic intent.",
-      body: "Start with a look direction, tune preview-safe controls, and import a schema-valid recipe straight into the library.",
+      title: "Build a validated recipe.",
+      body: "Start with an intent or duplicate a selected look, tune schema-backed Fuji controls, and save straight into the library.",
     },
   } satisfies Record<Workspace, { label: string; title: string; body: string }>;
   const selected = content[workspace];
@@ -271,11 +271,13 @@ function WorkspaceIntro({ workspace }: { workspace: Workspace }): JSX.Element {
           <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-emerald-400">
             {selected.label}
           </p>
-          <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-50">
+          <h2 className="mt-1 break-words text-xl font-semibold tracking-tight text-zinc-50">
             {selected.title}
           </h2>
         </div>
-        <p className="max-w-2xl text-sm leading-6 text-zinc-500">{selected.body}</p>
+        <p className="min-w-0 w-full max-w-2xl break-words text-sm leading-6 text-zinc-500">
+          {selected.body}
+        </p>
       </div>
     </section>
   );
@@ -327,7 +329,7 @@ function MobileDock({
 
       <nav
         aria-label="Mobile workspace"
-        className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] items-center gap-1 rounded-full border border-zinc-800/80 bg-zinc-950/80 p-1 shadow-2xl shadow-black/30 backdrop-blur-2xl"
+        className="grid grid-cols-5 items-center gap-0.5 rounded-full border border-zinc-800/80 bg-zinc-950/80 p-1 shadow-2xl shadow-black/30 backdrop-blur-2xl"
       >
         <MobileDockLink href="#camera" active={workspace === "camera"} label="Camera" />
         <MobileDockLink href="#raf" active={workspace === "raf"} label="RAF" />
@@ -339,7 +341,7 @@ function MobileDock({
           aria-expanded={expanded}
           aria-controls="mobile-workspace-menu"
           className={clsx(
-            "grid h-11 w-11 place-items-center rounded-full border font-mono text-lg leading-none transition-colors",
+            "grid h-11 w-full min-w-0 place-items-center rounded-full border font-mono text-lg leading-none transition-colors",
             expanded
               ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300"
               : "border-zinc-800 bg-zinc-900/80 text-zinc-300",
@@ -367,7 +369,7 @@ function MobileDockLink({
       href={href}
       aria-current={active ? "page" : undefined}
       className={clsx(
-        "rounded-full px-3 py-3 text-center text-xs font-medium transition-colors",
+        "min-w-0 rounded-full px-2 py-3 text-center text-[11px] font-medium transition-colors min-[380px]:px-3 min-[380px]:text-xs",
         active
           ? "bg-emerald-500/15 text-emerald-300"
           : "text-zinc-300 hover:bg-zinc-900/80 hover:text-zinc-100",
@@ -428,6 +430,10 @@ function EmptyDetail({ message }: { message: string }): JSX.Element {
 }
 
 function initialTheme(): "dark" | "light" {
+  if (typeof window !== "undefined") {
+    const themeParam = new URLSearchParams(window.location.search).get("theme");
+    if (themeParam === "dark" || themeParam === "light") return themeParam;
+  }
   if (typeof localStorage !== "undefined") {
     const stored = localStorage.getItem("latent-theme-v1");
     if (stored === "dark" || stored === "light") return stored;
