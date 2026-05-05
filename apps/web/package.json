@@ -33,6 +33,6 @@
     "jsdom": "^25",
     "tailwindcss": "^4",
     "vite": "^6",
-    "vitest": "^2"
+    "vitest": "^4"
   }
 }
