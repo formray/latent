@@ -189,7 +189,7 @@ function StudioOverview({
           <p className="font-mono text-[10px] uppercase tracking-[0.34em] text-emerald-400">
             open camera lab
           </p>
-          <h2 className="mt-3 font-mono text-5xl font-semibold uppercase leading-[0.86] tracking-normal text-zinc-50 sm:text-8xl lg:text-9xl xl:text-[10rem] 2xl:text-[12rem]">
+          <h2 className="mt-3 font-mono text-5xl font-semibold uppercase leading-[0.86] tracking-normal text-zinc-50 sm:text-7xl lg:text-8xl xl:text-[9rem] 2xl:text-[10.5rem]">
             Latent
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg">
