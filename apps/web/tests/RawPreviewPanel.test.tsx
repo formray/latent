@@ -154,6 +154,19 @@ describe("<RawPreviewPanel />", () => {
     });
   });
 
+  it("warns that Fuji RAF preview may not apply Kelvin changes", () => {
+    useRecipesStore.setState({
+      recipes: [sample],
+      selectedRecipeId: sample.id,
+    });
+
+    render(<RawPreviewPanel />);
+
+    expect(
+      screen.getByText(/Kelvin is saved when writing to camera/i),
+    ).toBeInTheDocument();
+  });
+
   it("uses a RAF selected from the recipe detail for the workspace render controls", async () => {
     const file = new File([new Uint8Array([1, 2, 3])], "detail-selected.raf", {
       type: "image/x-fuji-raf",
