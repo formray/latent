@@ -95,6 +95,8 @@ export type RawPreviewDiagnosticVariantId =
   | "film-color"
   | "film-chrome"
   | "film-texture"
+  | "wb-kelvin-2500"
+  | "wb-kelvin-10000"
   | "full";
 
 let manager: ConnectionManager | null = null;
@@ -611,6 +613,30 @@ function diagnosticVariants(full: ConversionParams): Array<{
         ...film,
         ...pickParams(full, ["grainEffect", "noiseReduction", "clarity"]),
       }),
+    },
+    {
+      id: "wb-kelvin-2500",
+      label: "Full recipe 2500K",
+      buildProfile: buildDiagnosticProfile(
+        {
+          ...full,
+          whiteBalance: 0x8007,
+          wbColorTemp: 2500,
+        },
+        { dynamicRangeEncoding: "enum" },
+      ),
+    },
+    {
+      id: "wb-kelvin-10000",
+      label: "Full recipe 10000K",
+      buildProfile: buildDiagnosticProfile(
+        {
+          ...full,
+          whiteBalance: 0x8007,
+          wbColorTemp: 10000,
+        },
+        { dynamicRangeEncoding: "enum" },
+      ),
     },
     {
       id: "full",
