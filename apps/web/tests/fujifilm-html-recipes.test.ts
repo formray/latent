@@ -29,6 +29,7 @@ describe("parseFujifilmRecipesHtml", () => {
     const recipes = parseFujifilmRecipesHtml(html);
     expect(recipes).toHaveLength(2);
     expect(recipes[0]?.name).toBe("Cinematic B&W");
+    expect(recipes[0]?.author).toBe("Latent Collective");
     expect(recipes[0]?.filmSimulation).toBe("AcrosR");
     expect(recipes[0]?.whiteBalance).toEqual({
       mode: "ColorTemperature",
