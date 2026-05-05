@@ -412,15 +412,21 @@ function RecipeControls({
         onChange={(value) => updateWhiteBalanceMode(value as RecipeType["whiteBalance"]["mode"])}
       />
       {recipe.whiteBalance.mode === "ColorTemperature" && (
-        <RangeControl
-          label="Kelvin"
-          value={recipe.whiteBalance.colorTemperatureK ?? 6500}
-          min={2500}
-          max={10000}
-          step={100}
-          format={(value) => `${value}K`}
-          onChange={(value) => updateWhiteBalance({ colorTemperatureK: value })}
-        />
+        <div>
+          <RangeControl
+            label="Kelvin"
+            value={recipe.whiteBalance.colorTemperatureK ?? 6500}
+            min={2500}
+            max={10000}
+            step={100}
+            format={(value) => `${value}K`}
+            onChange={(value) => updateWhiteBalance({ colorTemperatureK: value })}
+          />
+          <p className="mt-2 rounded-md border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-xs leading-5 text-zinc-400">
+            Kelvin is saved when writing to camera. Some Fuji RAF renders may keep the RAF file's
+            original Kelvin, so verify this control with Diagnose RAF before judging the look.
+          </p>
+        </div>
       )}
       <RangeControl
         label="WB Shift R"
