@@ -162,6 +162,21 @@ html {
   background-color: rgb(4 120 87 / 0.16) !important;
 }
 
+.theme-light .hover\:bg-zinc-900:hover,
+.theme-light .hover\:bg-zinc-950\/20:hover,
+.theme-light .hover\:bg-emerald-950\/20:hover {
+  background-color: rgb(226 218 205 / 0.72) !important;
+}
+
+.theme-light .hover\:text-zinc-300:hover {
+  color: #322a23 !important;
+}
+
+.theme-light .hover\:border-zinc-700:hover,
+.theme-light .hover\:border-red-800:hover {
+  border-color: rgb(119 109 95 / 0.48) !important;
+}
+
 .theme-light .hover\:text-emerald-300:hover {
   color: #035f49 !important;
 }
