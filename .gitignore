@@ -18,6 +18,10 @@ coverage/
 !.env.example
 .ops/
 
+# Local agent instructions / machine-specific workflow notes
+AGENTS.md
+CLAUDE.md
+
 # Logs
 *.log
 
