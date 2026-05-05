@@ -33,6 +33,7 @@ describe("<App />", () => {
     expect(screen.getByText(/Camera-backed Fujifilm recipes/i)).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Camera" })[0]).toHaveAttribute("href", "#camera");
     expect(screen.getAllByRole("link", { name: "RAF" })[0]).toHaveAttribute("href", "#raf");
+    expect(screen.getAllByRole("link", { name: "Create" })[0]).toHaveAttribute("href", "#create");
     expect(
       screen
         .getAllByRole("link", { name: "Library" })
@@ -75,6 +76,21 @@ describe("<App />", () => {
         .getAllByRole("link", { name: "Camera" })
         .some((link) => link.getAttribute("aria-current") === "page"),
     ).toBe(true);
+
+    act(() => {
+      window.location.hash = "#create";
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    expect(
+      screen.getByText(/Build a validated recipe from a photographic intent/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Build a recipe" })).toBeInTheDocument();
+    expect(
+      screen
+        .getAllByRole("link", { name: "Create" })
+        .some((link) => link.getAttribute("aria-current") === "page"),
+    ).toBe(true);
   });
 
   it("keeps a mobile workspace dock with expandable controls", () => {
@@ -83,6 +99,7 @@ describe("<App />", () => {
     const dock = screen.getByRole("navigation", { name: "Mobile workspace" });
     expect(dock).toBeInTheDocument();
     expect(within(dock).getByRole("link", { name: "RAF" })).toHaveAttribute("href", "#raf");
+    expect(within(dock).getByRole("link", { name: "Create" })).toHaveAttribute("href", "#create");
 
     fireEvent.click(screen.getByRole("button", { name: /open mobile controls/i }));
 
