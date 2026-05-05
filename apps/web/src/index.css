@@ -93,6 +93,7 @@ html {
 }
 
 .theme-light .bg-zinc-900\/40,
+.theme-light .bg-zinc-900\/50,
 .theme-light .bg-zinc-900\/60,
 .theme-light .bg-zinc-900\/70 {
   background-color: rgb(235 229 217 / 0.72) !important;
