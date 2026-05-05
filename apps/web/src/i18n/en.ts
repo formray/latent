@@ -40,9 +40,13 @@ export const en = {
   "detail.action.preview.section": "Preview",
   "detail.action.preview.body": "Render this recipe on a RAF through the connected camera.",
   "detail.action.file.section": "Recipe file",
-  "detail.action.write.body": "Choose the custom slot to overwrite on the connected camera.",
+  "detail.action.write.body":
+    "Send this recipe to one custom slot on the connected camera. This overwrites that slot.",
+  "detail.cameraAction.section": "Camera actions",
+  "detail.cameraAction.write": "Send recipe",
+  "detail.cameraAction.restore": "Restore backup",
   "detail.cameraWrite.section": "Write to camera",
-  "detail.cameraWrite.slot": "Write C{slot}",
+  "detail.cameraWrite.slot": "Send to C{slot}",
   "detail.cameraWrite.writing": "Writing",
   "detail.cameraWrite.confirm":
     "Write this recipe to camera slot C{slot}? Latent will verify the slot after writing.",
@@ -50,8 +54,9 @@ export const en = {
     "Write this recipe to camera slot C{slot}? Backup available: {backup}. Latent will verify the slot after writing.",
   "detail.cameraWrite.confirmWithoutBackup":
     "Write this recipe to camera slot C{slot}? No imported backup was found for this slot. Continue only if this slot is safe to overwrite.",
-  "detail.cameraWrite.backedUp": "backup",
-  "detail.cameraWrite.noBackup": "no backup",
+  "detail.cameraWrite.restoreAvailable": "One-click restore is available for {slots}.",
+  "detail.cameraWrite.restoreMissing":
+    "No one-click restore point is available for this camera yet.",
   "detail.cameraWrite.success": "Wrote C{slot} and verified {n} properties.",
   "detail.cameraWrite.lastSuccess": "Last write: C{slot} restored from {recipe}.",
   "detail.cameraWrite.error": "Write failed: {message}",
@@ -63,8 +68,13 @@ export const en = {
   "detail.cameraSafety.backup.missing":
     "No one-click restore point yet. Import this camera slot, or export a JSON backup before writing.",
   "detail.cameraSafety.readBack": "Latent reads the slot back after writing.",
+  "detail.cameraRestore.body":
+    "Restore the last imported camera backup to its original custom slot.",
+  "detail.cameraRestore.empty":
+    "Import a camera slot first. Restores only appear after Latent knows what was originally on the camera.",
   "detail.cameraRestore.section": "One-click restore",
-  "detail.cameraRestore.slot": "Restore C{slot}",
+  "detail.cameraRestore.slot": "Restore C{slot}: {name}",
+  "detail.cameraRestore.slotHint": "Writes this backup back to camera slot C{slot}.",
   "detail.cameraRestore.confirm": "Restore camera slot C{slot} from backup \"{backup}\"?",
   "detail.setupWalkthrough": "Set up on camera",
   "detail.setupWalkthrough.intro":

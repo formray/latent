@@ -192,8 +192,12 @@ describe("<RecipeDetail />", () => {
 
     expect(screen.getByText(/camera is online/i)).toBeInTheDocument();
     expect(screen.getByText(/restore points found for C3/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /write C3 backup/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /write C1 no backup/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /send recipe/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: /send to C3/i })).toBeInTheDocument();
+    expect(screen.getByText(/one-click restore is available for C3/i)).toBeInTheDocument();
   });
 
   it("restores a camera slot from an imported backup recipe", () => {
@@ -213,7 +217,8 @@ describe("<RecipeDetail />", () => {
     });
 
     render(<RecipeDetail recipe={sample} />);
-    fireEvent.click(screen.getByRole("button", { name: /restore C3/i }));
+    fireEvent.click(screen.getByRole("button", { name: /restore backup/i }));
+    fireEvent.click(screen.getByRole("button", { name: /restore C3: Original Camera C3/i }));
 
     expect(confirm).toHaveBeenCalledWith(
       'Restore camera slot C3 from backup "Original Camera C3"?',
@@ -236,7 +241,7 @@ describe("<RecipeDetail />", () => {
     });
 
     render(<RecipeDetail recipe={sample} />);
-    fireEvent.click(screen.getByRole("button", { name: /write C1 no backup/i }));
+    fireEvent.click(screen.getByRole("button", { name: /send to C1/i }));
 
     expect(confirm.mock.calls[0]?.[0]).toContain("No imported backup was found");
     expect(writeRecipeToSlot).not.toHaveBeenCalled();
