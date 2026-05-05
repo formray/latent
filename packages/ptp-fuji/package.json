@@ -1,6 +1,6 @@
 {
   "name": "@latent/ptp-fuji",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": false,
   "license": "MIT",
   "type": "module",
@@ -16,7 +16,12 @@
       "default": "./dist/errors.js"
     }
   },
-  "files": ["dist", "LICENSE", "NOTICE", "UPSTREAM"],
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICE",
+    "UPSTREAM"
+  ],
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run --dir tests"
