@@ -87,8 +87,10 @@ export interface RawPreviewDiagnosticResult {
 export type RawPreviewDiagnosticVariantId =
   | "base"
   | "film"
+  | "film-exposure"
   | "film-dynamic-range-enum"
   | "film-dynamic-range-raw"
+  | "film-d-range-priority"
   | "film-tone"
   | "film-color"
   | "film-chrome"
@@ -544,6 +546,14 @@ function diagnosticVariants(full: ConversionParams): Array<{
       buildProfile: buildDiagnosticProfile(film),
     },
     {
+      id: "film-exposure",
+      label: "Film + exposure",
+      buildProfile: buildDiagnosticProfile({
+        ...film,
+        ...pickParams(full, ["exposureBias"]),
+      }),
+    },
+    {
       id: "film-dynamic-range-enum",
       label: "Film + DR enum",
       buildProfile: buildDiagnosticProfile(
@@ -560,6 +570,14 @@ function diagnosticVariants(full: ConversionParams): Array<{
       buildProfile: buildDiagnosticProfile({
         ...film,
         ...pickParams(full, ["dynamicRange"]),
+      }),
+    },
+    {
+      id: "film-d-range-priority",
+      label: "Film + D Range Priority",
+      buildProfile: buildDiagnosticProfile({
+        ...film,
+        ...pickParams(full, ["wideDRange"]),
       }),
     },
     {

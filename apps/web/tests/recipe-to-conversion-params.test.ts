@@ -12,7 +12,9 @@ const recipe: RecipeType = {
   capabilitySetId: "latent-defaults-v1",
   cameraModel: "Fujifilm",
   filmSimulation: "ClassicChrome",
+  exposureCompensation: 1 / 3,
   dynamicRange: "DR400",
+  dRangePriority: "Weak",
   whiteBalance: { mode: "ColorTemperature", colorTemperatureK: 4550, shiftR: 2, shiftB: -1 },
   highlightTone: -1,
   shadowTone: 2,
@@ -30,7 +32,9 @@ describe("recipeToConversionParams", () => {
   it("maps recipe fields to D185 conversion parameters", () => {
     expect(recipeToConversionParams(recipe)).toMatchObject({
       filmSimulation: 0x0b,
+      exposureBias: 333,
       dynamicRange: 3,
+      wideDRange: 2,
       whiteBalance: 0x8007,
       wbColorTemp: 4550,
       wbShiftR: 2,

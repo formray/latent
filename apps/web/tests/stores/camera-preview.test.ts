@@ -77,7 +77,9 @@ describe("camera store raw preview", () => {
     expect(builder).toBeTypeOf("function");
     const patched = builder?.(baseProfile());
     expect(patched).not.toEqual(baseProfile());
+    expect(readD185Field(patched, 4)).toBe(333);
     expect(readD185Field(patched, 6)).toBe(3);
+    expect(readD185Field(patched, 7)).toBe(3);
     expect(useCameraStore.getState().rawPreviewStatus).toMatchObject({
       kind: "success",
       recipeName: "Preview sample",
@@ -97,7 +99,7 @@ describe("camera store raw preview", () => {
 
     await useCameraStore.getState().renderRawPreviewDiagnostics(file(), recipe);
 
-    expect(port.renderRawPreview).toHaveBeenCalledTimes(9);
+    expect(port.renderRawPreview).toHaveBeenCalledTimes(11);
     expect(port.renderRawPreview).toHaveBeenNthCalledWith(
       1,
       new Uint8Array([1, 2, 3, 4]),
@@ -110,8 +112,10 @@ describe("camera store raw preview", () => {
       diagnostics: [
         { id: "base", label: "Base RAF" },
         { id: "film", label: "Film simulation only" },
+        { id: "film-exposure", label: "Film + exposure" },
         { id: "film-dynamic-range-enum", label: "Film + DR enum" },
         { id: "film-dynamic-range-raw", label: "Film + DR raw %" },
+        { id: "film-d-range-priority", label: "Film + D Range Priority" },
         { id: "film-tone", label: "Film + tone" },
         { id: "film-color", label: "Film + color" },
         { id: "film-chrome", label: "Film + chrome" },
@@ -166,7 +170,9 @@ const recipe: RecipeType = {
   capabilitySetId: "latent-defaults-v1",
   cameraModel: "Fujifilm",
   filmSimulation: "ClassicChrome",
+  exposureCompensation: 1 / 3,
   dynamicRange: "DR400",
+  dRangePriority: "Strong",
   whiteBalance: { mode: "Auto", shiftR: 0, shiftB: 0 },
   highlightTone: 1,
   shadowTone: 1,

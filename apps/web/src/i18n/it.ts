@@ -73,6 +73,8 @@ export const it: Record<MessageKey, string> = {
   // Recipe parameters
   "param.filmSimulation": "Film Simulation",
   "param.dynamicRange": "Dynamic Range",
+  "param.exposureCompensation": "Exposure Compensation",
+  "param.dRangePriority": "D Range Priority",
   "param.whiteBalance": "White Balance",
   "param.whiteBalance.shift": "WB Shift",
   "param.highlightTone": "Highlight Tone",

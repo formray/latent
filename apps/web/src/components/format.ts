@@ -39,11 +39,22 @@ export function signedNumber(n: number): string {
   return n > 0 ? `+${n}` : `${n}`;
 }
 
+export function formatExposureCompensation(value: number): string {
+  const rounded = Math.round(value * 3) / 3;
+  if (rounded === 0) return "0 EV";
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)} EV`;
+}
+
 export function describeDynamicRange(value: RecipeType["dynamicRange"]): string {
   if (value === "DRAuto") return "DR Auto";
   if (value === "DR100") return "DR 100%";
   if (value === "DR200") return "DR 200%";
   return "DR 400%";
+}
+
+export function describeDRangePriority(value: RecipeType["dRangePriority"]): string {
+  return value ?? "Off";
 }
 
 export function describeWhiteBalance(wb: RecipeType["whiteBalance"]): string {

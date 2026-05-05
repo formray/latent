@@ -17,7 +17,9 @@ const sample: RecipeType = {
   capabilitySetId: "x-s20-fw3.30",
   cameraModel: "X-S20",
   filmSimulation: "ClassicNegative",
+  exposureCompensation: -1 / 3,
   dynamicRange: "DR400",
+  dRangePriority: "Strong",
   whiteBalance: { mode: "ColorTemperature", colorTemperatureK: 5400, shiftR: -2, shiftB: -1 },
   highlightTone: -1.5,
   shadowTone: 1,
@@ -73,8 +75,10 @@ describe("<RawPreviewPanel />", () => {
 
     expect(screen.getByText("RAF workspace")).toBeInTheDocument();
     expect(screen.getByLabelText("Film Simulation")).toHaveValue("ClassicNegative");
+    expect(screen.getByLabelText("D Range Priority")).toHaveValue("Strong");
 
     fireEvent.change(screen.getByLabelText("Color"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("Exposure Compensation"), { target: { value: "1" } });
     const file = new File([new Uint8Array([1, 2, 3])], "sample.raf", {
       type: "image/x-fuji-raf",
     });
@@ -89,6 +93,8 @@ describe("<RawPreviewPanel />", () => {
     expect(lastCall?.[0]).toBe(file);
     expect(lastCall?.[1]).toMatchObject({
       name: "Neon Dreams",
+      exposureCompensation: 1,
+      dRangePriority: "Strong",
       color: 1,
     });
   });

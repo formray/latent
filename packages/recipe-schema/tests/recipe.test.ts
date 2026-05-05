@@ -55,10 +55,15 @@ describe("Recipe identity & provenance", () => {
       filmSimulation: "ClassicChrome",
       dynamicRange: "DR100",
       whiteBalance: { mode: "Auto", shiftR: 0, shiftB: 0 },
-      highlightTone: 0, shadowTone: 0, color: 0, sharpness: 0,
-      noiseReduction: 0, clarity: 0,
+      highlightTone: 0,
+      shadowTone: 0,
+      color: 0,
+      sharpness: 0,
+      noiseReduction: 0,
+      clarity: 0,
       grainEffect: { strength: "Off", size: "Small" },
-      colorChromeEffect: "Off", colorChromeEffectBlue: "Off",
+      colorChromeEffect: "Off",
+      colorChromeEffectBlue: "Off",
     };
     expect(() => Recipe.parse(minimal)).not.toThrow();
   });
@@ -86,5 +91,35 @@ describe("Recipe identity & provenance", () => {
       colorChromeEffectBlue: "Off",
     };
     expect(() => Recipe.parse(imported)).not.toThrow();
+  });
+
+  it("accepts preview-only exposure and D Range Priority fields", () => {
+    const preview = {
+      id: "880e8400-e29b-41d4-a716-446655440003",
+      schemaVersion: 1,
+      name: "Preview Controls",
+      tags: [],
+      createdAt: "2026-05-04T10:00:00Z",
+      capabilitySetId: "x-s20-fw1.10",
+      cameraModel: "X-S20",
+      filmSimulation: "ClassicChrome",
+      exposureCompensation: -1 / 3,
+      dynamicRange: "DR400",
+      dRangePriority: "Strong",
+      whiteBalance: { mode: "Auto", shiftR: 0, shiftB: 0 },
+      highlightTone: 0,
+      shadowTone: 0,
+      color: 0,
+      sharpness: 0,
+      noiseReduction: 0,
+      clarity: 0,
+      grainEffect: { strength: "Off", size: "Small" },
+      colorChromeEffect: "Off",
+      colorChromeEffectBlue: "Off",
+    };
+    expect(Recipe.parse(preview)).toMatchObject({
+      exposureCompensation: -1 / 3,
+      dRangePriority: "Strong",
+    });
   });
 });

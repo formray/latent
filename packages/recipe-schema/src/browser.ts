@@ -6,7 +6,7 @@
  * Node-only modules out of the client bundle.
  */
 
-export { Recipe, FilmSimulation, TriState } from "./recipe.js";
+export { Recipe, FilmSimulation, TriState, DRangePriority } from "./recipe.js";
 export type { Recipe as RecipeType } from "./recipe.js";
 
 export { TasteProfile, ShootingContext } from "./taste-profile.js";

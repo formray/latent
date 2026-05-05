@@ -12,9 +12,11 @@ import { useCameraStore } from "../../stores/camera";
 import { useRecipesStore } from "../../stores/recipes";
 import {
   describeDynamicRange,
+  describeDRangePriority,
   describeGrain,
   describeWhiteBalance,
   describeWhiteBalanceShift,
+  formatExposureCompensation,
   humanFilmSim,
   signedNumber,
 } from "../format";
@@ -43,6 +45,12 @@ const FILM_SIM_OPTIONS: RecipeType["filmSimulation"][] = [
 ];
 
 const DYNAMIC_RANGE_OPTIONS: RecipeType["dynamicRange"][] = ["DRAuto", "DR100", "DR200", "DR400"];
+const D_RANGE_PRIORITY_OPTIONS: Array<NonNullable<RecipeType["dRangePriority"]>> = [
+  "Off",
+  "Auto",
+  "Weak",
+  "Strong",
+];
 
 const WHITE_BALANCE_OPTIONS: RecipeType["whiteBalance"]["mode"][] = [
   "Auto",
@@ -377,6 +385,23 @@ function RecipeControls({
         }))}
         onChange={(value) => update({ dynamicRange: value as RecipeType["dynamicRange"] })}
       />
+      <RangeControl
+        label="Exposure Compensation"
+        value={recipe.exposureCompensation ?? 0}
+        min={-5}
+        max={5}
+        step={1 / 3}
+        format={formatExposureCompensation}
+        onChange={(value) => update({ exposureCompensation: roundThird(value) })}
+      />
+      <SelectControl
+        label="D Range Priority"
+        value={recipe.dRangePriority ?? "Off"}
+        options={D_RANGE_PRIORITY_OPTIONS.map((value) => ({ value, label: value }))}
+        onChange={(value) =>
+          update({ dRangePriority: value as NonNullable<RecipeType["dRangePriority"]> })
+        }
+      />
       <SelectControl
         label="White Balance"
         value={recipe.whiteBalance.mode}
@@ -527,6 +552,8 @@ function RecipeControls({
       )}
       <div className="border-t border-zinc-900 pt-4 font-mono text-[11px] uppercase tracking-wider text-zinc-600">
         {humanFilmSim(recipe.filmSimulation)} · {describeDynamicRange(recipe.dynamicRange)} ·{" "}
+        {formatExposureCompensation(recipe.exposureCompensation ?? 0)} · DPR{" "}
+        {describeDRangePriority(recipe.dRangePriority)} ·{" "}
         {describeWhiteBalance(recipe.whiteBalance)} ·{" "}
         {describeWhiteBalanceShift(recipe.whiteBalance)} · {describeGrain(recipe.grainEffect)}
       </div>
@@ -615,7 +642,9 @@ function cloneRecipe(recipe: RecipeType): RecipeType {
 function recipePreviewSignature(recipe: RecipeType): unknown {
   return {
     filmSimulation: recipe.filmSimulation,
+    exposureCompensation: recipe.exposureCompensation,
     dynamicRange: recipe.dynamicRange,
+    dRangePriority: recipe.dRangePriority,
     whiteBalance: recipe.whiteBalance,
     highlightTone: recipe.highlightTone,
     shadowTone: recipe.shadowTone,
@@ -628,6 +657,10 @@ function recipePreviewSignature(recipe: RecipeType): unknown {
     colorChromeEffectBlue: recipe.colorChromeEffectBlue,
     smoothSkinEffect: recipe.smoothSkinEffect,
   };
+}
+
+function roundThird(value: number): number {
+  return Math.round(value * 3) / 3;
 }
 
 function makeRenderSignature(file: File, draftSignature: string): string {

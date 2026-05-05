@@ -12,7 +12,9 @@ describe("Recipe ↔ camera property translator", () => {
     capabilitySetId: "x-s20-fw1.10",
     cameraModel: "X-S20",
     filmSimulation: "ClassicChrome",
+    exposureCompensation: 1 / 3,
     dynamicRange: "DR200",
+    dRangePriority: "Weak",
     whiteBalance: { mode: "Daylight", shiftR: 2, shiftB: -1 },
     highlightTone: -1,
     shadowTone: 0.5,
@@ -37,7 +39,9 @@ describe("Recipe ↔ camera property translator", () => {
       cameraModel: sample.cameraModel,
     });
     expect(back.filmSimulation).toBe(sample.filmSimulation);
+    expect(back.exposureCompensation).toBe(sample.exposureCompensation);
     expect(back.dynamicRange).toBe(sample.dynamicRange);
+    expect(back.dRangePriority).toBe(sample.dRangePriority);
     expect(back.whiteBalance.shiftR).toBe(sample.whiteBalance.shiftR);
     expect(back.whiteBalance.shiftB).toBe(sample.whiteBalance.shiftB);
     expect(back.highlightTone).toBe(sample.highlightTone);

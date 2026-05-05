@@ -6,10 +6,12 @@ import { useCameraStore, type CameraWriteStatus, type RawPreviewStatus } from ".
 import { detectLocale, useT } from "../i18n";
 import {
   describeDynamicRange,
+  describeDRangePriority,
   describeGrain,
   describeWhiteBalance,
   describeWhiteBalanceShift,
   formatDate,
+  formatExposureCompensation,
   humanFilmSim,
   signedNumber,
 } from "./format";
@@ -113,6 +115,14 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
               <Param
                 label={t("param.dynamicRange")}
                 value={describeDynamicRange(recipe.dynamicRange)}
+              />
+              <Param
+                label={t("param.exposureCompensation")}
+                value={formatExposureCompensation(recipe.exposureCompensation ?? 0)}
+              />
+              <Param
+                label={t("param.dRangePriority")}
+                value={describeDRangePriority(recipe.dRangePriority)}
               />
               <Param
                 label={t("param.whiteBalance")}
@@ -425,6 +435,7 @@ function Walkthrough({ recipe }: { recipe: RecipeType }): JSX.Element {
   const steps = [
     `Set film simulation to ${humanFilmSim(recipe.filmSimulation)}`,
     `Dynamic range: ${recipe.dynamicRange}`,
+    `Exposure compensation ${formatExposureCompensation(recipe.exposureCompensation ?? 0)} · D Range Priority ${describeDRangePriority(recipe.dRangePriority)}`,
     `White balance: ${describeWhiteBalance(recipe.whiteBalance)} (shift R ${signedNumber(recipe.whiteBalance.shiftR)} / B ${signedNumber(recipe.whiteBalance.shiftB)})`,
     `Highlight tone ${signedNumber(recipe.highlightTone)} · Shadow tone ${signedNumber(recipe.shadowTone)}`,
     `Color ${signedNumber(recipe.color)} · Sharpness ${signedNumber(recipe.sharpness)} · Noise reduction ${signedNumber(recipe.noiseReduction)} · Clarity ${signedNumber(recipe.clarity)}`,

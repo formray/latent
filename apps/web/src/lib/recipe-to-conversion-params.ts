@@ -45,10 +45,23 @@ const DR: Record<RecipeType["dynamicRange"], number> = {
   DR400: 3,
 };
 
+const D_RANGE_PRIORITY: Record<NonNullable<RecipeType["dRangePriority"]>, number> = {
+  Off: 0,
+  Auto: 1,
+  Weak: 2,
+  Strong: 3,
+};
+
 export function recipeToConversionParams(recipe: RecipeType): ConversionParams {
   return {
     filmSimulation: FILM_SIM[recipe.filmSimulation],
+    ...(recipe.exposureCompensation !== undefined
+      ? { exposureBias: Math.round(recipe.exposureCompensation * 1000) }
+      : {}),
     dynamicRange: DR[recipe.dynamicRange],
+    ...(recipe.dRangePriority !== undefined
+      ? { wideDRange: D_RANGE_PRIORITY[recipe.dRangePriority] }
+      : {}),
     whiteBalance: WB[recipe.whiteBalance.mode],
     wbShiftR: recipe.whiteBalance.shiftR,
     wbShiftB: recipe.whiteBalance.shiftB,
