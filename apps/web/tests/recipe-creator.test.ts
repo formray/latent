@@ -24,8 +24,9 @@ describe("recipe creator", () => {
         ...presetInput("muted-street"),
         name: "Street Acros",
         filmSimulation: "AcrosR",
-        warmth: 2,
+        monochromaticWarmCool: 4,
         grainStrength: "Strong",
+        grainSize: "Large",
       },
       {
         id: "22222222-2222-4222-8222-222222222222",
