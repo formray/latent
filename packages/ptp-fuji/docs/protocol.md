@@ -1,17 +1,17 @@
-# @filmfork/ptp-fuji — protocol reference
+# @latent/ptp-fuji — protocol reference
 
 Forked from filmkit. This document mirrors filmkit's `QUICK_REFERENCE.md` with
-FilmFork-specific extensions called out: vendor opcodes for RAF upload,
+Latent-specific extensions called out: vendor opcodes for RAF upload,
 typed error taxonomy mapping, transport contract.
 
 ## Vendor opcodes (RAF upload — distinct from standard PTP)
 
-| Op | Purpose |
-|---|---|
-| `0x900C` (SendObjectInfo, vendor) | Announce object metadata |
-| `0x900D` (SendObject2, vendor) | Stream the RAF bytes |
-| `0xF802` (object format) | RAF object format identifier |
-| Filename | `FUP_FILE.dat` |
+| Op                                | Purpose                      |
+| --------------------------------- | ---------------------------- |
+| `0x900C` (SendObjectInfo, vendor) | Announce object metadata     |
+| `0x900D` (SendObject2, vendor)    | Stream the RAF bytes         |
+| `0xF802` (object format)          | RAF object format identifier |
+| Filename                          | `FUP_FILE.dat`               |
 
 (See spec §6.4 for the full conversion flow.)
 
