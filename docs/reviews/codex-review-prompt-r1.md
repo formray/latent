@@ -14,16 +14,17 @@ You are reviewing a draft V1 design specification for an open-source software pr
 **One-liner:** Open-source web platform for Fujifilm photographers — recipe library + AI-generated film simulations + direct browser-to-camera push via WebUSB.
 
 **Validated foundations (already proven during a live brainstorming session):**
+
 - Filmkit (https://github.com/eggricesoy/filmkit) — MIT-licensed TypeScript web app — successfully connects via WebUSB to a Fujifilm X-S20 on macOS/Chrome. Reads C1-C4 custom slots. Implements PTP-over-USB to talk to the camera's image processor.
 - macOS `ptpcamerad` daemon claims the USB interface; WebUSB succeeds only when ptpcamerad is killed (`killall -9`) within ~1 second of clicking Connect, before launchd respawns it.
 - The camera processes RAF files itself given a recipe profile, returning a pixel-accurate JPEG via PTP — this means "live preview" can be the camera's actual output, not a WebGL approximation.
 
-**Author's organization (Formray) has its own engineering guidelines** at `/Users/giuseppealbriziowork/Repos/Formray/formray-foundation/engineering-guidelines/` (17 modules, 00-16). Most relevant: `12-technology-stacks.md`, `13-macos-distribution.md`, `15-hardware-firmware.md`, `16-ai-native-patterns.md`. Formray root context: `/Users/giuseppealbriziowork/Repos/Formray/CLAUDE.md` and `/Users/giuseppealbriziowork/Repos/Formray/formray-foundation/CLAUDE.md`. The spec MUST align with these guidelines unless deviation is justified.
+**Author's organization (Formray) has its own engineering guidelines** (private reference at the time; 17 modules, 00-16). Most relevant: `12-technology-stacks.md`, `13-macos-distribution.md`, `15-hardware-firmware.md`, `16-ai-native-patterns.md`. Formray root and foundation context were also private references at the time. The spec MUST align with these guidelines unless deviation is justified.
 
 # Your task
 
 Read this file end-to-end:
-**`/Users/giuseppealbriziowork/Repos/Formray/filmfork/docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md`** (510 lines, 16 sections)
+**`docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md`** (510 lines, 16 sections)
 
 Then produce an adversarial review. I want to know what's actually wrong, missing, or risky — not where it succeeds.
 

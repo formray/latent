@@ -7,12 +7,13 @@ documented failure mode (refresh, unplug, sleep, macOS daemon claim,
 session-stale) without requiring physical power-cycle of the camera.
 
 **Architecture:** Separate `ConnectionManager` + `CameraDriver` interface
-+ `CameraSessionPort` abstraction in a new `@latent/camera-connection`
-package. State machine has 7 explicit states; listener lifecycle is
-connection-generation-owned; classifier reads structured `stage`
-metadata on `LatentError`. macOS first-run wizard with safer-first
-default plus advanced opt-in. Full design lives in
-`docs/superpowers/specs/2026-05-04-camera-connection-stability-design.md`.
+
+- `CameraSessionPort` abstraction in a new `@latent/camera-connection`
+  package. State machine has 7 explicit states; listener lifecycle is
+  connection-generation-owned; classifier reads structured `stage`
+  metadata on `LatentError`. macOS first-run wizard with safer-first
+  default plus advanced opt-in. Full design lives in
+  `docs/superpowers/specs/2026-05-04-camera-connection-stability-design.md`.
 
 **Tech Stack:** TypeScript 5.7 strict, Vitest 2, Zustand 5, React 19,
 Tailwind v4, npm workspaces, Node 22.
@@ -24,7 +25,7 @@ Tailwind v4, npm workspaces, Node 22.
 - Work one task at a time. Do not start the next task until the current task's tests pass and its commit is created.
 - Keep the commit boundaries exactly aligned to the task headings below.
 - Use npm only. Do not use pnpm or yarn.
-- Run commands from `/Users/giuseppealbriziowork/Repos/Formray/latent`.
+- Run commands from the repo root.
 - Each commit message must end with:
 
 ```text
@@ -371,10 +372,7 @@ throw new LatentError(
 ```ts
 let result: USBOutTransferResult;
 try {
-  result = await this.raceWithSignal(
-    this.device.transferOut(this.endpointOut, chunk),
-    signal,
-  );
+  result = await this.raceWithSignal(this.device.transferOut(this.endpointOut, chunk), signal);
 } catch (err) {
   throw new LatentError("UsbDisconnect", "WebUSB transferOut threw", err, {
     stage: "transfer-out",
@@ -549,9 +547,7 @@ describe("PtpFraming validation", () => {
     const t = new FakeTransport();
     t.enqueue(response(PTPResp.OK, 77));
     const framing = new PtpFraming(t);
-    await expect(
-      framing.sendDataCommand(0x1016, [1], new Uint8Array([2])),
-    ).rejects.toMatchObject({
+    await expect(framing.sendDataCommand(0x1016, [1], new Uint8Array([2]))).rejects.toMatchObject({
       category: "PtpStall",
     });
   });
@@ -574,15 +570,9 @@ AssertionError: promise resolved instead of rejecting
 - [ ] In `packages/ptp-fuji/src/ptp/transport.ts`, import `LatentError` and `PTPResp`, then add this helper below `MAX_RESPONSE_BYTES`:
 
 ```ts
-function assertResponse(
-  resp: PTPContainerData,
-  expectedTransactionId: number,
-): void {
+function assertResponse(resp: PTPContainerData, expectedTransactionId: number): void {
   if (resp.type !== ContainerType.Response) {
-    throw new LatentError(
-      "PtpStall",
-      `expected RESPONSE container, got type=${resp.type}`,
-    );
+    throw new LatentError("PtpStall", `expected RESPONSE container, got type=${resp.type}`);
   }
   if (resp.transactionId !== expectedTransactionId) {
     throw new LatentError(
@@ -597,10 +587,7 @@ function assertResponse(
   if (resp.code === PTPResp.DeviceBusy) {
     throw new LatentError("PtpDeviceBusy", "PTP device is busy");
   }
-  throw new LatentError(
-    "PtpUnsupportedOperation",
-    `PTP response code 0x${resp.code.toString(16)}`,
-  );
+  throw new LatentError("PtpUnsupportedOperation", `PTP response code 0x${resp.code.toString(16)}`);
 }
 ```
 
@@ -666,9 +653,7 @@ it("maps DeviceBusy to PtpDeviceBusy for sendDataCommand", async () => {
   const t = new FakeTransport();
   t.enqueue(response(PTPResp.DeviceBusy, 1));
   const framing = new PtpFraming(t);
-  await expect(
-    framing.sendDataCommand(0x1016, [1], new Uint8Array([2])),
-  ).rejects.toMatchObject({
+  await expect(framing.sendDataCommand(0x1016, [1], new Uint8Array([2]))).rejects.toMatchObject({
     category: "PtpDeviceBusy",
   });
 });
@@ -947,13 +932,15 @@ function deviceInfoPayload(): Uint8Array {
 it("getDeviceInfo parses model, firmware, serial, and supported ops", async () => {
   const t = new FakeTransport();
   t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x01, 0x20, 1, 0, 0, 0]));
-  t.enqueue(packContainer({
-    type: 2,
-    code: 0x1001,
-    transactionId: 2,
-    params: [],
-    data: deviceInfoPayload(),
-  }));
+  t.enqueue(
+    packContainer({
+      type: 2,
+      code: 0x1001,
+      transactionId: 2,
+      params: [],
+      data: deviceInfoPayload(),
+    }),
+  );
   t.enqueue(new Uint8Array([0x0c, 0, 0, 0, 3, 0, 0x01, 0x20, 2, 0, 0, 0]));
   const s = new FujiCameraSession(t);
   await s.open();
@@ -1364,11 +1351,7 @@ Error: Failed to resolve import "../src/driver.js"
 export interface CameraSessionPort {
   getDeviceInfo(signal?: AbortSignal): Promise<DeviceInfo>;
   getDevicePropValue(code: number, signal?: AbortSignal): Promise<DeviceValue>;
-  setDevicePropValue(
-    code: number,
-    value: DeviceValue,
-    signal?: AbortSignal,
-  ): Promise<void>;
+  setDevicePropValue(code: number, value: DeviceValue, signal?: AbortSignal): Promise<void>;
   isOpen(): boolean;
 }
 
@@ -1479,22 +1462,9 @@ export function assertNever(value: never): never {
 - [ ] Replace `packages/camera-connection/src/index.ts` with:
 
 ```ts
-export type {
-  CameraDriver,
-  ConnectOptions,
-  DriverConnectResult,
-} from "./driver.js";
-export type {
-  CameraSessionPort,
-  DeviceInfo,
-  DeviceValue,
-} from "./session-port.js";
-export {
-  ERROR_REASONS,
-  assertNever,
-  type ConnectionState,
-  type ErrorReason,
-} from "./types.js";
+export type { CameraDriver, ConnectOptions, DriverConnectResult } from "./driver.js";
+export type { CameraSessionPort, DeviceInfo, DeviceValue } from "./session-port.js";
+export { ERROR_REASONS, assertNever, type ConnectionState, type ErrorReason } from "./types.js";
 ```
 
 - [ ] Run:
@@ -1555,20 +1525,88 @@ import { classifyDriverError } from "../src/classifier.js";
 
 describe("classifyDriverError", () => {
   it.each([
-    ["claim NetworkError on mac classifies macos-claim-collision", new LatentError("UsbDisconnect", "x", undefined, { stage: "claim", domException: "NetworkError", platform: "mac" }), "macos-claim-collision"],
-    ["claim NetworkError on linux classifies session-stale", new LatentError("UsbDisconnect", "x", undefined, { stage: "claim", domException: "NetworkError", platform: "linux" }), "session-stale"],
-    ["claim NetworkError on windows classifies session-stale", new LatentError("UsbDisconnect", "x", undefined, { stage: "claim", domException: "NetworkError", platform: "windows" }), "session-stale"],
-    ["transfer-in classifies cable-unplugged", new LatentError("UsbDisconnect", "x", undefined, { stage: "transfer-in" }), "cable-unplugged"],
-    ["transfer-out classifies cable-unplugged", new LatentError("UsbDisconnect", "x", undefined, { stage: "transfer-out" }), "cable-unplugged"],
-    ["open classifies session-stale", new LatentError("UsbDisconnect", "x", undefined, { stage: "open" }), "session-stale"],
-    ["reset classifies session-stale", new LatentError("UsbDisconnect", "x", undefined, { stage: "reset" }), "session-stale"],
-    ["setup-config classifies session-stale", new LatentError("UsbDisconnect", "x", undefined, { stage: "setup-config" }), "session-stale"],
-    ["endpoint-discovery classifies session-stale", new LatentError("UsbDisconnect", "x", undefined, { stage: "endpoint-discovery" }), "session-stale"],
-    ["PtpStall without stage classifies camera-off", new LatentError("PtpStall", "x"), "camera-off"],
-    ["PtpTimeout without stage classifies camera-off", new LatentError("PtpTimeout", "x"), "camera-off"],
-    ["UsbPermissionDenied classifies permission-denied", new LatentError("UsbPermissionDenied", "x"), "permission-denied"],
-    ["WebUSBSecureContextRequired classifies secure-context", new LatentError("WebUSBSecureContextRequired", "x"), "secure-context"],
-    ["WebUSBUnsupported classifies webusb-unsupported", new LatentError("WebUSBUnsupported", "x"), "webusb-unsupported"],
+    [
+      "claim NetworkError on mac classifies macos-claim-collision",
+      new LatentError("UsbDisconnect", "x", undefined, {
+        stage: "claim",
+        domException: "NetworkError",
+        platform: "mac",
+      }),
+      "macos-claim-collision",
+    ],
+    [
+      "claim NetworkError on linux classifies session-stale",
+      new LatentError("UsbDisconnect", "x", undefined, {
+        stage: "claim",
+        domException: "NetworkError",
+        platform: "linux",
+      }),
+      "session-stale",
+    ],
+    [
+      "claim NetworkError on windows classifies session-stale",
+      new LatentError("UsbDisconnect", "x", undefined, {
+        stage: "claim",
+        domException: "NetworkError",
+        platform: "windows",
+      }),
+      "session-stale",
+    ],
+    [
+      "transfer-in classifies cable-unplugged",
+      new LatentError("UsbDisconnect", "x", undefined, { stage: "transfer-in" }),
+      "cable-unplugged",
+    ],
+    [
+      "transfer-out classifies cable-unplugged",
+      new LatentError("UsbDisconnect", "x", undefined, { stage: "transfer-out" }),
+      "cable-unplugged",
+    ],
+    [
+      "open classifies session-stale",
+      new LatentError("UsbDisconnect", "x", undefined, { stage: "open" }),
+      "session-stale",
+    ],
+    [
+      "reset classifies session-stale",
+      new LatentError("UsbDisconnect", "x", undefined, { stage: "reset" }),
+      "session-stale",
+    ],
+    [
+      "setup-config classifies session-stale",
+      new LatentError("UsbDisconnect", "x", undefined, { stage: "setup-config" }),
+      "session-stale",
+    ],
+    [
+      "endpoint-discovery classifies session-stale",
+      new LatentError("UsbDisconnect", "x", undefined, { stage: "endpoint-discovery" }),
+      "session-stale",
+    ],
+    [
+      "PtpStall without stage classifies camera-off",
+      new LatentError("PtpStall", "x"),
+      "camera-off",
+    ],
+    [
+      "PtpTimeout without stage classifies camera-off",
+      new LatentError("PtpTimeout", "x"),
+      "camera-off",
+    ],
+    [
+      "UsbPermissionDenied classifies permission-denied",
+      new LatentError("UsbPermissionDenied", "x"),
+      "permission-denied",
+    ],
+    [
+      "WebUSBSecureContextRequired classifies secure-context",
+      new LatentError("WebUSBSecureContextRequired", "x"),
+      "secure-context",
+    ],
+    [
+      "WebUSBUnsupported classifies webusb-unsupported",
+      new LatentError("WebUSBUnsupported", "x"),
+      "webusb-unsupported",
+    ],
   ] as const)("%s", (_name, err, expected) => {
     expect(classifyDriverError(err)).toBe(expected);
   });
@@ -1711,8 +1749,16 @@ describe("connection reducer transitions", () => {
   });
 
   it.each([
-    ["connected USB_DEVICE_DISCONNECTED enters reconnecting", { type: "USB_DEVICE_DISCONNECTED" } as ConnectionEvent, "reconnecting"],
-    ["connected PAGE_HIDING stays connected", { type: "PAGE_HIDING" } as ConnectionEvent, "connected"],
+    [
+      "connected USB_DEVICE_DISCONNECTED enters reconnecting",
+      { type: "USB_DEVICE_DISCONNECTED" } as ConnectionEvent,
+      "reconnecting",
+    ],
+    [
+      "connected PAGE_HIDING stays connected",
+      { type: "PAGE_HIDING" } as ConnectionEvent,
+      "connected",
+    ],
   ])("%s", (_name, event, expected) => {
     const state = fakeConnectedState();
     expect(transition(state, event, ctx()).state.kind).toBe(expected);
@@ -1725,7 +1771,9 @@ describe("connection reducer transitions", () => {
 
   it("error USB_DEVICE_CONNECTED enters connecting for cable-unplugged", () => {
     const state = fakeErrorState("cable-unplugged");
-    expect(transition(state, { type: "USB_DEVICE_CONNECTED" }, ctx()).state.kind).toBe("connecting");
+    expect(transition(state, { type: "USB_DEVICE_CONNECTED" }, ctx()).state.kind).toBe(
+      "connecting",
+    );
   });
 
   it("error USB_DEVICE_CONNECTED is skipped for macos-claim-collision", () => {
@@ -1826,7 +1874,12 @@ export function transition(
     case "connecting":
       if (event.type === "DISCONNECT_REQUESTED") return { state: { kind: "disconnected" } };
       if (event.type === "USB_DEVICE_DISCONNECTED") {
-        return { state: toError("cable-unplugged", new LatentError("UsbDisconnect", "USB device disconnected")) };
+        return {
+          state: toError(
+            "cable-unplugged",
+            new LatentError("UsbDisconnect", "USB device disconnected"),
+          ),
+        };
       }
       if (event.type === "OPERATION_FAILED") {
         if (event.opId !== context.currentOpId) return { state };
@@ -1836,7 +1889,13 @@ export function transition(
 
     case "connected":
       if (event.type === "USB_DEVICE_DISCONNECTED") {
-        return { state: reconnectingState(1, "cable-unplugged", new LatentError("UsbDisconnect", "USB device disconnected")) };
+        return {
+          state: reconnectingState(
+            1,
+            "cable-unplugged",
+            new LatentError("UsbDisconnect", "USB device disconnected"),
+          ),
+        };
       }
       if (event.type === "PAGE_HIDING") return { state };
       if (event.type === "DISCONNECT_REQUESTED") return { state: { kind: "disconnected" } };
@@ -1895,7 +1954,10 @@ function toError(reason: ErrorReason, underlying: LatentError): ConnectionState 
   };
 }
 
-function reduceError(state: Extract<ConnectionState, { kind: "error" }>, event: ConnectionEvent): TransitionResult {
+function reduceError(
+  state: Extract<ConnectionState, { kind: "error" }>,
+  event: ConnectionEvent,
+): TransitionResult {
   if (event.type === "RETRY_REQUESTED") return { state: connectingState(1) };
   if (event.type === "MACOS_SETUP_ATTEMPTED") {
     return { state: connectingState(1, event.advanced ? "advanced" : "basic") };
@@ -2030,7 +2092,9 @@ function reduceReconnecting(
   if (event.type === "OPERATION_FAILED") {
     if (event.opId !== context.currentOpId) return { state };
     if (state.attempt >= 3) return { state: toError(classifyDriverError(event.err), event.err) };
-    return { state: reconnectingState(state.attempt + 1, classifyDriverError(event.err), event.err) };
+    return {
+      state: reconnectingState(state.attempt + 1, classifyDriverError(event.err), event.err),
+    };
   }
   return { state };
 }
@@ -2118,7 +2182,9 @@ export class FakeSessionPort implements CameraSessionPort {
   };
 
   getDeviceInfo = vi.fn(async () => this.deviceInfo);
-  getDevicePropValue = vi.fn(async (_code: number): Promise<DeviceValue> => ({ kind: "uint16", value: 1 }));
+  getDevicePropValue = vi.fn(
+    async (_code: number): Promise<DeviceValue> => ({ kind: "uint16", value: 1 }),
+  );
   setDevicePropValue = vi.fn(async () => undefined);
   isOpen = vi.fn(() => this.open);
 }
@@ -2132,7 +2198,9 @@ export class FakeCameraDriver implements CameraDriver {
   private disconnectHandlers = new Set<() => void>();
   private connectHandlers = new Set<() => void>();
 
-  async connect(opts: { autoSelectPaired?: boolean; signal?: AbortSignal } = {}): Promise<DriverConnectResult> {
+  async connect(
+    opts: { autoSelectPaired?: boolean; signal?: AbortSignal } = {},
+  ): Promise<DriverConnectResult> {
     this.connectCalls.push(opts);
     return {
       port: this.port,
@@ -2218,7 +2286,11 @@ export class WebUsbSessionPort implements CameraSessionPort {
     throw new LatentError("PtpUnsupportedOperation", "GetDevicePropValue is not wired yet");
   }
 
-  async setDevicePropValue(_code: number, _value: DeviceValue, _signal?: AbortSignal): Promise<void> {
+  async setDevicePropValue(
+    _code: number,
+    _value: DeviceValue,
+    _signal?: AbortSignal,
+  ): Promise<void> {
     throw new LatentError("PtpUnsupportedOperation", "SetDevicePropValue is not wired yet");
   }
 
@@ -2857,34 +2929,34 @@ Device under test:
 ## Result table
 
 | Item | Pass/Fail | Notes |
-|---|---|---|
-| 1 |  |  |
-| 2 |  |  |
-| 3 |  |  |
-| 4 |  |  |
-| 5 |  |  |
-| 6 |  |  |
-| 7 |  |  |
-| 8 |  |  |
-| 9 |  |  |
-| 10 |  |  |
-| 11 |  |  |
-| 12 |  |  |
-| 13 |  |  |
-| 14 |  |  |
-| 15 |  |  |
-| 16 |  |  |
-| 17 |  |  |
-| 18 |  |  |
-| 19 |  |  |
-| 20 |  |  |
-| 21 |  |  |
-| 22 |  |  |
-| 23 |  |  |
-| 24 |  |  |
-| 25 |  |  |
-| 26 |  |  |
-| 27 |  |  |
+| ---- | --------- | ----- |
+| 1    |           |       |
+| 2    |           |       |
+| 3    |           |       |
+| 4    |           |       |
+| 5    |           |       |
+| 6    |           |       |
+| 7    |           |       |
+| 8    |           |       |
+| 9    |           |       |
+| 10   |           |       |
+| 11   |           |       |
+| 12   |           |       |
+| 13   |           |       |
+| 14   |           |       |
+| 15   |           |       |
+| 16   |           |       |
+| 17   |           |       |
+| 18   |           |       |
+| 19   |           |       |
+| 20   |           |       |
+| 21   |           |       |
+| 22   |           |       |
+| 23   |           |       |
+| 24   |           |       |
+| 25   |           |       |
+| 26   |           |       |
+| 27   |           |       |
 ```
 
 - [ ] Run the automated validation before hardware testing:
@@ -3058,6 +3130,7 @@ rg -n "TB[D]|TO[D]O|fill i[n]|implement late[r]|as appropriat[e]|similar t[o]" d
 Expected output:
 
 ```text
+
 ```
 
 **Type consistency**

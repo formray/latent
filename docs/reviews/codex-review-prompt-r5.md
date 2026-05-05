@@ -35,7 +35,7 @@ Be terse. This is a focused validation, not an open-ended adversarial review.
 
 # Files to read
 
-1. **R5 spec (current):** `/Users/giuseppealbriziowork/Repos/Formray/filmfork/docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` (1182 lines, 19 sections — added §6.7, §6.8, renumbered §6.7 typed errors → §6.9, added §19 changelog)
+1. **R5 spec (current):** `docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` (1182 lines, 19 sections — added §6.7, §6.8, renumbered §6.7 typed errors → §6.9, added §19 changelog)
 2. **R4 spec history** is in git: `git show 4d5ea16:docs/superpowers/specs/2026-05-03-fujicomp-v1-design.md` if you want to diff
 3. **R4 review output (your prior approval):** `docs/superpowers/codex-review-output-r4.md`
 4. Other R1-R4 lineage in same folder
@@ -46,13 +46,13 @@ Be terse. This is a focused validation, not an open-ended adversarial review.
 
 For each, mark ✅ SOUND / ⚠️ CONCERN / ❌ BROKEN with one-line justification + § ref.
 
-| Addition | Specific things to check |
-|---|---|
-| §6.7 iteration loop | (a) RAF really stays browser-local (verify §11 storage row + §6.7 step 1 + §11 iteration history row); (b) iteration constraint "≥ 90% iterations change ≤ 5 fields" is actually testable (deterministic? what's the test fixture?); (c) interaction with §6.3 push (can a chosen iteration round-trip to camera with verified backup?); (d) interaction with §6.9 typed errors (camera disconnect mid-iteration handled?); (e) interaction with unknown-firmware mode from §9 (does iteration block writes? — only the save→push step should be gated, not the render step) |
-| §6.8 recipe diff | (a) rule-table approach scalable, or maintenance trap as schema grows? (b) rule-table for missing entries — does spec define a fallback phrase? (c) cross-camera diff (recipes from different capability sets) — spec says "flags incompatible fields rather than diffing them silently" — is this actually implemented as a clear contract? (d) en + it locales — is the i18n surface bounded or open-ended? |
-| §5 structured reasoning | (a) payload caps still respected (40 entries × ~700 chars max = ~28KB worst case — does this break URL share even when reasoning is excluded?); (b) backward compat with hypothetical R4 recipes that have flat `explanation` — schema migration path? |
-| §5 Local Taste Profile | (a) opt-in gate `enabled: false` default — is enforcement clear in §7 prompt-injection path? (b) sanitization before prompt injection — what does "sanitized" actually mean operationally? (c) prompt-injection via `notes` field — is 500-char cap + sanitization enough? (d) export/import round-trip — does the Taste Profile reset its `lastTouchedAt` correctly on import? |
-| §1 positioning | (a) is it marketing fluff (the spec is implementation-oriented; does the sentence stay technical?); (b) five-property differentiation list — is the wording precise without overclaiming AI accuracy? |
+| Addition                | Specific things to check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §6.7 iteration loop     | (a) RAF really stays browser-local (verify §11 storage row + §6.7 step 1 + §11 iteration history row); (b) iteration constraint "≥ 90% iterations change ≤ 5 fields" is actually testable (deterministic? what's the test fixture?); (c) interaction with §6.3 push (can a chosen iteration round-trip to camera with verified backup?); (d) interaction with §6.9 typed errors (camera disconnect mid-iteration handled?); (e) interaction with unknown-firmware mode from §9 (does iteration block writes? — only the save→push step should be gated, not the render step) |
+| §6.8 recipe diff        | (a) rule-table approach scalable, or maintenance trap as schema grows? (b) rule-table for missing entries — does spec define a fallback phrase? (c) cross-camera diff (recipes from different capability sets) — spec says "flags incompatible fields rather than diffing them silently" — is this actually implemented as a clear contract? (d) en + it locales — is the i18n surface bounded or open-ended?                                                                                                                                                                |
+| §5 structured reasoning | (a) payload caps still respected (40 entries × ~700 chars max = ~28KB worst case — does this break URL share even when reasoning is excluded?); (b) backward compat with hypothetical R4 recipes that have flat `explanation` — schema migration path?                                                                                                                                                                                                                                                                                                                       |
+| §5 Local Taste Profile  | (a) opt-in gate `enabled: false` default — is enforcement clear in §7 prompt-injection path? (b) sanitization before prompt injection — what does "sanitized" actually mean operationally? (c) prompt-injection via `notes` field — is 500-char cap + sanitization enough? (d) export/import round-trip — does the Taste Profile reset its `lastTouchedAt` correctly on import?                                                                                                                                                                                              |
+| §1 positioning          | (a) is it marketing fluff (the spec is implementation-oriented; does the sentence stay technical?); (b) five-property differentiation list — is the wording precise without overclaiming AI accuracy?                                                                                                                                                                                                                                                                                                                                                                        |
 
 ## Task 2: Verify locked constraints preserved
 
@@ -93,6 +93,7 @@ Choose one:
 - **SCOPE-VIOLATION** — describe which locked constraint was violated despite stated intent
 
 If READY, optionally update the top 3 implementation risks from R4. The R4 risks were:
+
 1. Recipe schema and filmkit translator in lockstep
 2. X-S20 manual hardware validation reproducibility
 3. WebUSB failure modes as first-class UX
