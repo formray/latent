@@ -60,12 +60,12 @@ html {
     auto;
 }
 
-.studio-stage {
+.workspace-shell {
   border-inline: 1px solid rgb(39 39 42 / 0.72);
 }
 
 @media (min-width: 1280px) {
-  .studio-stage,
+  .workspace-shell,
   #recipe-workspace {
     margin-inline: auto;
     max-width: 1800px;
@@ -117,11 +117,48 @@ html {
   color: #8f8578 !important;
 }
 
+.theme-light .text-emerald-300,
+.theme-light .text-emerald-400 {
+  color: #047857 !important;
+}
+
+.theme-light .text-emerald-500 {
+  color: #03634d !important;
+}
+
 .theme-light .border-zinc-900,
 .theme-light .border-zinc-900\/40,
 .theme-light .border-zinc-900\/70,
 .theme-light .border-zinc-800 {
   border-color: #ded6c7 !important;
+}
+
+.theme-light .border-emerald-500\/30,
+.theme-light .border-emerald-500\/40,
+.theme-light .border-emerald-500\/50,
+.theme-light .border-emerald-900\/80 {
+  border-color: rgb(4 120 87 / 0.5) !important;
+}
+
+.theme-light .hover\:border-emerald-500\/50:hover,
+.theme-light .focus\:border-emerald-500\/50:focus {
+  border-color: rgb(4 120 87 / 0.72) !important;
+}
+
+.theme-light .bg-emerald-500\/10 {
+  background-color: rgb(4 120 87 / 0.1) !important;
+}
+
+.theme-light .hover\:bg-emerald-500\/15:hover {
+  background-color: rgb(4 120 87 / 0.16) !important;
+}
+
+.theme-light .hover\:text-emerald-300:hover {
+  color: #035f49 !important;
+}
+
+.theme-light .accent-emerald-500 {
+  accent-color: #047857 !important;
 }
 
 .theme-light input,
