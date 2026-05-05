@@ -1,6 +1,6 @@
 {
   "name": "@latent/ptp-fuji-webusb",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": false,
   "license": "MIT",
   "type": "module",
@@ -12,13 +12,16 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "LICENSE"],
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run --dir tests"
   },
   "dependencies": {
-    "@latent/ptp-fuji": "0.0.0"
+    "@latent/ptp-fuji": "0.1.0"
   },
   "devDependencies": {
     "@types/w3c-web-usb": "^1"

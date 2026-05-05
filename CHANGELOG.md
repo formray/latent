@@ -7,6 +7,10 @@ launch).
 
 ## [Unreleased]
 
+No unreleased changes yet.
+
+## [0.1.0] - 2026-05-05
+
 ### Changed
 
 - **Project renamed `FilmFork` → `Latent`** (2026-05-04). All `@filmfork/*`
