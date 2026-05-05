@@ -25,6 +25,21 @@ launch).
   `CODEOWNERS`, `FUNDING.yml`, `dependabot.yml`
 - `docs/adr/` for forthcoming Architecture Decision Records (§15.9–15.16
   in the V1 spec)
+- Camera connection stability layer with explicit connection states,
+  structured error classification, stale-session cleanup, and macOS
+  claim-collision guidance.
+- Camera recipe read/import/write flows for verified custom-slot properties.
+- RAF preview workspace that renders local RAF files through the connected
+  camera and includes diagnostic parameter-group renders.
+- Open-source readiness docs: contributor onboarding, use cases, and launch
+  checklist.
+
+### Fixed
+
+- Refresh/reconnect handling no longer leaves the browser UI stuck in a
+  generic disconnected state for known camera failure paths.
+- The public docs now use the Latent package names and current camera/RAF
+  workflow scope.
 
 ## Pre-rename history (under "FilmFork")
 

@@ -1,7 +1,7 @@
-@filmfork/ptp-fuji
+@latent/ptp-fuji
 
 This package is an independent fork of filmkit (https://github.com/eggricesoy/filmkit)
-by eggricesoy, licensed under MIT. FilmFork is NOT endorsed by or affiliated with
+by eggricesoy, licensed under MIT. Latent is NOT endorsed by or affiliated with
 filmkit's authors.
 
 Files in src/ptp/, src/profile/, and src/util/binary.ts derive from filmkit.
@@ -18,4 +18,4 @@ references, acknowledged here for transparency and chain-of-attribution:
 
 All RE work in those projects was performed by their respective authors. This
 package's contribution is the TypeScript fork structure, the PtpTransport DI
-boundary, the typed error taxonomy, and the integration with FilmFork.
+boundary, the typed error taxonomy, and the integration with Latent.

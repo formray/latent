@@ -38,13 +38,20 @@ The repo root `npm run validate` runs lint, typecheck, the full test
 suite (packages and web), license check, and the schema-translator
 lockstep gate.
 
-## Camera support (Phase 3-base)
+## Camera support
 
-- **Connect & list presets:** uses `@latent/ptp-fuji-webusb` to open a
-  WebUSB session and read whatever camera-side preset slots the session
-  exposes. Per-slot reads land progressively in Phase 2-full.
-- **Push to camera, AI agent, side-by-side preview:** out of scope for
-  Phase 3-base (Phase 4 and Phase 5 territory).
+- **Connect & recover:** uses `@latent/camera-connection` and
+  `@latent/ptp-fuji-webusb` to connect over WebUSB, recover from refresh,
+  unplug, sleep, and common macOS PTP claim collisions.
+- **Read slots:** reads camera-side C slots and imports decoded recipes into
+  the local library.
+- **Write slots:** writes verified custom-slot recipe fields to the selected
+  C slot. Preview-only fields remain excluded from slot writes until the
+  camera path is verified.
+- **RAF preview:** sends a local RAF to the connected camera and displays the
+  JPEG rendered by the camera processor. Diagnostic renders isolate parameter
+  groups when a look diverges from expectation.
+- **AI agent:** still future scope; `@latent/ai-agent` remains a stub.
 
 ## Browser requirements
 
@@ -57,7 +64,7 @@ browsers and on insecure (non-HTTPS, non-localhost) origins.
 ```
 apps/web/
   src/
-    components/   # Recipe cards, library, detail, camera connect
+    components/   # Recipe cards, library, detail, camera, RAF preview
     stores/       # Zustand stores: recipes, camera
     i18n/         # en + it message catalogs and useT() hook
     App.tsx       # Top-level layout

@@ -4,6 +4,14 @@
   "private": true,
   "license": "AGPL-3.0",
   "description": "Open-source camera-backed look lab for Fujifilm photographers",
+  "homepage": "https://github.com/formray/latent#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formray/latent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/formray/latent/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22.0.0"
