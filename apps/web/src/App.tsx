@@ -3,13 +3,14 @@ import clsx from "clsx";
 import { useRecipesStore } from "./stores/recipes";
 import { RecipeLibrary } from "./components/RecipeLibrary";
 import { RecipeDetail } from "./components/RecipeDetail";
+import { RecipeCreator } from "./components/RecipeCreator";
 import { CameraConnect } from "./components/CameraConnect";
 import { CameraRecipesPanel } from "./components/camera/CameraRecipesPanel";
 import { RawPreviewPanel } from "./components/camera/RawPreviewPanel";
 import { useCameraStore } from "./stores/camera";
 import { useT } from "./i18n";
 
-type Workspace = "camera" | "raf" | "library";
+type Workspace = "camera" | "raf" | "library" | "create";
 
 export function App(): JSX.Element {
   const t = useT();
@@ -71,6 +72,9 @@ export function App(): JSX.Element {
             </NavLink>
             <NavLink href="#library" active={workspace === "library"}>
               Library
+            </NavLink>
+            <NavLink href="#create" active={workspace === "create"}>
+              Create
             </NavLink>
           </nav>
           <div className="hidden items-center gap-2 md:flex">
@@ -147,6 +151,12 @@ export function App(): JSX.Element {
               <EmptyDetail message={t("detail.empty")} />
             )}
           </section>
+        </main>
+      )}
+
+      {workspace === "create" && (
+        <main id="create-workspace" className="workspace-shell border-t border-zinc-900">
+          <RecipeCreator />
         </main>
       )}
 
@@ -246,6 +256,11 @@ function WorkspaceIntro({ workspace }: { workspace: Workspace }): JSX.Element {
       title: "Browse, edit, export, and write recipes.",
       body: "This is the archive view: inspect parameters, manage JSON files, and send a selected recipe to a camera slot.",
     },
+    create: {
+      label: "creator",
+      title: "Build a validated recipe from a photographic intent.",
+      body: "Start with a look direction, tune preview-safe controls, and import a schema-valid recipe straight into the library.",
+    },
   } satisfies Record<Workspace, { label: string; title: string; body: string }>;
   const selected = content[workspace];
 
@@ -312,11 +327,12 @@ function MobileDock({
 
       <nav
         aria-label="Mobile workspace"
-        className="grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-1 rounded-full border border-zinc-800/80 bg-zinc-950/80 p-1 shadow-2xl shadow-black/30 backdrop-blur-2xl"
+        className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] items-center gap-1 rounded-full border border-zinc-800/80 bg-zinc-950/80 p-1 shadow-2xl shadow-black/30 backdrop-blur-2xl"
       >
         <MobileDockLink href="#camera" active={workspace === "camera"} label="Camera" />
         <MobileDockLink href="#raf" active={workspace === "raf"} label="RAF" />
         <MobileDockLink href="#library" active={workspace === "library"} label="Library" />
+        <MobileDockLink href="#create" active={workspace === "create"} label="Create" />
         <button
           type="button"
           onClick={onToggleExpanded}
@@ -396,6 +412,9 @@ function workspaceFromHash(hash: string): Workspace {
   }
   if (hash === "#raf" || hash === "#raw-preview-panel" || hash === "#raf-workspace") {
     return "raf";
+  }
+  if (hash === "#create" || hash === "#creator" || hash === "#create-workspace") {
+    return "create";
   }
   return "library";
 }
