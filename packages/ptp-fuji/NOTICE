@@ -1,8 +1,9 @@
 @latent/ptp-fuji
 
 This package is an independent fork of filmkit (https://github.com/eggricesoy/filmkit)
-by eggricesoy, licensed under MIT. Latent is NOT endorsed by or affiliated with
-filmkit's authors.
+by eggricesoy, licensed under MIT. Latent starts from FilmKit's PTP/WebUSB
+research and product insight, but is independently maintained and is NOT
+endorsed by or affiliated with filmkit's authors.
 
 Files in src/ptp/, src/profile/, and src/util/binary.ts derive from filmkit.
 The pinned upstream commit SHA is recorded in UPSTREAM.

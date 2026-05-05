@@ -5,6 +5,13 @@ you keep a local recipe library, read and restore camera custom slots, render
 RAF files through the camera processor, and iterate on a look with the real
 Fujifilm pipeline instead of a browser approximation.
 
+Latent is an independent fork and product expansion inspired by
+[FilmKit](https://github.com/eggricesoy/filmkit). FilmKit proved that a
+browser can manage Fujifilm presets and render RAF files through the camera
+over WebUSB; Latent builds from that idea toward a broader open-source
+workspace for recipe libraries, camera backups, connection reliability,
+model capability tracking, and contributor-friendly protocol packages.
+
 > **Status:** pre-launch, hardware-backed alpha. Core packages, WebUSB
 > connection stability, recipe import/export, camera slot read/write, and RAF
 > preview are implemented. See [`ROADMAP.md`](./ROADMAP.md) and
@@ -43,6 +50,37 @@ engine. The goal is a workflow where a photographer can:
 3. Preview a recipe against a known RAF using the camera processor.
 4. Write a verified recipe to a disposable slot.
 5. Restore the original slot if the experiment is not right.
+
+## Relationship To FilmKit
+
+Latent is not meant to compete with FilmKit. It exists because FilmKit's
+WebUSB/PTP work made the path credible, and because there is room for a
+community project with a different emphasis.
+
+What differs today:
+
+- **Workflow safety:** Latent makes backup, read-back, restore, and explicit
+  slot writes first-class flows.
+- **Connection reliability:** Latent adds a dedicated connection manager,
+  structured error classification, reconnect behavior, and macOS PTP
+  claim-collision guidance.
+- **Package boundaries:** protocol, WebUSB transport, connection management,
+  and recipe schema live in separate `@latent/*` packages.
+- **Schema discipline:** recipe fields, camera capabilities, translators, and
+  round-trip tests are kept in lockstep by CI.
+- **Open-source onboarding:** docs, use cases, hardware QA, governance, issue
+  templates, and launch checklist are part of the repo.
+- **Validation target:** current hands-on validation has focused on X-S20 and
+  X-M5, while FilmKit documents X100VI as its primary tested body.
+
+Where Latent should go next:
+
+- richer recipe editing with auto-render, closer to FilmKit's fast creative
+  loop;
+- broader camera compatibility reports from the community;
+- safer verified writes for more camera-specific fields;
+- a public library workflow for importing, comparing, and sharing recipes;
+- eventually, native transport support when WebUSB becomes the limiting factor.
 
 ## Quick Start
 
