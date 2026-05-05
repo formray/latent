@@ -229,7 +229,7 @@ export function RawPreviewPanel(): JSX.Element | null {
           )}
         </aside>
 
-        <div className="min-h-96 bg-zinc-950">
+        <div className="min-h-96 bg-[#050505]">
           {preview.kind === "success" && preview.diagnostics?.length ? (
             <div className="grid min-h-full gap-px bg-zinc-900 sm:grid-cols-2 xl:grid-cols-3">
               {preview.diagnostics.map((variant) => (
@@ -245,14 +245,14 @@ export function RawPreviewPanel(): JSX.Element | null {
             </div>
           ) : preview.kind === "success" && preview.objectUrl ? (
             <figure className="grid h-full min-h-[560px] grid-rows-[1fr_auto]">
-              <div className="flex items-center justify-center p-4">
+              <div className="flex items-start justify-center p-2 sm:p-3">
                 <img
                   src={preview.objectUrl}
                   alt={`Camera-rendered preview for ${preview.fileName}`}
-                  className="max-h-[70vh] w-full object-contain"
+                  className="max-h-[calc(100svh-190px)] w-full object-contain"
                 />
               </div>
-              <figcaption className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900 px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500">
+              <figcaption className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900 bg-[#050505] px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500">
                 <span>{preview.fileName}</span>
                 <span>
                   {preview.recipeName ? `${preview.recipeName} · ` : ""}
@@ -262,7 +262,7 @@ export function RawPreviewPanel(): JSX.Element | null {
               </figcaption>
             </figure>
           ) : (
-            <div className="flex h-full min-h-[560px] items-center justify-center p-8">
+            <div className="flex h-full min-h-[560px] items-center justify-center bg-[#050505] p-8">
               <p className="max-w-sm text-center text-sm leading-6 text-zinc-600">
                 Open a RAF to keep it loaded, then edit the selected recipe and render through the
                 camera processor.
@@ -318,15 +318,15 @@ function PreviewFigure({
   baseProfileBytes: number;
 }): JSX.Element {
   return (
-    <figure className="grid bg-zinc-950">
-      <div className="flex min-h-64 items-center justify-center">
+    <figure className="grid bg-[#050505]">
+      <div className="flex min-h-64 items-start justify-center p-1">
         <img
           src={objectUrl}
           alt={`${label} RAF render for ${fileName}`}
           className="max-h-[420px] w-full object-contain"
         />
       </div>
-      <figcaption className="border-t border-zinc-900 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+      <figcaption className="border-t border-zinc-900 bg-[#050505] px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
         <div className="text-zinc-300">{label}</div>
         <div className="mt-1">
           JPEG {formatBytes(jpegBytes)} · D185 {formatBytes(baseProfileBytes)}
