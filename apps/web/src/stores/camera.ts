@@ -97,6 +97,8 @@ export type RawPreviewDiagnosticVariantId =
   | "film-texture"
   | "wb-kelvin-2500"
   | "wb-kelvin-10000"
+  | "wb-shift-warm"
+  | "wb-shift-cool"
   | "full";
 
 let manager: ConnectionManager | null = null;
@@ -634,6 +636,30 @@ function diagnosticVariants(full: ConversionParams): Array<{
           ...full,
           whiteBalance: 0x8007,
           wbColorTemp: 10000,
+        },
+        { dynamicRangeEncoding: "enum" },
+      ),
+    },
+    {
+      id: "wb-shift-warm",
+      label: "Full recipe WB R+9 B-9",
+      buildProfile: buildDiagnosticProfile(
+        {
+          ...full,
+          wbShiftR: 9,
+          wbShiftB: -9,
+        },
+        { dynamicRangeEncoding: "enum" },
+      ),
+    },
+    {
+      id: "wb-shift-cool",
+      label: "Full recipe WB R-9 B+9",
+      buildProfile: buildDiagnosticProfile(
+        {
+          ...full,
+          wbShiftR: -9,
+          wbShiftB: 9,
         },
         { dynamicRangeEncoding: "enum" },
       ),
