@@ -1,8 +1,7 @@
 # Funding configuration for github.com/formray/latent
 #
-# Latent does not accept funding pre-launch (Phase 7). When sponsorship
-# opens, this file gets enabled with at minimum github_sponsors pointing
-# at the maintainer.
+# Funding is voluntary and supports hardware testing, hosting, and
+# maintenance. No features are paywalled.
 
 # github: [giuseppealbrizio]
-# custom: ["https://formray.io"]
+custom: ["https://buymeacoffee.com/galbrizio"]

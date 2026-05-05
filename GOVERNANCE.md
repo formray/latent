@@ -16,14 +16,14 @@ and decision-making moves to the model below.
 
 ## Decision-making
 
-| Type of decision | Today | Future (≥2 maintainers) |
-| --- | --- | --- |
-| Bug fixes, doc fixes, small refactors | Maintainer reviews & merges | Any maintainer reviews & merges |
-| Features inside the roadmap | Maintainer scopes & merges | Lazy consensus among maintainers (48h objection window) |
-| New dependencies | Maintainer decides | Lazy consensus, with a written rationale in the PR |
-| Roadmap changes | Maintainer decides | Maintainer consensus required |
-| Breaking API changes in `@latent/*` packages | Maintainer + ADR | Maintainer consensus + ADR |
-| License changes | Founder only | Founder only (cannot be delegated) |
+| Type of decision                             | Today                       | Future (≥2 maintainers)                                 |
+| -------------------------------------------- | --------------------------- | ------------------------------------------------------- |
+| Bug fixes, doc fixes, small refactors        | Maintainer reviews & merges | Any maintainer reviews & merges                         |
+| Features inside the roadmap                  | Maintainer scopes & merges  | Lazy consensus among maintainers (48h objection window) |
+| New dependencies                             | Maintainer decides          | Lazy consensus, with a written rationale in the PR      |
+| Roadmap changes                              | Maintainer decides          | Maintainer consensus required                           |
+| Breaking API changes in `@latent/*` packages | Maintainer + ADR            | Maintainer consensus + ADR                              |
+| License changes                              | Founder only                | Founder only (cannot be delegated)                      |
 
 "Lazy consensus" means: a proposal is approved if no maintainer objects
 within the stated window. Objections must be substantive (not just
@@ -52,10 +52,10 @@ trademark policy ADR scheduled at Phase 7.
 
 ## Funding
 
-This project takes no money today. If/when we accept sponsorship, the
-mechanism is GitHub Sponsors with a public ledger. We will never accept
-funding that comes with feature direction strings attached — see the
-roadmap section above.
+Funding is voluntary and currently routed through Buy Me a Coffee. Funds
+support hardware testing, hosting, and maintenance. We will never accept
+funding that comes with feature direction strings attached — see the roadmap
+section above.
 
 ## Changing this document
 

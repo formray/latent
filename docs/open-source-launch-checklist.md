@@ -43,6 +43,8 @@ Use this before making the repository public or announcing it broadly.
 - [x] filmkit attribution in `packages/ptp-fuji/NOTICE`.
 - [x] Fujifilm non-affiliation notice in README.
 - [x] Public contact email uses `admin@formray.io`.
+- [x] Funding link points to Buy Me a Coffee for voluntary hardware/testing
+      support.
 - [ ] Confirm trademark policy ADR before V1.0.0.
 
 ## Release Safety

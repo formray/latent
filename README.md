@@ -135,6 +135,12 @@ Start with [`CONTRIBUTING.md`](./CONTRIBUTING.md), then read
 [`docs/onboarding.md`](./docs/onboarding.md). The roadmap is intentionally
 narrow because camera write paths need careful hardware validation.
 
+## Funding
+
+Latent is open source and has no paid features. If it saves you time or you
+want to support hardware testing, you can contribute through
+[Buy Me a Coffee](https://buymeacoffee.com/galbrizio).
+
 ## License
 
 - **App** (`apps/*`): [AGPL-3.0](./LICENSE). If you run a modified Latent app
