@@ -42,6 +42,20 @@ trademarks of their respective owners.
   validation, capability-aware translation, PTP framing, WebUSB transport, and
   connection state management.
 
+## Screenshots
+
+| Library workspace                                                                        | RAF preview                                                                       |
+| ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| ![Latent recipe library workspace](./docs/launch/screenshots/latent-library-desktop.png) | ![Latent RAF preview workspace](./docs/launch/screenshots/latent-raf-desktop.png) |
+
+| Recipe creator, dark                                                                            | Recipe creator, light                                                                             |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| ![Latent recipe creator in dark mode](./docs/launch/screenshots/latent-create-desktop-dark.png) | ![Latent recipe creator in light mode](./docs/launch/screenshots/latent-create-desktop-light.png) |
+
+| Mobile creator                                                                         |
+| -------------------------------------------------------------------------------------- |
+| ![Latent recipe creator on mobile](./docs/launch/screenshots/latent-create-mobile.png) |
+
 ## Why It Exists
 
 Most recipe tools are static forms: you copy settings by hand and hope the

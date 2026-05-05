@@ -33,7 +33,7 @@ Use this before making the repository public or announcing it broadly.
 - [x] Hardware QA checklist
 - [x] License explanation
 - [x] Safety notes for camera writes
-- [ ] Public screenshots or demo video
+- [x] Public screenshots or demo video
 - [ ] Compatibility table populated with community results
 
 ## Legal And Attribution
