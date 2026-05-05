@@ -64,4 +64,25 @@ describe("<App />", () => {
     expect(screen.getByText(/Read custom slots directly/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Camera" })).toHaveAttribute("aria-current", "page");
   });
+
+  it("opens a mobile workspace menu with navigation and theme controls", () => {
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+
+    expect(screen.getByText("Read camera slots")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /RAF Lab/i })).toHaveAttribute("href", "#raf");
+
+    fireEvent.click(screen.getByRole("button", { name: /Theme Switch to Light/i }));
+
+    expect(container.firstElementChild).toHaveAttribute("data-theme", "light");
+
+    act(() => {
+      window.location.hash = "#raf";
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    expect(screen.queryByText("Read camera slots")).not.toBeInTheDocument();
+    expect(screen.getByText(/Choose a recipe, keep a RAF loaded/i)).toBeInTheDocument();
+  });
 });
