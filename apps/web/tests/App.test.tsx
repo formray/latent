@@ -126,4 +126,19 @@ describe("<App />", () => {
     expect(document.getElementById("mobile-workspace-menu")).not.toBeInTheDocument();
     expect(screen.getByText(/Choose a recipe, keep a RAF loaded/i)).toBeInTheDocument();
   });
+
+  it("keeps mobile lab status collapsed until requested", () => {
+    render(<App />);
+
+    const summary = screen.getByRole("button", { name: /lab status/i });
+    expect(summary).toHaveAttribute("aria-expanded", "false");
+    expect(document.getElementById("mobile-studio-details")).not.toBeInTheDocument();
+
+    fireEvent.click(summary);
+
+    expect(summary).toHaveAttribute("aria-expanded", "true");
+    const details = document.getElementById("mobile-studio-details");
+    expect(details).toBeInTheDocument();
+    expect(within(details!).getByText("RAF loop")).toBeInTheDocument();
+  });
 });

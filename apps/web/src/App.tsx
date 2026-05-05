@@ -23,6 +23,7 @@ export function App(): JSX.Element {
   const [theme, setTheme] = useState<"dark" | "light">(() => initialTheme());
   const [workspace, setWorkspace] = useState<Workspace>(() => initialWorkspace());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOverviewOpen, setMobileOverviewOpen] = useState(false);
 
   useEffect(() => {
     void loadSeedRecipes();
@@ -104,6 +105,16 @@ export function App(): JSX.Element {
         rawPreviewLabel={rawPreviewLabel(rawPreviewStatus)}
       />
 
+      <MobileStudioSummary
+        open={mobileOverviewOpen}
+        recipeCount={recipes.length}
+        selectedRecipeName={selected?.name ?? null}
+        cameraStatus={cameraStatusLabel(cameraState)}
+        presetCount={presets.length}
+        rawPreviewLabel={rawPreviewLabel(rawPreviewStatus)}
+        onToggle={() => setMobileOverviewOpen((value) => !value)}
+      />
+
       <WorkspaceIntro workspace={workspace} />
 
       {workspace === "camera" && (
@@ -176,6 +187,62 @@ export function App(): JSX.Element {
         onToggleTheme={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
       />
     </div>
+  );
+}
+
+function MobileStudioSummary({
+  open,
+  recipeCount,
+  selectedRecipeName,
+  cameraStatus,
+  presetCount,
+  rawPreviewLabel,
+  onToggle,
+}: {
+  open: boolean;
+  recipeCount: number;
+  selectedRecipeName: string | null;
+  cameraStatus: string;
+  presetCount: number;
+  rawPreviewLabel: string;
+  onToggle: () => void;
+}): JSX.Element {
+  return (
+    <section className="border-b border-zinc-900 bg-zinc-950/80 px-4 py-3 md:hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full min-w-0 items-center justify-between gap-3 text-left"
+      >
+        <span className="min-w-0">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-400">
+            lab status
+          </span>
+          <span className="mt-1 block truncate text-sm font-medium text-zinc-100">
+            {cameraStatus} · {recipeCount} recipes
+          </span>
+        </span>
+        <span className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400">
+          {open ? "Hide" : "Details"}
+        </span>
+      </button>
+
+      {open && (
+        <div
+          id="mobile-studio-details"
+          className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-zinc-900 bg-zinc-900"
+        >
+          <OverviewMetric label="Camera" value={cameraStatus} />
+          <OverviewMetric
+            label="Slots read"
+            value={presetCount ? String(presetCount) : "Standby"}
+          />
+          <OverviewMetric label="RAF loop" value={rawPreviewLabel} />
+          <OverviewMetric label="Selected" value={selectedRecipeName ?? "Choose a recipe"} />
+        </div>
+      )}
+    </section>
   );
 }
 
