@@ -6,6 +6,7 @@ import { useCameraStore } from "../src/stores/camera";
 import { useRecipesStore } from "../src/stores/recipes";
 
 const renderRawPreview = vi.fn(async () => undefined);
+const renderRawPreviewDiagnostics = vi.fn(async () => undefined);
 
 const sample: RecipeType = {
   id: "44444444-4444-4444-8444-444444444444",
@@ -46,6 +47,7 @@ function lastRenderCall(): [File, RecipeType | null | undefined] | undefined {
 describe("<RawPreviewPanel />", () => {
   beforeEach(() => {
     renderRawPreview.mockClear();
+    renderRawPreviewDiagnostics.mockClear();
     useRecipesStore.setState({
       recipes: [sample],
       loaded: true,
@@ -67,6 +69,7 @@ describe("<RawPreviewPanel />", () => {
       rawPreviewStatus: { kind: "idle" },
       rawPreviewFile: null,
       renderRawPreview,
+      renderRawPreviewDiagnostics,
     });
   });
 
@@ -110,7 +113,8 @@ describe("<RawPreviewPanel />", () => {
     fireEvent.change(screen.getByLabelText("White Balance"), {
       target: { value: "ColorTemperature" },
     });
-    expect((screen.getByLabelText("Kelvin") as HTMLInputElement).value).toBe("6500");
+    const kelvin = screen.getByLabelText("Kelvin") as HTMLInputElement;
+    expect(kelvin.value).toBe("6500");
 
     const file = new File([new Uint8Array([1, 2, 3])], "sample.raf", {
       type: "image/x-fuji-raf",
@@ -162,9 +166,7 @@ describe("<RawPreviewPanel />", () => {
 
     render(<RawPreviewPanel />);
 
-    expect(
-      screen.getByText(/Kelvin is saved when writing to camera/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Kelvin is saved when writing to camera/i)).toBeInTheDocument();
   });
 
   it("uses a RAF selected from the recipe detail for the workspace render controls", async () => {
@@ -182,5 +184,24 @@ describe("<RawPreviewPanel />", () => {
       expect(renderRawPreview).toHaveBeenCalled();
     });
     expect(lastRenderCall()?.[0]).toBe(file);
+  });
+
+  it("starts RAF diagnostics from the workspace controls", async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], "detail-selected.raf", {
+      type: "image/x-fuji-raf",
+    });
+    useCameraStore.setState({ rawPreviewFile: file });
+
+    render(<RawPreviewPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "Diagnose RAF" }));
+
+    await waitFor(() => {
+      expect(renderRawPreviewDiagnostics).toHaveBeenCalledWith(
+        file,
+        expect.objectContaining({
+          name: "Neon Dreams",
+        }),
+      );
+    });
   });
 });

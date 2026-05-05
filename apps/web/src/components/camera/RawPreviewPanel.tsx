@@ -92,6 +92,7 @@ export function RawPreviewPanel(): JSX.Element | null {
   const loadedFile = useCameraStore((s) => s.rawPreviewFile);
   const setRawPreviewFile = useCameraStore((s) => s.setRawPreviewFile);
   const renderRawPreview = useCameraStore((s) => s.renderRawPreview);
+  const renderRawPreviewDiagnostics = useCameraStore((s) => s.renderRawPreviewDiagnostics);
   const clearRawPreview = useCameraStore((s) => s.clearRawPreview);
   const recipes = useRecipesStore((s) => s.recipes);
   const selectedRecipeId = useRecipesStore((s) => s.selectedRecipeId);
@@ -153,6 +154,11 @@ export function RawPreviewPanel(): JSX.Element | null {
     );
   };
 
+  const diagnoseNow = (): void => {
+    if (!loadedFile || !activeRecipe) return;
+    void renderRawPreviewDiagnostics(loadedFile, activeRecipe);
+  };
+
   const resetDraft = (): void => {
     setDraftRecipe(selectedRecipe ? cloneRecipe(selectedRecipe) : null);
     lastQueuedSignatureRef.current = "";
@@ -199,6 +205,14 @@ export function RawPreviewPanel(): JSX.Element | null {
               className="rounded-full border border-zinc-800 px-4 py-2.5 text-xs font-medium text-zinc-300 transition-colors hover:border-zinc-700 hover:text-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-700"
             >
               Render now
+            </button>
+            <button
+              type="button"
+              disabled={!loadedFile || !activeRecipe || preview.kind === "rendering"}
+              onClick={diagnoseNow}
+              className="rounded-full border border-zinc-800 px-4 py-2.5 text-xs font-medium text-zinc-300 transition-colors hover:border-zinc-700 hover:text-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-700"
+            >
+              Diagnose RAF
             </button>
             {preview.kind !== "idle" && (
               <button
@@ -423,8 +437,8 @@ function RecipeControls({
             onChange={(value) => updateWhiteBalance({ colorTemperatureK: value })}
           />
           <p className="mt-2 rounded-md border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-xs leading-5 text-zinc-400">
-            Kelvin is saved when writing to camera. Some Fuji RAF renders may keep the RAF file's
-            original Kelvin, so verify this control with Diagnose RAF before judging the look.
+            Kelvin is saved when writing to camera, but this Fuji RAF render path can keep the RAF
+            file's original color temperature. WB Shift still applies through the RAF profile.
           </p>
         </div>
       )}
