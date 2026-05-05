@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { App } from "../src/App";
 import { useRecipesStore } from "../src/stores/recipes";
 import { resetCameraManagerForTests, useCameraStore } from "../src/stores/camera";
@@ -31,9 +31,13 @@ describe("<App />", () => {
     const { container } = render(<App />);
 
     expect(screen.getByText(/Camera-backed Fujifilm recipes/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Camera" })).toHaveAttribute("href", "#camera");
-    expect(screen.getByRole("link", { name: "RAF" })).toHaveAttribute("href", "#raf");
-    expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getAllByRole("link", { name: "Camera" })[0]).toHaveAttribute("href", "#camera");
+    expect(screen.getAllByRole("link", { name: "RAF" })[0]).toHaveAttribute("href", "#raf");
+    expect(
+      screen
+        .getAllByRole("link", { name: "Library" })
+        .some((link) => link.getAttribute("aria-current") === "page"),
+    ).toBe(true);
     expect(container.firstElementChild).toHaveAttribute("data-theme", "dark");
 
     fireEvent.click(screen.getByRole("button", { name: /switch to light theme/i }));
@@ -54,7 +58,11 @@ describe("<App />", () => {
 
     expect(screen.getByText(/Choose a recipe, keep a RAF loaded/i)).toBeInTheDocument();
     expect(screen.getByText("RAF workspace")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "RAF" })).toHaveAttribute("aria-current", "page");
+    expect(
+      screen
+        .getAllByRole("link", { name: "RAF" })
+        .some((link) => link.getAttribute("aria-current") === "page"),
+    ).toBe(true);
 
     act(() => {
       window.location.hash = "#camera";
@@ -62,18 +70,27 @@ describe("<App />", () => {
     });
 
     expect(screen.getByText(/Read custom slots directly/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Camera" })).toHaveAttribute("aria-current", "page");
+    expect(
+      screen
+        .getAllByRole("link", { name: "Camera" })
+        .some((link) => link.getAttribute("aria-current") === "page"),
+    ).toBe(true);
   });
 
-  it("opens a mobile workspace menu with navigation and theme controls", () => {
+  it("keeps a mobile workspace dock with expandable controls", () => {
     const { container } = render(<App />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    const dock = screen.getByRole("navigation", { name: "Mobile workspace" });
+    expect(dock).toBeInTheDocument();
+    expect(within(dock).getByRole("link", { name: "RAF" })).toHaveAttribute("href", "#raf");
 
-    expect(screen.getByText("Read camera slots")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /RAF Lab/i })).toHaveAttribute("href", "#raf");
+    fireEvent.click(screen.getByRole("button", { name: /open mobile controls/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /Theme Switch to Light/i }));
+    const panel = document.getElementById("mobile-workspace-menu");
+    expect(panel).toBeInTheDocument();
+    expect(within(panel!).getByText("camera")).toBeInTheDocument();
+
+    fireEvent.click(within(panel!).getByRole("button", { name: /switch to light theme/i }));
 
     expect(container.firstElementChild).toHaveAttribute("data-theme", "light");
 
@@ -82,7 +99,7 @@ describe("<App />", () => {
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     });
 
-    expect(screen.queryByText("Read camera slots")).not.toBeInTheDocument();
+    expect(document.getElementById("mobile-workspace-menu")).not.toBeInTheDocument();
     expect(screen.getByText(/Choose a recipe, keep a RAF loaded/i)).toBeInTheDocument();
   });
 });

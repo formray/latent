@@ -49,6 +49,7 @@ export function App(): JSX.Element {
       data-theme={theme}
       className={clsx(
         "latent-app min-h-screen bg-zinc-950 text-zinc-100",
+        "pb-28 md:pb-0",
         theme === "light" ? "theme-light" : "theme-dark",
       )}
     >
@@ -87,24 +88,8 @@ export function App(): JSX.Element {
             <span className="max-w-[9rem] truncate font-mono text-[10px] uppercase tracking-wider text-emerald-400">
               {cameraStatusLabel(cameraState)}
             </span>
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((value) => !value)}
-              aria-expanded={mobileMenuOpen}
-              aria-controls="mobile-workspace-menu"
-              className="rounded-md border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-200 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
-            >
-              Menu
-            </button>
           </div>
         </div>
-        {mobileMenuOpen && (
-          <MobileMenu
-            workspace={workspace}
-            themeLabel={themeLabel}
-            onToggleTheme={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
-          />
-        )}
       </header>
 
       <StudioOverview
@@ -171,6 +156,15 @@ export function App(): JSX.Element {
           <span className="font-mono text-zinc-600">v0.0.0 · phase 3-base</span>
         </div>
       </footer>
+
+      <MobileDock
+        workspace={workspace}
+        expanded={mobileMenuOpen}
+        cameraStatus={cameraStatusLabel(cameraState)}
+        themeLabel={themeLabel}
+        onToggleExpanded={() => setMobileMenuOpen((value) => !value)}
+        onToggleTheme={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
+      />
     </div>
   );
 }
@@ -202,11 +196,6 @@ function StudioOverview({
             Camera-backed Fujifilm recipes, live RAF rendering, and custom-slot control in one
             focused workspace.
           </p>
-          <div className="mt-6 grid gap-2 md:hidden">
-            <OverviewLink href="#raf">Preview on RAF</OverviewLink>
-            <OverviewLink href="#library">Browse recipes</OverviewLink>
-            <OverviewLink href="#camera">Read camera</OverviewLink>
-          </div>
         </div>
 
         <div className="grid gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/80 sm:grid-cols-2">
@@ -228,17 +217,6 @@ function StudioOverview({
         </div>
       </div>
     </section>
-  );
-}
-
-function OverviewLink({ href, children }: { href: string; children: string }): JSX.Element {
-  return (
-    <a
-      href={href}
-      className="rounded-md border border-zinc-800 bg-zinc-950/50 px-4 py-2 text-xs font-medium text-zinc-300 transition-colors hover:border-emerald-500/50 hover:text-emerald-300"
-    >
-      {children}
-    </a>
   );
 }
 
@@ -288,68 +266,98 @@ function WorkspaceIntro({ workspace }: { workspace: Workspace }): JSX.Element {
   );
 }
 
-function MobileMenu({
+function MobileDock({
   workspace,
+  expanded,
+  cameraStatus,
   themeLabel,
+  onToggleExpanded,
   onToggleTheme,
 }: {
   workspace: Workspace;
+  expanded: boolean;
+  cameraStatus: string;
   themeLabel: string;
+  onToggleExpanded: () => void;
   onToggleTheme: () => void;
 }): JSX.Element {
   return (
-    <div
-      id="mobile-workspace-menu"
-      className="mt-3 grid gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 md:hidden"
-    >
-      <MobileMenuLink href="#camera" active={workspace === "camera"} label="Camera">
-        Read camera slots
-      </MobileMenuLink>
-      <MobileMenuLink href="#raf" active={workspace === "raf"} label="RAF Lab">
-        Preview recipes on RAF
-      </MobileMenuLink>
-      <MobileMenuLink href="#library" active={workspace === "library"} label="Library">
-        Browse and write recipes
-      </MobileMenuLink>
-      <button
-        type="button"
-        onClick={onToggleTheme}
-        className="flex items-center justify-between bg-zinc-950 px-4 py-3 text-left text-sm text-zinc-200"
+    <div className="fixed inset-x-0 bottom-3 z-50 px-3 pb-[env(safe-area-inset-bottom)] md:hidden">
+      {expanded && (
+        <div
+          id="mobile-workspace-menu"
+          className="mb-2 grid gap-3 rounded-[28px] border border-zinc-800/80 bg-zinc-950/85 p-3 shadow-2xl shadow-black/35 backdrop-blur-2xl"
+        >
+          <div className="flex items-center justify-between gap-3 px-1">
+            <div className="min-w-0">
+              <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-400">
+                camera
+              </p>
+              <p className="mt-1 truncate text-sm font-medium text-zinc-100">{cameraStatus}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="rounded-full border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-xs text-zinc-200"
+              aria-label={`Switch to ${themeLabel.toLowerCase()} theme`}
+            >
+              {themeLabel}
+            </button>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-3">
+            <CameraConnect />
+          </div>
+        </div>
+      )}
+
+      <nav
+        aria-label="Mobile workspace"
+        className="grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-1 rounded-full border border-zinc-800/80 bg-zinc-950/80 p-1 shadow-2xl shadow-black/30 backdrop-blur-2xl"
       >
-        <span>Theme</span>
-        <span className="font-mono text-xs uppercase tracking-wider text-zinc-500">
-          Switch to {themeLabel}
-        </span>
-      </button>
-      <div className="bg-zinc-950 px-4 py-3">
-        <CameraConnect />
-      </div>
+        <MobileDockLink href="#camera" active={workspace === "camera"} label="Camera" />
+        <MobileDockLink href="#raf" active={workspace === "raf"} label="RAF" />
+        <MobileDockLink href="#library" active={workspace === "library"} label="Library" />
+        <button
+          type="button"
+          onClick={onToggleExpanded}
+          aria-expanded={expanded}
+          aria-controls="mobile-workspace-menu"
+          className={clsx(
+            "grid h-11 w-11 place-items-center rounded-full border font-mono text-lg leading-none transition-colors",
+            expanded
+              ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300"
+              : "border-zinc-800 bg-zinc-900/80 text-zinc-300",
+          )}
+          aria-label={expanded ? "Close mobile controls" : "Open mobile controls"}
+        >
+          {expanded ? "-" : "+"}
+        </button>
+      </nav>
     </div>
   );
 }
 
-function MobileMenuLink({
+function MobileDockLink({
   href,
   active,
   label,
-  children,
 }: {
   href: string;
   active: boolean;
   label: string;
-  children: string;
 }): JSX.Element {
   return (
     <a
       href={href}
       aria-current={active ? "page" : undefined}
       className={clsx(
-        "flex items-center justify-between bg-zinc-950 px-4 py-3 text-sm transition-colors hover:bg-zinc-900",
-        active ? "text-emerald-300" : "text-zinc-200",
+        "rounded-full px-3 py-3 text-center text-xs font-medium transition-colors",
+        active
+          ? "bg-emerald-500/15 text-emerald-300"
+          : "text-zinc-300 hover:bg-zinc-900/80 hover:text-zinc-100",
       )}
     >
-      <span className="font-medium">{label}</span>
-      <span className="text-xs text-zinc-500">{children}</span>
+      {label}
     </a>
   );
 }
