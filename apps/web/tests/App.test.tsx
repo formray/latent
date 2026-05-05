@@ -47,6 +47,15 @@ describe("<App />", () => {
     expect(localStorage.getItem("latent-theme-v1")).toBe("light");
   });
 
+  it("allows launch screenshots to force the initial theme from the URL", () => {
+    window.history.replaceState(null, "", "/?theme=light#create");
+
+    const { container } = render(<App />);
+
+    expect(container.firstElementChild).toHaveAttribute("data-theme", "light");
+    expect(screen.getByRole("heading", { name: "Build a recipe" })).toBeInTheDocument();
+  });
+
   it("switches between first-class workspaces from the hash", () => {
     render(<App />);
 
@@ -82,9 +91,7 @@ describe("<App />", () => {
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     });
 
-    expect(
-      screen.getByText(/Build a validated recipe from a photographic intent/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Build a validated recipe/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Build a recipe" })).toBeInTheDocument();
     expect(
       screen

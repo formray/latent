@@ -28,6 +28,9 @@ trademarks of their respective owners.
 
 - **Recipe library:** browse, search, import, export, delete, restore factory
   defaults, and keep everything local in the browser.
+- **Recipe creator:** start from photographic intents, duplicate an existing
+  look, edit schema-backed Fujifilm settings, and export a validated JSON
+  recipe without connecting hardware.
 - **Camera connection:** connect over WebUSB in Chromium browsers, recover
   from refresh/unplug/camera sleep, and surface macOS claim-collision guidance.
 - **Custom slots:** read camera-side C1-C4 recipes, import them into the
@@ -123,6 +126,9 @@ version:
   into the local library, export JSON if needed.
 - **Try a recipe on a known RAF:** open the RAF workspace, select a recipe,
   render, adjust preview-only controls, and compare diagnostic variants.
+- **Create a recipe from scratch:** open the Creator workspace, choose an
+  intent or duplicate a selected look, tune the Fuji controls, then save the
+  result into the local library or export JSON.
 - **Write a recipe to camera:** select a library recipe, write to C1-C4, then
   verify by reading the slot back.
 - **Recover from a bad write:** select the previously imported backup recipe
