@@ -233,7 +233,6 @@ function cameraImportKeyParts(parts: {
     parts.cameraModel.trim().toLowerCase(),
     parts.capabilitySetId.trim().toLowerCase(),
     parts.slot.trim().toLowerCase(),
-    parts.name.trim().toLowerCase(),
   ].join("|");
 }
 
@@ -244,12 +243,10 @@ function createUuid(): string {
 }
 
 function recipeComparable(recipe: RecipeType): RecipeFields & {
-  name: string;
   capabilitySetId: string;
   cameraModel: string;
 } {
   return {
-    name: recipe.name,
     capabilitySetId: recipe.capabilitySetId,
     cameraModel: recipe.cameraModel,
     filmSimulation: recipe.filmSimulation,

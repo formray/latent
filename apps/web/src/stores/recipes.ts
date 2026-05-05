@@ -10,6 +10,36 @@ import { recipeCameraImportKey } from "../lib/camera-preset-to-recipe";
 const FAVORITES_KEY = "latent-favorites-v1";
 const IMPORTED_RECIPES_KEY = "latent-imported-recipes-v1";
 const HIDDEN_DEFAULT_RECIPES_KEY = "latent-hidden-default-recipes-v1";
+const RECIPE_NAME_OVERRIDES_KEY = "latent-recipe-name-overrides-v1";
+
+function loadNameOverrides(): Record<string, string> {
+  try {
+    if (typeof localStorage === "undefined") return {};
+    const raw = localStorage.getItem(RECIPE_NAME_OVERRIDES_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] =>
+          typeof entry[0] === "string" &&
+          typeof entry[1] === "string" &&
+          entry[1].trim().length > 0,
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function persistNameOverrides(overrides: Record<string, string>): void {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(RECIPE_NAME_OVERRIDES_KEY, JSON.stringify(overrides));
+  } catch {
+    // ignore quota / privacy-mode failures
+  }
+}
 
 function loadFavorites(): Set<string> {
   try {
@@ -106,7 +136,7 @@ function upsertImportedRecipe(recipe: RecipeType, imported: RecipeType[]): Recip
   if (!key) return mergeRecipes([recipe], imported);
   const existing = imported.find((candidate) => recipeCameraImportKey(candidate) === key);
   const nextRecipe = existing
-    ? { ...recipe, id: existing.id, createdAt: existing.createdAt }
+    ? { ...recipe, id: existing.id, name: existing.name, createdAt: existing.createdAt }
     : recipe;
   return [nextRecipe, ...imported.filter((candidate) => recipeCameraImportKey(candidate) !== key)];
 }
@@ -114,6 +144,14 @@ function upsertImportedRecipe(recipe: RecipeType, imported: RecipeType[]): Recip
 function dropBundledImports(imported: RecipeType[], seeds: RecipeType[]): RecipeType[] {
   const seedIds = new Set(seeds.map((recipe) => recipe.id));
   return imported.filter((recipe) => !seedIds.has(recipe.id));
+}
+
+function applyNameOverrides(recipes: RecipeType[]): RecipeType[] {
+  const overrides = loadNameOverrides();
+  return recipes.map((recipe) => {
+    const name = overrides[recipe.id]?.trim();
+    return name ? Recipe.parse({ ...recipe, name }) : recipe;
+  });
 }
 
 export type FilmSimulationValue = z.infer<typeof FilmSimulation>;
@@ -133,6 +171,7 @@ export interface RecipesState {
   setRecipes: (recipes: RecipeType[]) => void;
   importRecipe: (recipe: RecipeType) => void;
   importRecipes: (recipes: RecipeType[]) => void;
+  renameRecipe: (id: string, name: string) => void;
   deleteRecipe: (id: string) => void;
   resetRecipeLibrary: () => Promise<void>;
   setSearchQuery: (q: string) => void;
@@ -167,9 +206,11 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
       const imported = loadImportedRecipes();
       const userImports = dropBundledImports(imported, validated);
       if (userImports.length !== imported.length) persistImportedRecipes(userImports);
-      const visibleSeeds = validated.filter((recipe) => !hiddenDefaultIds.has(recipe.id));
+      const visibleSeeds = applyNameOverrides(
+        validated.filter((recipe) => !hiddenDefaultIds.has(recipe.id)),
+      );
       set({
-        recipes: mergeRecipes(userImports, visibleSeeds),
+        recipes: mergeRecipes(applyNameOverrides(userImports), visibleSeeds),
         loaded: true,
         loadError: null,
         hiddenDefaultIds,
@@ -181,7 +222,7 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
   },
 
   setRecipes(recipes) {
-    set({ recipes, loaded: true, loadError: null });
+    set({ recipes: applyNameOverrides(recipes), loaded: true, loadError: null });
   },
 
   importRecipe(recipe) {
@@ -213,6 +254,29 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
       loaded: true,
       loadError: null,
       selectedRecipeId: selected.id,
+    });
+  },
+
+  renameRecipe(id, name) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const recipe = get().recipes.find((candidate) => candidate.id === id);
+    if (!recipe || recipe.name === trimmed) return;
+    const renamed = Recipe.parse({ ...recipe, name: trimmed });
+
+    if (recipe.tags.includes("latent-default")) {
+      const overrides = loadNameOverrides();
+      persistNameOverrides({ ...overrides, [id]: trimmed });
+    } else {
+      const imported = mergeRecipes(
+        [renamed],
+        loadImportedRecipes().filter((candidate) => candidate.id !== id),
+      );
+      persistImportedRecipes(imported);
+    }
+
+    set({
+      recipes: get().recipes.map((candidate) => (candidate.id === id ? renamed : candidate)),
     });
   },
 
@@ -257,6 +321,7 @@ export const useRecipesStore = create<RecipesState>((set, get) => ({
       persistImportedRecipes([]);
       persistHiddenDefaultIds(new Set());
       persistFavorites(new Set());
+      persistNameOverrides({});
       set({
         recipes: validated,
         loaded: true,

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ChangeEvent, type JSX } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type FormEvent, type JSX } from "react";
 import clsx from "clsx";
 import type { RecipeType } from "@latent/recipe-schema/browser";
 import { useRecipesStore } from "../stores/recipes";
@@ -31,6 +31,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const isFavorite = useRecipesStore((s) => s.favorites.has(recipe.id));
   const toggleFavorite = useRecipesStore((s) => s.toggleFavorite);
   const deleteRecipe = useRecipesStore((s) => s.deleteRecipe);
+  const renameRecipe = useRecipesStore((s) => s.renameRecipe);
   const recipes = useRecipesStore((s) => s.recipes);
   const cameraState = useCameraStore((s) => s.state);
   const cameraConnected = useCameraStore((s) => s.isConnected());
@@ -41,6 +42,8 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const writeRecipeToSlot = useCameraStore((s) => s.writeRecipeToSlot);
   const [copied, setCopied] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState(recipe.name);
   const slotBackups = useMemo(
     () => findCameraSlotBackups(recipes, cameraState),
     [recipes, cameraState],
@@ -63,6 +66,19 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const handleDelete = (): void => {
     if (!window.confirm(t("detail.delete.confirm"))) return;
     deleteRecipe(recipe.id);
+  };
+
+  const startRename = (): void => {
+    setDraftName(recipe.name);
+    setEditingName(true);
+  };
+
+  const handleRename = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    const nextName = draftName.trim();
+    if (!nextName) return;
+    renameRecipe(recipe.id, nextName);
+    setEditingName(false);
   };
 
   const handleWrite = (slot: number): void => {
@@ -116,9 +132,52 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
         <p className="font-mono text-xs uppercase tracking-wider text-zinc-500">
           {humanFilmSim(recipe.filmSimulation)}
         </p>
-        <h2 className="mt-1 max-w-3xl text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
-          {recipe.name}
-        </h2>
+        {editingName ? (
+          <form
+            onSubmit={handleRename}
+            className="mt-2 flex max-w-3xl flex-col gap-2 sm:flex-row sm:items-center"
+          >
+            <input
+              type="text"
+              value={draftName}
+              onChange={(event) => setDraftName(event.target.value)}
+              aria-label={t("detail.rename.input")}
+              className={clsx(
+                "min-w-0 flex-1 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2",
+                "text-2xl font-semibold tracking-tight text-zinc-50 focus:border-emerald-500/50 focus:outline-none",
+              )}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-500/15"
+              >
+                {t("detail.rename.save")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingName(false)}
+                className="rounded-md border border-zinc-800 px-3 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+              >
+                {t("detail.rename.cancel")}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="mt-1 flex max-w-3xl flex-wrap items-start gap-3">
+            <h2 className="min-w-0 text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
+              {recipe.name}
+            </h2>
+            <button
+              type="button"
+              onClick={startRename}
+              className="mt-1 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-300"
+            >
+              {t("detail.rename")}
+            </button>
+          </div>
+        )}
         {recipe.description && (
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
             {recipe.description}

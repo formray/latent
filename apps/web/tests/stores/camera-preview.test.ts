@@ -86,6 +86,30 @@ describe("camera store raw preview", () => {
     });
   });
 
+  it("patches color-temperature white balance into the RAF render profile", async () => {
+    const port = fakePort();
+    useCameraStore.setState({
+      state: {
+        kind: "connected",
+        port,
+        cameraModel: "X-S20",
+        firmwareVersion: "3.30",
+      },
+    });
+
+    await useCameraStore.getState().renderRawPreview(file(), {
+      ...recipe,
+      whiteBalance: { mode: "ColorTemperature", colorTemperatureK: 7200, shiftR: -2, shiftB: 3 },
+    });
+
+    const builder = vi.mocked(port.renderRawPreview).mock.calls[0]?.[1];
+    const patched = builder?.(baseProfile());
+    expect(readD185Field(patched, 12)).toBe(0x8007);
+    expect(readD185Field(patched, 13)).toBe(-2);
+    expect(readD185Field(patched, 14)).toBe(3);
+    expect(readD185Field(patched, 15)).toBe(7200);
+  });
+
   it("renders diagnostic RAF variants for isolating preview color shifts", async () => {
     const port = fakePort();
     useCameraStore.setState({

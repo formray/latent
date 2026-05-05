@@ -150,6 +150,53 @@ describe("useRecipesStore", () => {
     expect(useRecipesStore.getState().selectedRecipeId).toBe(first.id);
   });
 
+  it("renames an imported recipe and keeps the name across re-imports", () => {
+    const first = sampleRecipe({
+      id: "44444444-4444-4444-8444-444444444444",
+      name: "Camera C2",
+      author: "Camera import",
+      tags: ["camera-import", "x-m5", "c2"],
+      dynamicRange: "DRAuto",
+      cameraModel: "X-M5",
+      capabilitySetId: "x-m5-fw1.20",
+      color: 3,
+    });
+    const cameraUpdate = sampleRecipe({
+      ...first,
+      id: "55555555-5555-4555-8555-555555555555",
+      name: "Camera name from body",
+      color: 4,
+    });
+
+    useRecipesStore.getState().importRecipe(first);
+    useRecipesStore.getState().renameRecipe(first.id, "My Chrome Backup");
+    useRecipesStore.getState().importRecipe(cameraUpdate);
+
+    const imported = useRecipesStore.getState().recipes[0];
+    expect(imported?.id).toBe(first.id);
+    expect(imported?.name).toBe("My Chrome Backup");
+    expect(imported?.color).toBe(4);
+    expect(JSON.parse(localStorage.getItem("latent-imported-recipes-v1") ?? "[]")[0]?.name).toBe(
+      "My Chrome Backup",
+    );
+  });
+
+  it("renames bundled defaults through a local override", () => {
+    const bundled = sampleRecipe({
+      id: "f802c137-99c2-4058-8174-c35396bcd79d",
+      name: "Silver Screen Protocol",
+      tags: ["latent-default"],
+    });
+    useRecipesStore.getState().setRecipes([bundled]);
+
+    useRecipesStore.getState().renameRecipe(bundled.id, "Silver Circuit");
+
+    expect(useRecipesStore.getState().recipes[0]?.name).toBe("Silver Circuit");
+    expect(
+      JSON.parse(localStorage.getItem("latent-recipe-name-overrides-v1") ?? "{}")[bundled.id],
+    ).toBe("Silver Circuit");
+  });
+
   it("deduplicates existing persisted camera imports on load", async () => {
     const first = sampleRecipe({
       id: "44444444-4444-4444-8444-444444444444",

@@ -32,6 +32,10 @@ export const it: Record<MessageKey, string> = {
   "detail.delete": "Elimina",
   "detail.delete.hideDefault": "Nascondi",
   "detail.delete.confirm": "Rimuovere questa ricetta dalla libreria?",
+  "detail.rename": "Rinomina",
+  "detail.rename.input": "Nome ricetta",
+  "detail.rename.save": "Salva nome",
+  "detail.rename.cancel": "Annulla",
   "detail.previewRaf": "Preview su RAF",
   "detail.previewRaf.rendering": "Rendering",
   "detail.previewRaf.title":
