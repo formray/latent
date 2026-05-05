@@ -301,9 +301,9 @@ function RecipeCommandPanel({
   slotBackups: CameraSlotBackup[];
 }): JSX.Element {
   const t = useT();
+  const [cameraActionMode, setCameraActionMode] = useState<"write" | "restore">("write");
   const previewDisabled = !cameraConnected || rawPreviewStatus.kind === "rendering";
   const writeDisabled = !cameraConnected || writeStatus.kind === "writing";
-  const backupBySlot = new Map(slotBackups.map((entry) => [entry.slot, entry.recipe]));
   const backedUpSlots = slotBackups.map((entry) => `C${entry.slot}`).join(", ");
   const activeWriteForCurrentRecipe =
     writeStatus.kind !== "idle" && writeStatus.recipeName === recipe.name;
@@ -377,11 +377,36 @@ function RecipeCommandPanel({
 
       <div className="bg-zinc-950 p-4">
         <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">
-          {t("detail.cameraWrite.section")}
+          {t("detail.cameraAction.section")}
         </p>
-        <p className="mt-1 text-xs leading-5 text-zinc-500">
-          {cameraConnected ? t("detail.action.write.body") : t("detail.cameraWrite.disconnected")}
-        </p>
+        <div className="mt-3 grid grid-cols-2 gap-1 rounded-full border border-zinc-900 bg-zinc-900/40 p-1">
+          <button
+            type="button"
+            onClick={() => setCameraActionMode("write")}
+            aria-pressed={cameraActionMode === "write"}
+            className={clsx(
+              "rounded-full px-3 py-2 text-xs font-medium transition-colors",
+              cameraActionMode === "write"
+                ? "bg-emerald-500/15 text-emerald-300"
+                : "text-zinc-500 hover:text-zinc-300",
+            )}
+          >
+            {t("detail.cameraAction.write")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCameraActionMode("restore")}
+            aria-pressed={cameraActionMode === "restore"}
+            className={clsx(
+              "rounded-full px-3 py-2 text-xs font-medium transition-colors",
+              cameraActionMode === "restore"
+                ? "bg-emerald-500/15 text-emerald-300"
+                : "text-zinc-500 hover:text-zinc-300",
+            )}
+          >
+            {t("detail.cameraAction.restore")}
+          </button>
+        </div>
         <div className="mt-4 grid gap-2 rounded-md border border-zinc-900 bg-zinc-900/30 p-3 text-xs">
           <SafetyRow
             ok={cameraConnected}
@@ -401,46 +426,52 @@ function RecipeCommandPanel({
           />
           <SafetyRow ok text={t("detail.cameraSafety.readBack")} />
         </div>
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          {[1, 2, 3, 4].map((slot) => {
-            const backup = backupBySlot.get(slot);
-            const writing =
-              writeStatus.kind === "writing" &&
-              writeStatus.slot === slot &&
-              writeStatus.recipeName === recipe.name;
-            return (
-              <button
-                key={slot}
-                type="button"
-                disabled={writeDisabled}
-                onClick={() => onWrite(slot)}
-                className={clsx(
-                  "rounded-md border px-2 py-3 font-mono text-xs transition-colors",
-                  !writeDisabled
-                    ? "border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/20"
-                    : "cursor-not-allowed border-zinc-900 text-zinc-700",
-                )}
-              >
-                <span className="block">
-                  {writing
-                    ? t("detail.cameraWrite.writing")
-                    : t("detail.cameraWrite.slot", { slot })}
-                </span>
-                <span className="mt-1 block text-[10px] normal-case tracking-normal opacity-60">
-                  {backup
-                    ? t("detail.cameraWrite.backedUp")
-                    : t("detail.cameraWrite.noBackup")}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {slotBackups.length > 0 && (
-          <div className="mt-3 border-t border-zinc-900 pt-3">
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-600">
-              {t("detail.cameraRestore.section")}
+
+        {cameraActionMode === "write" ? (
+          <div className="mt-4">
+            <p className="text-xs leading-5 text-zinc-500">
+              {cameraConnected ? t("detail.action.write.body") : t("detail.cameraWrite.disconnected")}
             </p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[1, 2, 3, 4].map((slot) => {
+                const writing =
+                  writeStatus.kind === "writing" &&
+                  writeStatus.slot === slot &&
+                  writeStatus.recipeName === recipe.name;
+                return (
+                  <button
+                    key={slot}
+                    type="button"
+                    disabled={writeDisabled}
+                    onClick={() => onWrite(slot)}
+                    className={clsx(
+                      "rounded-md border px-2 py-3 font-mono text-xs transition-colors",
+                      !writeDisabled
+                        ? "border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/20"
+                        : "cursor-not-allowed border-zinc-900 text-zinc-700",
+                    )}
+                  >
+                    {writing
+                      ? t("detail.cameraWrite.writing")
+                      : t("detail.cameraWrite.slot", { slot })}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-xs leading-5 text-zinc-500">
+              {slotBackups.length > 0
+                ? t("detail.cameraWrite.restoreAvailable", { slots: backedUpSlots })
+                : t("detail.cameraWrite.restoreMissing")}
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4">
+            <p className="text-xs leading-5 text-zinc-500">
+              {slotBackups.length > 0
+                ? t("detail.cameraRestore.body")
+                : t("detail.cameraRestore.empty")}
+            </p>
+            <div className="mt-3 grid gap-2">
               {slotBackups.map(({ slot, recipe: backup }) => (
                 <button
                   key={slot}
@@ -451,10 +482,15 @@ function RecipeCommandPanel({
                     "rounded-md border px-3 py-2 text-xs transition-colors",
                     !writeDisabled
                       ? "border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
-                      : "cursor-not-allowed border-zinc-900 text-zinc-700",
+                    : "cursor-not-allowed border-zinc-900 text-zinc-700",
                   )}
                 >
-                  {t("detail.cameraRestore.slot", { slot })}
+                  <span className="block font-medium">
+                    {t("detail.cameraRestore.slot", { slot, name: backup.name })}
+                  </span>
+                  <span className="mt-1 block text-[10px] text-zinc-500">
+                    {t("detail.cameraRestore.slotHint", { slot })}
+                  </span>
                 </button>
               ))}
             </div>

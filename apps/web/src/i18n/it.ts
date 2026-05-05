@@ -46,9 +46,13 @@ export const it: Record<MessageKey, string> = {
   "detail.action.preview.body":
     "Renderizza questa ricetta su un RAF attraverso la fotocamera collegata.",
   "detail.action.file.section": "File ricetta",
-  "detail.action.write.body": "Scegli lo slot custom da sovrascrivere sulla fotocamera collegata.",
+  "detail.action.write.body":
+    "Invia questa ricetta a uno slot custom della fotocamera collegata. Quello slot verrà sovrascritto.",
+  "detail.cameraAction.section": "Azioni fotocamera",
+  "detail.cameraAction.write": "Invia ricetta",
+  "detail.cameraAction.restore": "Ripristina backup",
   "detail.cameraWrite.section": "Scrivi su fotocamera",
-  "detail.cameraWrite.slot": "Scrivi C{slot}",
+  "detail.cameraWrite.slot": "Invia a C{slot}",
   "detail.cameraWrite.writing": "Scrittura",
   "detail.cameraWrite.confirm":
     "Scrivere questa ricetta nello slot C{slot}? Latent verificherà lo slot dopo la scrittura.",
@@ -56,8 +60,9 @@ export const it: Record<MessageKey, string> = {
     "Scrivere questa ricetta nello slot C{slot}? Backup disponibile: {backup}. Latent verificherà lo slot dopo la scrittura.",
   "detail.cameraWrite.confirmWithoutBackup":
     "Scrivere questa ricetta nello slot C{slot}? Non è stato trovato un backup importato per questo slot. Continua solo se lo slot può essere sovrascritto.",
-  "detail.cameraWrite.backedUp": "backup",
-  "detail.cameraWrite.noBackup": "no backup",
+  "detail.cameraWrite.restoreAvailable": "Ripristino immediato disponibile per {slots}.",
+  "detail.cameraWrite.restoreMissing":
+    "Nessun ripristino immediato disponibile per questa fotocamera.",
   "detail.cameraWrite.success": "C{slot} scritto e {n} proprietà verificate.",
   "detail.cameraWrite.lastSuccess": "Ultima scrittura: C{slot} ripristinato da {recipe}.",
   "detail.cameraWrite.error": "Scrittura non riuscita: {message}",
@@ -70,8 +75,13 @@ export const it: Record<MessageKey, string> = {
   "detail.cameraSafety.backup.missing":
     "Nessun ripristino immediato disponibile. Importa questo slot, oppure esporta un backup JSON prima di scrivere.",
   "detail.cameraSafety.readBack": "Latent rilegge lo slot dopo la scrittura.",
+  "detail.cameraRestore.body":
+    "Ripristina l'ultimo backup importato dalla fotocamera nel suo slot custom originale.",
+  "detail.cameraRestore.empty":
+    "Importa prima uno slot dalla fotocamera. I ripristini compaiono solo quando Latent conosce cosa c'era originariamente sulla camera.",
   "detail.cameraRestore.section": "Ripristino immediato",
-  "detail.cameraRestore.slot": "Ripristina C{slot}",
+  "detail.cameraRestore.slot": "Ripristina C{slot}: {name}",
+  "detail.cameraRestore.slotHint": "Riscrive questo backup nello slot C{slot} della fotocamera.",
   "detail.cameraRestore.confirm": "Ripristinare lo slot C{slot} dal backup \"{backup}\"?",
   "detail.setupWalkthrough": "Configura sulla fotocamera",
   "detail.setupWalkthrough.intro":
