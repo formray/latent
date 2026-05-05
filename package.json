@@ -35,7 +35,7 @@
     "@eslint/js": "^9",
     "@types/node": "^22",
     "@vitest/coverage-v8": "^2.1.9",
-    "eslint": "^9",
+    "eslint": "^10",
     "license-checker": "^25",
     "prettier": "^3",
     "tsx": "^4",
