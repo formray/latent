@@ -26,11 +26,11 @@ trademarks of their respective owners.
 
 ## What Latent Does Today
 
-- **Recipe library:** browse, search, import, export, delete, restore factory
-  defaults, and keep everything local in the browser.
+- **Recipe library:** browse, search, import, export, share links, delete,
+  restore factory defaults, and keep everything local in the browser.
 - **Recipe creator:** start from photographic intents, duplicate an existing
-  look, edit schema-backed Fujifilm settings, and export a validated JSON
-  recipe without connecting hardware.
+  look with parent metadata, edit schema-backed Fujifilm settings, and export a
+  validated JSON recipe without connecting hardware.
 - **Camera connection:** connect over WebUSB in Chromium browsers, recover
   from refresh/unplug/camera sleep, and surface macOS claim-collision guidance.
 - **Custom slots:** read camera-side C1-C4 recipes, import them into the
@@ -129,7 +129,9 @@ Before writing to a camera:
   claim the PTP interface.
 
 Manual release checks live in
-[`docs/qa/hardware-test-plan.md`](./docs/qa/hardware-test-plan.md).
+[`docs/qa/hardware-test-plan.md`](./docs/qa/hardware-test-plan.md). macOS
+Image Capture/WebUSB release notes live in
+[`docs/qa/macos-webusb-camera-release.md`](./docs/qa/macos-webusb-camera-release.md).
 
 ## Use Cases
 

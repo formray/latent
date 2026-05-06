@@ -13,12 +13,22 @@ import type { ConnectionState } from "./types.js";
 
 export type ManagerNotifications = {
   "setup-confirmed": { advanced: boolean };
-  "presets-read": { presets: RawPreset[] };
+  "presets-read": { presets: RawPreset[]; failures: PresetReadFailure[] };
 };
+
+export interface PresetReadFailure {
+  slot: number;
+  message: string;
+  category?: string;
+  stage?: string;
+}
 
 export interface ConnectionManagerOptions {
   shouldAutoconnect?: () => Promise<boolean> | boolean;
+  presetReadTimeoutMs?: number;
 }
+
+const DEFAULT_PRESET_READ_TIMEOUT_MS = 15_000;
 
 type StateSubscriber = (state: ConnectionState) => void;
 
@@ -156,21 +166,25 @@ export class ConnectionManager {
 
   private startConnect(state: Extract<ConnectionState, { kind: "connecting" }>): void {
     const opId = ++this.currentOpId;
-    void this.runConnect(opId, state.abort);
+    void this.runConnect(opId, state.abort, state.macosSetupPending ? false : true);
   }
 
   private startReconnect(state: Extract<ConnectionState, { kind: "reconnecting" }>): void {
     this.clearReconnectTimer();
     this.reconnectAbort = state.abort;
     this.reconnectTimer = setTimeout(() => {
-      void this.runConnect(++this.currentOpId, state.abort);
+      void this.runConnect(++this.currentOpId, state.abort, true);
     }, backoffDelayMs(state.attempt));
   }
 
-  private async runConnect(opId: number, abort: AbortController): Promise<void> {
+  private async runConnect(
+    opId: number,
+    abort: AbortController,
+    autoSelectPaired: boolean,
+  ): Promise<void> {
     try {
       const result = await this.driver.connect({
-        autoSelectPaired: true,
+        autoSelectPaired,
         signal: abort.signal,
       });
       if (opId !== this.currentOpId || !canAcceptConnect(this.state)) {
@@ -195,17 +209,36 @@ export class ConnectionManager {
     port: { getPreset: (slot: number, signal?: AbortSignal) => Promise<RawPreset> },
   ): Promise<void> {
     const presets: RawPreset[] = [];
+    const failures: PresetReadFailure[] = [];
     for (let slot = 1; slot <= 7; slot++) {
       if (opId !== this.currentOpId || !isAlive(this.state)) return;
       try {
-        presets.push(await port.getPreset(slot));
+        const preset = await readPresetWithTimeout(
+          port,
+          slot,
+          this.options.presetReadTimeoutMs ?? DEFAULT_PRESET_READ_TIMEOUT_MS,
+        );
+        presets.push(preset);
+        this.emitPresetReadSnapshot(opId, presets, failures);
       } catch (err) {
         if (isOptionalPresetReadFailure(err)) continue;
-        return;
+        failures.push(toPresetReadFailure(slot, err));
+        this.emitPresetReadSnapshot(opId, presets, failures);
       }
     }
+    this.emitPresetReadSnapshot(opId, presets, failures);
+  }
+
+  private emitPresetReadSnapshot(
+    opId: number,
+    presets: RawPreset[],
+    failures: PresetReadFailure[],
+  ): void {
     if (opId === this.currentOpId && isAlive(this.state)) {
-      this.emitNotification("presets-read", { presets });
+      this.emitNotification("presets-read", {
+        presets: [...presets],
+        failures: [...failures],
+      });
     }
   }
 
@@ -273,6 +306,40 @@ function abortState(state: ConnectionState): void {
   }
 }
 
+async function readPresetWithTimeout(
+  port: { getPreset: (slot: number, signal?: AbortSignal) => Promise<RawPreset> },
+  slot: number,
+  timeoutMs: number,
+): Promise<RawPreset> {
+  if (timeoutMs <= 0) return port.getPreset(slot);
+
+  const abort = new AbortController();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const timeoutError = new LatentError(
+    "PtpTimeout",
+    `Timed out reading C${slot} after ${Math.round(timeoutMs / 1000)}s`,
+    undefined,
+    { stage: "transfer-in" },
+  );
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(() => {
+      abort.abort(timeoutError);
+      reject(timeoutError);
+    }, timeoutMs);
+  });
+  const readPromise = port.getPreset(slot, abort.signal);
+  readPromise.catch(() => undefined);
+
+  try {
+    return await Promise.race([readPromise, timeoutPromise]);
+  } catch (err) {
+    if (nameOf(err) === "AbortError") throw timeoutError;
+    throw err;
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
+  }
+}
+
 function toLatentError(err: unknown): LatentError {
   if (err instanceof LatentError) return err;
   const name = nameOf(err);
@@ -297,4 +364,19 @@ function isOptionalPresetReadFailure(err: unknown): boolean {
     err instanceof LatentError &&
     (err.category === "PtpUnsupportedOperation" || err.category === "PtpStall")
   );
+}
+
+function toPresetReadFailure(slot: number, err: unknown): PresetReadFailure {
+  if (err instanceof LatentError) {
+    return {
+      slot,
+      message: err.message,
+      category: err.category,
+      ...(err.stage ? { stage: err.stage } : {}),
+    };
+  }
+  return {
+    slot,
+    message: err instanceof Error ? err.message : String(err),
+  };
 }

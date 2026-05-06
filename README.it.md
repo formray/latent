@@ -28,8 +28,11 @@ nelle ricette sono marchi dei rispettivi proprietari.
 
 ## Cosa fa oggi
 
-- **Libreria ricette:** cerca, importa, esporta, elimina, ripristina i default
-  e conserva tutto localmente nel browser.
+- **Libreria ricette:** cerca, importa, esporta, condivide link, elimina,
+  ripristina i default e conserva tutto localmente nel browser.
+- **Creator ricette:** parte da intenti fotografici, duplica look esistenti
+  mantenendo metadati di parentela, modifica controlli Fujifilm validati dallo
+  schema ed esporta JSON senza hardware collegato.
 - **Connessione camera:** si collega via WebUSB su browser Chromium, recupera
   da refresh/unplug/sleep e guida l'utente quando macOS prende il controllo
   dell'interfaccia PTP.
@@ -114,7 +117,9 @@ Prima di scrivere sulla camera:
   prendere l'interfaccia PTP.
 
 La checklist manuale e' in
-[`docs/qa/hardware-test-plan.md`](./docs/qa/hardware-test-plan.md).
+[`docs/qa/hardware-test-plan.md`](./docs/qa/hardware-test-plan.md). Le note
+per sbloccare collisioni macOS/Image Capture/WebUSB sono in
+[`docs/qa/macos-webusb-camera-release.md`](./docs/qa/macos-webusb-camera-release.md).
 
 ## Casi d'uso
 

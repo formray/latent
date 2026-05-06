@@ -11,10 +11,11 @@ interface MacosSetupWizardProps {
   onClose: () => void;
 }
 
-const BASIC_COMMAND = "killall ptpcamerad";
+const BASIC_COMMAND = "killall ptpcamerad icdd";
 const ADVANCED_COMMAND =
-  "launchctl disable gui/$(id -u)/com.apple.ptpcamerad && killall ptpcamerad";
-const ENABLE_COMMAND = "launchctl enable gui/$(id -u)/com.apple.ptpcamerad";
+  "launchctl disable gui/$(id -u)/com.apple.ptpcamerad && launchctl disable gui/$(id -u)/com.apple.icdd && killall ptpcamerad icdd";
+const ENABLE_COMMAND =
+  "launchctl enable gui/$(id -u)/com.apple.ptpcamerad && launchctl enable gui/$(id -u)/com.apple.icdd";
 
 export function MacosSetupWizard({
   acknowledged,

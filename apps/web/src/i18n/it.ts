@@ -28,6 +28,8 @@ export const it: Record<MessageKey, string> = {
     "Seleziona una ricetta dalla libreria per leggere tutti i parametri della fotocamera e la procedura di configurazione passo passo.",
   "detail.copyJson": "Copia come JSON",
   "detail.copyJson.copied": "Copiato",
+  "detail.share": "Copia link",
+  "detail.share.copied": "Link copiato",
   "detail.downloadJson": "Scarica .json",
   "detail.delete": "Elimina",
   "detail.delete.hideDefault": "Nascondi",
@@ -86,7 +88,7 @@ export const it: Record<MessageKey, string> = {
   "detail.cameraRestore.section": "Ripristino immediato",
   "detail.cameraRestore.slot": "Ripristina C{slot}: {name}",
   "detail.cameraRestore.slotHint": "Riscrive questo backup nello slot C{slot} della fotocamera.",
-  "detail.cameraRestore.confirm": "Ripristinare lo slot C{slot} dal backup \"{backup}\"?",
+  "detail.cameraRestore.confirm": 'Ripristinare lo slot C{slot} dal backup "{backup}"?',
   "detail.setupWalkthrough": "Configura sulla fotocamera",
   "detail.setupWalkthrough.intro":
     "Segui questi passaggi per inserire la ricetta in uno slot personalizzato della fotocamera.",
@@ -96,6 +98,7 @@ export const it: Record<MessageKey, string> = {
   "detail.metadata.camera": "Fotocamera di riferimento",
   "detail.metadata.created": "Aggiunta il",
   "detail.metadata.tags": "Tag",
+  "detail.metadata.parent": "Ricetta sorgente",
   "detail.favourite.add": "Aggiungi ai preferiti",
   "detail.favourite.remove": "Rimuovi dai preferiti",
   "detail.favourite.short.add": "salva",
@@ -129,7 +132,7 @@ export const it: Record<MessageKey, string> = {
   "camera.notSupported.short": "WebUSB non disponibile",
   "camera.error.macos-claim-collision.title": "macOS sta usando la fotocamera",
   "camera.error.macos-claim-collision.body":
-    "Acquisizione Immagine sta richiedendo accesso esclusivo. Apri la configurazione macOS per liberarla.",
+    "macOS o un'altra sessione del browser ha accesso esclusivo. Apri la configurazione per liberarla e riaprire il selettore USB.",
   "camera.error.macos-claim-collision.action": "Apri configurazione",
   "camera.error.camera-off.title": "La fotocamera non risponde",
   "camera.error.camera-off.body":
@@ -158,7 +161,7 @@ export const it: Record<MessageKey, string> = {
   "camera.error.unknown.action": "Riprova",
   "camera.macos.beta.title": "Il supporto fotocamera su macOS è beta",
   "camera.macos.beta.body":
-    "macOS può montare automaticamente le fotocamere per Acquisizione Immagine o Foto. Parti dal comando temporaneo; la correzione persistente è avanzata.",
+    "macOS può montare automaticamente le fotocamere per Acquisizione Immagine o Foto, e una sessione browser bloccata può tenere aperto l'accesso USB. Parti dal comando temporaneo; la correzione persistente è avanzata.",
   "camera.macos.beta.ack": "Ho capito",
   "camera.macos.setup.title": "Libera la fotocamera da macOS",
   "camera.macos.basic.body": "Esegui questo comando temporaneo, poi conferma.",
@@ -177,6 +180,9 @@ export const it: Record<MessageKey, string> = {
   "camera.recipes.slotsRead": "{n} slot letti",
   "camera.recipes.readOnly": "Sola lettura",
   "camera.recipes.scanning": "Lettura degli slot custom dalla fotocamera",
+  "camera.recipes.readPartial": "Impossibile leggere {slots}; mostro gli slot che hanno risposto.",
+  "camera.recipes.readFailed": "Nessuno slot custom è stato letto.",
+  "camera.recipes.noneRead": "La fotocamera non ha restituito slot custom leggibili.",
   "camera.recipes.empty": "Collega una fotocamera per leggere gli slot custom.",
   "camera.recipes.inspector": "ispettore slot",
   "camera.recipes.import": "Importa come ricetta",

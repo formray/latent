@@ -9,12 +9,15 @@ import { CameraRecipesPanel } from "./components/camera/CameraRecipesPanel";
 import { RawPreviewPanel } from "./components/camera/RawPreviewPanel";
 import { useCameraStore } from "./stores/camera";
 import { useT } from "./i18n";
+import { decodeRecipeShareFromLocation } from "./lib/recipe-share";
 
 type Workspace = "camera" | "raf" | "library" | "create";
 
 export function App(): JSX.Element {
   const t = useT();
   const loadSeedRecipes = useRecipesStore((s) => s.loadSeedRecipes);
+  const importRecipe = useRecipesStore((s) => s.importRecipe);
+  const loaded = useRecipesStore((s) => s.loaded);
   const selectedId = useRecipesStore((s) => s.selectedRecipeId);
   const recipes = useRecipesStore((s) => s.recipes);
   const cameraState = useCameraStore((s) => s.state);
@@ -24,10 +27,22 @@ export function App(): JSX.Element {
   const [workspace, setWorkspace] = useState<Workspace>(() => initialWorkspace());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileOverviewOpen, setMobileOverviewOpen] = useState(false);
+  const [shareImportHandled, setShareImportHandled] = useState(false);
 
   useEffect(() => {
     void loadSeedRecipes();
   }, [loadSeedRecipes]);
+
+  useEffect(() => {
+    if (!loaded || shareImportHandled) return;
+    setShareImportHandled(true);
+    try {
+      const sharedRecipe = decodeRecipeShareFromLocation(window.location);
+      if (sharedRecipe) importRecipe(sharedRecipe);
+    } catch {
+      // Invalid shared URLs should never block the local library.
+    }
+  }, [importRecipe, loaded, shareImportHandled]);
 
   useEffect(() => {
     localStorage.setItem("latent-theme-v1", theme);

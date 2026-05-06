@@ -18,6 +18,7 @@ import {
   signedNumber,
 } from "./format";
 import { downloadRecipeJson, serializeRecipeJson } from "../lib/recipe-json";
+import { recipeShareUrl } from "../lib/recipe-share";
 
 export interface RecipeDetailProps {
   recipe: RecipeType;
@@ -41,6 +42,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
   const writeStatus = useCameraStore((s) => s.writeStatus);
   const writeRecipeToSlot = useCameraStore((s) => s.writeRecipeToSlot);
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState(recipe.name);
@@ -61,6 +63,16 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleShare = async (): Promise<void> => {
+    try {
+      await navigator.clipboard?.writeText(recipeShareUrl(recipe));
+      setShared(true);
+      setTimeout(() => setShared(false), 1500);
+    } catch {
+      setShared(false);
+    }
   };
 
   const handleDelete = (): void => {
@@ -125,6 +137,10 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
     rafPreviewModeRef.current = mode;
     rafInputRef.current?.click();
   };
+
+  const parentRecipe = recipe.parentRecipeId
+    ? (recipes.find((candidate) => candidate.id === recipe.parentRecipeId) ?? null)
+    : null;
 
   return (
     <article className="flex w-full max-w-none flex-col gap-7 px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
@@ -269,6 +285,12 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
                 label={t("detail.metadata.tags")}
                 value={recipe.tags?.length ? recipe.tags.join(", ") : "—"}
               />
+              <Param
+                label={t("detail.metadata.parent")}
+                value={
+                  parentRecipe ? parentRecipe.name : formatParentRecipeId(recipe.parentRecipeId)
+                }
+              />
             </dl>
           </section>
 
@@ -305,11 +327,13 @@ export function RecipeDetail({ recipe }: RecipeDetailProps): JSX.Element {
             onDiagnose={() => openRafPicker("diagnostic")}
             onToggleFavorite={() => toggleFavorite(recipe.id)}
             onCopy={() => void handleCopy()}
+            onShare={() => void handleShare()}
             onDownload={() => downloadRecipeJson(recipe)}
             onDelete={handleDelete}
             onWrite={handleWrite}
             onRestore={handleRestore}
             slotBackups={slotBackups}
+            shared={shared}
           />
         </aside>
       </div>
@@ -326,9 +350,14 @@ function Param({ label, value }: { label: string; value: string }): JSX.Element 
   );
 }
 
+function formatParentRecipeId(parentRecipeId: string | undefined): string {
+  return parentRecipeId ? `Parent ${parentRecipeId.slice(0, 8)}` : "—";
+}
+
 function RecipeCommandPanel({
   recipe,
   copied,
+  shared,
   cameraConnected,
   rawPreviewStatus,
   writeStatus,
@@ -337,6 +366,7 @@ function RecipeCommandPanel({
   onDiagnose,
   onToggleFavorite,
   onCopy,
+  onShare,
   onDownload,
   onDelete,
   onWrite,
@@ -345,6 +375,7 @@ function RecipeCommandPanel({
 }: {
   recipe: RecipeType;
   copied: boolean;
+  shared: boolean;
   cameraConnected: boolean;
   rawPreviewStatus: RawPreviewStatus;
   writeStatus: CameraWriteStatus;
@@ -353,6 +384,7 @@ function RecipeCommandPanel({
   onDiagnose: () => void;
   onToggleFavorite: () => void;
   onCopy: () => void;
+  onShare: () => void;
   onDownload: () => void;
   onDelete: () => void;
   onWrite: (slot: number) => void;
@@ -489,7 +521,9 @@ function RecipeCommandPanel({
         {cameraActionMode === "write" ? (
           <div className="mt-4">
             <p className="text-xs leading-5 text-zinc-500">
-              {cameraConnected ? t("detail.action.write.body") : t("detail.cameraWrite.disconnected")}
+              {cameraConnected
+                ? t("detail.action.write.body")
+                : t("detail.cameraWrite.disconnected")}
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[1, 2, 3, 4].map((slot) => {
@@ -541,7 +575,7 @@ function RecipeCommandPanel({
                     "rounded-md border px-3 py-2 text-xs transition-colors",
                     !writeDisabled
                       ? "border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
-                    : "cursor-not-allowed border-zinc-900 text-zinc-700",
+                      : "cursor-not-allowed border-zinc-900 text-zinc-700",
                   )}
                 >
                   <span className="block font-medium">
@@ -622,6 +656,13 @@ function RecipeCommandPanel({
           </button>
           <button
             type="button"
+            onClick={onShare}
+            className="rounded-md border border-zinc-800 px-3 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+          >
+            {shared ? t("detail.share.copied") : t("detail.share")}
+          </button>
+          <button
+            type="button"
             onClick={onDownload}
             className="rounded-md border border-zinc-800 px-3 py-2 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
           >
@@ -637,10 +678,7 @@ function SafetyRow({ ok, text }: { ok: boolean; text: string }): JSX.Element {
   return (
     <div className="flex items-center gap-2 text-zinc-400">
       <span
-        className={clsx(
-          "size-1.5 rounded-full",
-          ok ? "bg-emerald-400" : "bg-amber-400",
-        )}
+        className={clsx("size-1.5 rounded-full", ok ? "bg-emerald-400" : "bg-amber-400")}
         aria-hidden="true"
       />
       <span>{text}</span>
