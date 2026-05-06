@@ -245,6 +245,9 @@ npm run macos-camera-helper
 The helper listens only on `127.0.0.1:5174` and accepts browser requests only
 from `localhost` or `127.0.0.1` origins. When it is running, the macOS setup
 wizard shows daemon status plus one-click Release and Restore buttons.
+If the wizard is closed while the services are still disabled or suspended,
+Latent keeps a compact restore control in a bottom-right portal so the user can
+return macOS to its normal state.
 
 Release runs:
 

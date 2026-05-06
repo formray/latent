@@ -28,6 +28,8 @@ launch).
   processes running.
 - Optional local macOS camera helper can expose daemon status plus one-click
   release/restore actions to the setup wizard during hardware QA.
+- When macOS camera services are left disabled/suspended, a compact restore
+  control remains available outside the setup wizard.
 - Failed WebUSB connect attempts now clean up partially opened transports or raw
   USB devices.
 - Camera slot reads now emit partial results and slot-level failures, with a

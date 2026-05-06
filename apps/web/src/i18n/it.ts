@@ -176,6 +176,7 @@ export const it: Record<MessageKey, string> = {
   "camera.macos.helper.refresh": "Aggiorna",
   "camera.macos.helper.release": "Sblocca",
   "camera.macos.helper.restore": "Ripristina",
+  "camera.macos.helper.paused": "Servizi fotocamera macOS sospesi",
   "camera.macos.done.title": "Configurazione macOS confermata",
   "camera.macos.reset": "Reimposta stato configurazione macOS",
   "camera.macos.close": "Chiudi",

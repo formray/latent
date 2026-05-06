@@ -165,6 +165,7 @@ export const en = {
   "camera.macos.helper.refresh": "Refresh",
   "camera.macos.helper.release": "Release",
   "camera.macos.helper.restore": "Restore",
+  "camera.macos.helper.paused": "macOS camera services paused",
   "camera.macos.done.title": "macOS setup confirmed",
   "camera.macos.reset": "Reset macOS setup status",
   "camera.macos.close": "Close",

@@ -47,6 +47,8 @@ device after the setup flow.
 - Added an optional localhost macOS camera helper for hardware QA. When started
   with `npm run macos-camera-helper`, the setup wizard can read daemon status
   and run release/restore actions from the web UI.
+- Moved the post-release restore affordance into a compact portal so users can
+  close the setup panel without losing the ability to restore macOS services.
 - Updated the app-side macOS wizard and copy to cover macOS services and stale
   browser sessions instead of blaming only Image Capture.
 - Updated the connection manager so macOS setup retries force a picker reopen

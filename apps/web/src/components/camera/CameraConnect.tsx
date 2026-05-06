@@ -7,6 +7,7 @@ import { DegradedBanner } from "./DegradedBanner";
 import { ErrorBanner } from "./ErrorBanner";
 import { MacosBetaWarning } from "./MacosBetaWarning";
 import { MacosSetupWizard } from "./MacosSetupWizard";
+import { MacosServicesControl } from "./MacosServicesControl";
 
 export function CameraConnect(): JSX.Element {
   const state = useCameraStore((s) => s.state);
@@ -42,6 +43,7 @@ export function CameraConnect(): JSX.Element {
           onClose={closeMacosWizard}
         />
       ) : null}
+      {!macosWizardOpen ? <MacosServicesControl variant="compact" /> : null}
     </>
   );
 

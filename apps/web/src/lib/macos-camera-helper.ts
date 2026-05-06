@@ -30,6 +30,12 @@ export function canUseMacosCameraHelper(): boolean {
   );
 }
 
+export function macosCameraHelperNeedsRestore(status: MacosCameraHelperStatus): boolean {
+  return Object.values(status.services).some(
+    (service) => service.disabled || service.suspendedPids.length > 0,
+  );
+}
+
 export async function getMacosCameraHelperStatus(
   signal?: AbortSignal,
 ): Promise<MacosCameraHelperStatus> {
