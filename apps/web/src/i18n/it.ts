@@ -164,11 +164,12 @@ export const it: Record<MessageKey, string> = {
     "macOS può montare automaticamente le fotocamere per Acquisizione Immagine o Foto, e una sessione browser bloccata può tenere aperto l'accesso USB. Parti dal comando temporaneo; la correzione persistente è avanzata.",
   "camera.macos.beta.ack": "Ho capito",
   "camera.macos.setup.title": "Libera la fotocamera da macOS",
-  "camera.macos.basic.body": "Esegui questo comando temporaneo, poi conferma.",
+  "camera.macos.basic.body":
+    "Esegui questo comando temporaneo, spegni e riaccendi la fotocamera, poi conferma.",
   "camera.macos.ran": "L'ho eseguito",
   "camera.macos.showAdvanced": "Mostra opzione avanzata",
   "camera.macos.advanced.title":
-    "Avanzato — disabilita Acquisizione Immagine finché non la riattivi",
+    "Avanzato — disabilita e sospende i servizi fotocamera di macOS",
   "camera.macos.advanced.enable": "Comando per riattivare:",
   "camera.macos.done.title": "Configurazione macOS confermata",
   "camera.macos.reset": "Reimposta stato configurazione macOS",

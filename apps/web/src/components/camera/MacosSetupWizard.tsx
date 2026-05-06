@@ -13,9 +13,9 @@ interface MacosSetupWizardProps {
 
 const BASIC_COMMAND = "killall ptpcamerad icdd";
 const ADVANCED_COMMAND =
-  "launchctl disable gui/$(id -u)/com.apple.ptpcamerad && launchctl disable gui/$(id -u)/com.apple.icdd && killall ptpcamerad icdd";
+  "launchctl disable gui/$(id -u)/com.apple.ptpcamerad && launchctl disable gui/$(id -u)/com.apple.icdd && killall -STOP ptpcamerad icdd";
 const ENABLE_COMMAND =
-  "launchctl enable gui/$(id -u)/com.apple.ptpcamerad && launchctl enable gui/$(id -u)/com.apple.icdd";
+  "killall -CONT ptpcamerad icdd; launchctl enable gui/$(id -u)/com.apple.ptpcamerad && launchctl enable gui/$(id -u)/com.apple.icdd";
 
 export function MacosSetupWizard({
   acknowledged,

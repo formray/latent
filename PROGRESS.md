@@ -40,6 +40,10 @@ device after the setup flow.
 - Confirmed the effective release path on X-S20 FW 3.30: handle both
   `ptpcamerad` and `icdd`, reopen the WebUSB picker, and use a clean Chrome
   profile when the normal profile holds stale WebUSB state.
+- Reproduced the claim bug after re-enabling `ptpcamerad` and `icdd`.
+  `launchctl disable` marked the services disabled but left live processes
+  running; suspending the live daemons plus a full camera power-cycle/battery
+  reseat cleared the stale PTP session.
 - Updated the app-side macOS wizard and copy to cover macOS services and stale
   browser sessions instead of blaming only Image Capture.
 - Updated the connection manager so macOS setup retries force a picker reopen

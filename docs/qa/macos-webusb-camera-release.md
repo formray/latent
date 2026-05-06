@@ -37,6 +37,12 @@ What happened:
 9. The app now emits partial preset-read results, records per-slot failures,
    and times out stuck slot reads instead of leaving the UI indefinitely in the
    scanning state.
+10. After intentionally re-enabling `ptpcamerad` and `icdd`, the claim bug
+    reproduced. `launchctl disable ... && killall ...` left the jobs disabled
+    but still running, so the reliable dev workaround was to suspend the live
+    daemon PIDs and fully power-cycle the camera.
+11. In the observed case, unplugging USB was not enough; removing and
+    reinserting the camera battery cleared the camera-side stale PTP session.
 
 Outcome:
 
@@ -89,7 +95,9 @@ Fixed in the app:
   only Image Capture;
 - the basic setup command shown by Latent is `killall ptpcamerad icdd`;
 - the advanced setup command covers both `com.apple.ptpcamerad` and
-  `com.apple.icdd`;
+  `com.apple.icdd`, and suspends live daemon processes with `killall -STOP`;
+- the setup copy tells the user to power-cycle the camera after running the
+  release command;
 - after a macOS setup attempt, the connection manager requests the browser
   picker again by setting `autoSelectPaired: false`;
 - failed WebUSB connection attempts clean up partially opened transports and
@@ -101,7 +109,7 @@ Implementation map:
 
 | Area | Files | Behavior |
 | --- | --- | --- |
-| macOS recovery UI | `apps/web/src/components/camera/CameraConnect.tsx`, `apps/web/src/components/camera/MacosSetupWizard.tsx` | Setup is reachable from the collision state and shows commands for both `ptpcamerad` and `icdd`. |
+| macOS recovery UI | `apps/web/src/components/camera/CameraConnect.tsx`, `apps/web/src/components/camera/MacosSetupWizard.tsx` | Setup is reachable from the collision state and shows commands for both `ptpcamerad` and `icdd`; advanced mode suspends live daemon processes. |
 | macOS recovery copy | `apps/web/src/i18n/en.ts`, `apps/web/src/i18n/it.ts` | Copy now says macOS or another browser session may own the camera, avoiding a false single-cause Image Capture diagnosis. |
 | Picker retry | `packages/camera-connection/src/manager.ts` | `MACOS_SETUP_ATTEMPTED` reconnects with `autoSelectPaired: false`, forcing the browser picker and avoiding stale paired-device reuse. |
 | Failed connect cleanup | `packages/camera-connection/src/drivers/webusb.ts` | Failed connect attempts close partially opened PTP transports or raw USB devices. |
@@ -157,8 +165,10 @@ killall ptpcamerad icdd
 Then:
 
 1. Unplug and replug the camera.
-2. Keep the camera awake and in USB/PTP mode.
-3. Reopen the WebUSB picker in Latent and select the camera again.
+2. Power-cycle the camera. If the claim remains stuck, remove and reinsert the
+   battery to clear the camera-side PTP session.
+3. Keep the camera awake and in USB/PTP mode.
+4. Reopen the WebUSB picker in Latent and select the camera again.
 
 The app should force the picker after the macOS setup flow; reusing a stale
 paired device can reproduce the same claim error.
@@ -195,11 +205,15 @@ macOS auto-claiming services until they are re-enabled:
 ```bash
 launchctl disable gui/$(id -u)/com.apple.ptpcamerad
 launchctl disable gui/$(id -u)/com.apple.icdd
-killall ptpcamerad icdd
+killall -STOP ptpcamerad icdd
 ```
 
-If the services are already running and immediately restart or keep the camera
-busy, stop the current processes for the test session:
+If the services are already running, `launchctl disable` can mark them disabled
+while the current processes remain alive. `killall -STOP` freezes those live
+processes so they cannot claim the next camera attach.
+
+If `killall -STOP` is unavailable or you need to target exact PIDs, stop the
+current processes for the test session:
 
 ```bash
 ps -axo pid,comm,args | rg "ptpcamerad|icdd"
@@ -208,6 +222,14 @@ kill -STOP <icdd-pid>
 ```
 
 Record the stopped PIDs. Do not leave them suspended after testing.
+
+After suspending the daemons, physically reset the camera connection:
+
+1. Unplug USB.
+2. Turn the camera off.
+3. If the browser still reports a claim collision after reconnect, remove and
+   reinsert the battery.
+4. Turn the camera on, keep it awake, and reopen the WebUSB picker.
 
 Notes:
 
@@ -224,11 +246,12 @@ Notes:
 When hardware testing is finished, re-enable the services:
 
 ```bash
+killall -CONT ptpcamerad icdd
 launchctl enable gui/$(id -u)/com.apple.ptpcamerad
 launchctl enable gui/$(id -u)/com.apple.icdd
 ```
 
-If you used `kill -STOP`, resume the same PIDs:
+If you used `kill -STOP` on exact PIDs, resume the same PIDs:
 
 ```bash
 kill -CONT <ptpcamerad-pid>
@@ -244,6 +267,8 @@ After applying the release procedure:
 
 - reopen the WebUSB picker and select the Fujifilm camera;
 - confirm Latent shows the connected badge with model and firmware;
+- confirm a full camera power-cycle or battery reseat clears a stale PTP
+  session when USB replug alone does not;
 - confirm `Slots read` increments, or a final slot-level failure is shown;
 - confirm a failed read does not stay forever on "Reading custom slots from the
   camera";
@@ -264,6 +289,9 @@ Latent should support this runbook with product behavior:
 
 - the macOS setup wizard uses `killall ptpcamerad icdd`, not only
   `ptpcamerad`;
+- advanced setup uses `killall -STOP ptpcamerad icdd` because `launchctl
+  disable` can leave existing daemon processes running;
+- setup copy asks for a camera power-cycle after the release command;
 - after setup confirmation, the connection manager reopens the WebUSB picker
   instead of silently reusing a stale paired device;
 - failed WebUSB connection attempts close any partially opened transport or raw

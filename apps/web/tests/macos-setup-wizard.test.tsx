@@ -136,6 +136,8 @@ describe("MacosSetupWizard", () => {
     render(<CameraConnect />);
     fireEvent.click(screen.getByRole("button", { name: /show advanced option/i }));
     expect(screen.getByText(/launchctl disable/)).toBeInTheDocument();
+    expect(screen.getByText(/killall -STOP ptpcamerad icdd/)).toBeInTheDocument();
+    expect(screen.getByText(/killall -CONT ptpcamerad icdd/)).toBeInTheDocument();
     expect(screen.getAllByText(/com\.apple\.icdd/)).toHaveLength(2);
     expect(screen.getByText(/launchctl enable/)).toBeInTheDocument();
   });

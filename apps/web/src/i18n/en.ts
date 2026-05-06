@@ -154,10 +154,11 @@ export const en = {
     "macOS may auto-mount cameras for Image Capture or Photos, and stale browser sessions can keep USB access open. Start with the temporary release command; the persistent fix is advanced.",
   "camera.macos.beta.ack": "I understand",
   "camera.macos.setup.title": "Release the camera from macOS",
-  "camera.macos.basic.body": "Run this temporary command, then confirm.",
+  "camera.macos.basic.body":
+    "Run this temporary command, power-cycle the camera, then confirm.",
   "camera.macos.ran": "I've run it",
   "camera.macos.showAdvanced": "Show advanced option",
-  "camera.macos.advanced.title": "Advanced — disables Image Capture until re-enabled",
+  "camera.macos.advanced.title": "Advanced — disables and suspends macOS camera services",
   "camera.macos.advanced.enable": "Re-enable command:",
   "camera.macos.done.title": "macOS setup confirmed",
   "camera.macos.reset": "Reset macOS setup status",

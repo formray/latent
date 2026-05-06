@@ -44,8 +44,8 @@ Run every item against each supported physical setup before release.
 
 - [ ] 12. With `ptpcamerad` able to claim the camera, connect and confirm the first claim collision shows the macOS beta warning.
 - [ ] 13. Acknowledge the beta warning, retry the collision, and confirm the beta warning is not shown again in the same browser profile.
-- [ ] 14. Run the safer-first `killall ptpcamerad icdd` command from the wizard, reconnect, and confirm only the setup-acknowledged flag is stored.
-- [ ] 15. Use the advanced persistent command for both `com.apple.ptpcamerad` and `com.apple.icdd`, reconnect successfully, and confirm both setup-acknowledged and persistent-disable flags are stored.
+- [ ] 14. Run the safer-first `killall ptpcamerad icdd` command from the wizard, power-cycle the camera, reconnect, and confirm only the setup-acknowledged flag is stored.
+- [ ] 15. Use the advanced persistent command for both `com.apple.ptpcamerad` and `com.apple.icdd`, confirm it suspends live daemon processes, power-cycle or battery-reset the camera, reconnect successfully, and confirm both setup-acknowledged and persistent-disable flags are stored.
 - [ ] 16. Re-enable `ptpcamerad` and `icdd`, reproduce a claim collision, and confirm the stale persistent flag is cleared and the UI explains that macOS or another browser session may have re-enabled the claim path.
 
 ### Edge Environment

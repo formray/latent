@@ -23,6 +23,9 @@ launch).
   and stale browser sessions instead of only Image Capture.
 - macOS setup retry now reopens the WebUSB picker instead of silently reusing a
   stale paired device.
+- macOS setup copy now includes a camera power-cycle step, and advanced setup
+  suspends live camera daemons because `launchctl disable` can leave existing
+  processes running.
 - Failed WebUSB connect attempts now clean up partially opened transports or raw
   USB devices.
 - Camera slot reads now emit partial results and slot-level failures, with a
