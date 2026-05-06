@@ -33,3 +33,13 @@ authoritative). Phase plans are in [`docs/plans/`](./docs/plans/).
   custom observability, or future server-side services.
 - Decide whether Phase 5 AI agent remains in V1 scope or moves behind the
   post-alpha launch line.
+
+## Known Hardware Follow-Ups
+
+- macOS release can be automated locally for `ptpcamerad`/`icdd`, but a stale
+  camera-side PTP session may still require full body power-cycle or battery
+  reseat. A future native transport/helper should investigate whether a lower
+  level USB reset can replace the physical battery step.
+- X-T20 currently reaches the connected/no-readable-slots state; investigate
+  whether legacy custom settings expose different PTP operations, slot counts,
+  or property mappings before widening model support.

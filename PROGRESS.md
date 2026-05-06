@@ -44,6 +44,9 @@ device after the setup flow.
   `launchctl disable` marked the services disabled but left live processes
   running; suspending the live daemons plus a full camera power-cycle/battery
   reseat cleared the stale PTP session.
+- Added an optional localhost macOS camera helper for hardware QA. When started
+  with `npm run macos-camera-helper`, the setup wizard can read daemon status
+  and run release/restore actions from the web UI.
 - Updated the app-side macOS wizard and copy to cover macOS services and stale
   browser sessions instead of blaming only Image Capture.
 - Updated the connection manager so macOS setup retries force a picker reopen

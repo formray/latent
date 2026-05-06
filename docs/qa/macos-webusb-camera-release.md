@@ -104,6 +104,8 @@ Fixed in the app:
   raw USB devices;
 - preset reads report partial success and slot-level failures;
 - stuck preset reads are guarded by a per-slot timeout.
+- when the optional local helper is running, the setup wizard can read daemon
+  status and run release/restore actions through `http://127.0.0.1:5174`.
 
 Implementation map:
 
@@ -114,12 +116,13 @@ Implementation map:
 | Picker retry | `packages/camera-connection/src/manager.ts` | `MACOS_SETUP_ATTEMPTED` reconnects with `autoSelectPaired: false`, forcing the browser picker and avoiding stale paired-device reuse. |
 | Failed connect cleanup | `packages/camera-connection/src/drivers/webusb.ts` | Failed connect attempts close partially opened PTP transports or raw USB devices. |
 | Preset read guardrail | `packages/camera-connection/src/manager.ts`, `apps/web/src/stores/camera.ts`, `apps/web/src/components/camera/CameraRecipesPanel.tsx` | Slot reads emit snapshots, record per-slot failures, and time out stuck reads instead of leaving the UI in permanent scanning. |
+| Local macOS helper | `scripts/macos-camera-helper.ts`, `apps/web/src/lib/macos-camera-helper.ts` | Optional localhost helper reads daemon status and runs release/restore actions from buttons in the setup wizard. |
 | Regression tests | `packages/camera-connection/tests/manager.test.ts`, `packages/camera-connection/tests/webusb-driver.test.ts`, `apps/web/tests/CameraConnect.test.tsx`, `apps/web/tests/macos-setup-wizard.test.tsx`, `apps/web/tests/CameraRecipesPanel.test.tsx` | Tests cover picker forcing, cleanup, command text, setup state, partial preset failures, and stuck-slot timeout. |
 
 Not fixable directly from the web app:
 
 - a browser page cannot run `killall`, `launchctl`, `kill -STOP`, or reopen
-  macOS privacy/system dialogs;
+  macOS privacy/system dialogs without the optional local helper;
 - the browser must still show the WebUSB picker for permission;
 - macOS services can restart or reclaim the camera outside the app's control;
 - a stale browser profile may need a clean-profile launch or full browser
@@ -231,6 +234,38 @@ After suspending the daemons, physically reset the camera connection:
    reinsert the battery.
 4. Turn the camera on, keep it awake, and reopen the WebUSB picker.
 
+## Optional Local Helper
+
+For hardware QA, start the local helper before opening Latent:
+
+```bash
+npm run macos-camera-helper
+```
+
+The helper listens only on `127.0.0.1:5174` and accepts browser requests only
+from `localhost` or `127.0.0.1` origins. When it is running, the macOS setup
+wizard shows daemon status plus one-click Release and Restore buttons.
+
+Release runs:
+
+```bash
+launchctl disable gui/$(id -u)/com.apple.ptpcamerad
+launchctl disable gui/$(id -u)/com.apple.icdd
+killall -STOP ptpcamerad icdd
+```
+
+Restore runs:
+
+```bash
+killall -CONT ptpcamerad icdd
+launchctl enable gui/$(id -u)/com.apple.ptpcamerad
+launchctl enable gui/$(id -u)/com.apple.icdd
+```
+
+The helper cannot power-cycle the camera. If the camera-side PTP session is
+stale, still unplug USB and power-cycle the body, including battery reseat when
+needed.
+
 Notes:
 
 - `launchctl bootout` may be denied or ineffective for protected Apple agents
@@ -278,6 +313,7 @@ After applying the release procedure:
 ```bash
 npm --workspace @latent/camera-connection test -- manager webusb-driver
 npm --workspace @latent/web test -- CameraConnect macos-setup-wizard CameraRecipesPanel
+npm test -- scripts/macos-camera-helper.test.ts
 npm run typecheck
 npm run lint
 npm run lockstep-check

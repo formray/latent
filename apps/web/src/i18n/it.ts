@@ -171,6 +171,11 @@ export const it: Record<MessageKey, string> = {
   "camera.macos.advanced.title":
     "Avanzato — disabilita e sospende i servizi fotocamera di macOS",
   "camera.macos.advanced.enable": "Comando per riattivare:",
+  "camera.macos.helper.title": "Helper locale",
+  "camera.macos.helper.offline": "Avvia npm run macos-camera-helper per lo sblocco one-click.",
+  "camera.macos.helper.refresh": "Aggiorna",
+  "camera.macos.helper.release": "Sblocca",
+  "camera.macos.helper.restore": "Ripristina",
   "camera.macos.done.title": "Configurazione macOS confermata",
   "camera.macos.reset": "Reimposta stato configurazione macOS",
   "camera.macos.close": "Chiudi",

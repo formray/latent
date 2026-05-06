@@ -26,6 +26,8 @@ launch).
 - macOS setup copy now includes a camera power-cycle step, and advanced setup
   suspends live camera daemons because `launchctl disable` can leave existing
   processes running.
+- Optional local macOS camera helper can expose daemon status plus one-click
+  release/restore actions to the setup wizard during hardware QA.
 - Failed WebUSB connect attempts now clean up partially opened transports or raw
   USB devices.
 - Camera slot reads now emit partial results and slot-level failures, with a
