@@ -174,6 +174,41 @@ describe("WebUsbCameraDriver connect", () => {
     });
   });
 
+  it("closes the USB device when claim recovery still fails", async () => {
+    const device = new FakeUSBDevice();
+    device.claimInterface
+      .mockRejectedValueOnce(new DOMException("busy", "NetworkError"))
+      .mockRejectedValueOnce(new DOMException("busy", "NetworkError"));
+    const usb = new FakeUsb([device]);
+
+    await expect(driverWith(usb).connect()).rejects.toMatchObject({
+      stage: "claim",
+    });
+    expect(device.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes the transport when device info read fails", async () => {
+    const fakeSession = session({
+      getDeviceInfo: vi.fn(async () => {
+        throw new Error("device info failed");
+      }),
+    });
+    const transport = {
+      send: vi.fn(async () => undefined),
+      receive: vi.fn(async () => new Uint8Array(0)),
+      close: vi.fn(async () => undefined),
+    };
+    const driver = new WebUsbCameraDriver({
+      usb: new FakeUsb() as unknown as USB,
+      sessionFactory: () => fakeSession,
+      transportFactory: () => transport,
+    });
+
+    await expect(driver.connect()).rejects.toThrow("device info failed");
+    expect(fakeSession.close).toHaveBeenCalledTimes(1);
+    expect(transport.close).toHaveBeenCalledTimes(1);
+  });
+
   it("WebUsbSessionPort reports isOpen from FujiCameraSession state", () => {
     expect(new WebUsbSessionPort(session()).isOpen()).toBe(true);
     expect(new WebUsbSessionPort(session({ state: "closed" })).isOpen()).toBe(false);

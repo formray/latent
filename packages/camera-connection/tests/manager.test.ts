@@ -29,6 +29,10 @@ function result(port = new FakeSessionPort()): DriverConnectResult {
   };
 }
 
+async function flushAsyncWork(turns = 40): Promise<void> {
+  for (let i = 0; i < turns; i++) await Promise.resolve();
+}
+
 const err = new LatentError("UsbDisconnect", "gone", undefined, {
   stage: "transfer-in",
 });
@@ -49,6 +53,32 @@ describe("ConnectionManager public API", () => {
     expect(driver.connectCalls[0]).toMatchObject({ autoSelectPaired: true });
   });
 
+  it("macOS setup retry forces the browser picker instead of reusing paired devices", async () => {
+    const driver = new FakeCameraDriver();
+    driver.connect = vi.fn(async (opts = {}) => {
+      driver.connectCalls.push(opts);
+      if (driver.connectCalls.length === 1) {
+        throw new LatentError("UsbDisconnect", "busy", undefined, {
+          stage: "claim",
+          domException: "NetworkError",
+          platform: "mac",
+        });
+      }
+      return result();
+    });
+    const manager = new ConnectionManager(driver);
+
+    manager.dispatch({ type: "CONNECT_REQUESTED" });
+    await Promise.resolve();
+    expect(manager.getSnapshot()).toMatchObject({
+      kind: "error",
+      reason: "macos-claim-collision",
+    });
+
+    manager.dispatch({ type: "MACOS_SETUP_ATTEMPTED", advanced: false });
+    expect(driver.connectCalls.at(-1)).toMatchObject({ autoSelectPaired: false });
+  });
+
   it("connect success commits connected", async () => {
     const manager = new ConnectionManager(new FakeCameraDriver());
     manager.dispatch({ type: "CONNECT_REQUESTED" });
@@ -62,14 +92,15 @@ describe("ConnectionManager public API", () => {
     const handler = vi.fn();
     manager.onNotification("presets-read", handler);
     manager.dispatch({ type: "CONNECT_REQUESTED" });
-    for (let i = 0; i < 10; i++) await Promise.resolve();
-    expect(driver.port.getPreset).toHaveBeenCalledWith(1);
-    expect(driver.port.getPreset).toHaveBeenCalledWith(7);
+    await flushAsyncWork();
+    expect(driver.port.getPreset).toHaveBeenCalledWith(1, expect.any(AbortSignal));
+    expect(driver.port.getPreset).toHaveBeenCalledWith(7, expect.any(AbortSignal));
     expect(handler).toHaveBeenCalledWith({
       presets: expect.arrayContaining([
         expect.objectContaining({ slot: 1 }),
         expect.objectContaining({ slot: 7 }),
       ]),
+      failures: [],
     });
   });
 
@@ -85,7 +116,7 @@ describe("ConnectionManager public API", () => {
     const handler = vi.fn();
     manager.onNotification("presets-read", handler);
     manager.dispatch({ type: "CONNECT_REQUESTED" });
-    for (let i = 0; i < 10; i++) await Promise.resolve();
+    await flushAsyncWork();
     expect(handler).toHaveBeenCalledWith({
       presets: [
         expect.objectContaining({ slot: 1 }),
@@ -93,7 +124,72 @@ describe("ConnectionManager public API", () => {
         expect.objectContaining({ slot: 3 }),
         expect.objectContaining({ slot: 4 }),
       ],
+      failures: [],
     });
+  });
+
+  it("preset read continues after a non-optional slot failure and reports it", async () => {
+    const driver = new FakeCameraDriver();
+    driver.port.getPreset.mockImplementation(async (slot: number) => {
+      if (slot === 2) {
+        throw new LatentError("UsbDisconnect", "C2 transfer failed", undefined, {
+          stage: "transfer-in",
+        });
+      }
+      return { slot, name: `C${slot}`, properties: {} };
+    });
+    const manager = new ConnectionManager(driver);
+    const handler = vi.fn();
+    manager.onNotification("presets-read", handler);
+    manager.dispatch({ type: "CONNECT_REQUESTED" });
+    await flushAsyncWork();
+    expect(driver.port.getPreset).toHaveBeenCalledWith(3, expect.any(AbortSignal));
+    expect(handler).toHaveBeenCalledWith({
+      presets: expect.arrayContaining([
+        expect.objectContaining({ slot: 1 }),
+        expect.objectContaining({ slot: 3 }),
+        expect.objectContaining({ slot: 7 }),
+      ]),
+      failures: [
+        {
+          slot: 2,
+          message: "C2 transfer failed",
+          category: "UsbDisconnect",
+          stage: "transfer-in",
+        },
+      ],
+    });
+  });
+
+  it("preset read times out a stuck slot and reports later slots", async () => {
+    vi.useFakeTimers();
+    try {
+      const driver = new FakeCameraDriver();
+      driver.port.getPreset.mockImplementation((slot: number) => {
+        if (slot === 1) return new Promise(() => undefined);
+        return Promise.resolve({ slot, name: `C${slot}`, properties: {} });
+      });
+      const manager = new ConnectionManager(driver, { presetReadTimeoutMs: 5 });
+      const handler = vi.fn();
+      manager.onNotification("presets-read", handler);
+      manager.dispatch({ type: "CONNECT_REQUESTED" });
+      await flushAsyncWork();
+      await vi.advanceTimersByTimeAsync(5);
+      await flushAsyncWork();
+      expect(driver.port.getPreset).toHaveBeenCalledWith(2, expect.any(AbortSignal));
+      expect(handler).toHaveBeenCalledWith({
+        presets: expect.arrayContaining([expect.objectContaining({ slot: 2 })]),
+        failures: [
+          expect.objectContaining({
+            slot: 1,
+            category: "PtpTimeout",
+            stage: "transfer-in",
+          }),
+        ],
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("raw picker cancellation exits connecting as permission-denied", async () => {

@@ -26,6 +26,7 @@ export function CameraRecipesPanel(): JSX.Element | null {
   const t = useT();
   const state = useCameraStore((s) => s.state);
   const presets = useCameraStore((s) => s.presets);
+  const presetReadStatus = useCameraStore((s) => s.presetReadStatus);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const visible = isCameraAlive(state.kind) || presets.length > 0;
   const cameraLabel =
@@ -72,6 +73,13 @@ export function CameraRecipesPanel(): JSX.Element | null {
                 <div>{t("camera.recipes.slotsRead", { n: presets.length })}</div>
                 <div className="text-emerald-400 sm:mt-1">{t("camera.recipes.readOnly")}</div>
               </div>
+              {presetReadStatus.kind === "success" && presetReadStatus.failures.length > 0 ? (
+                <p className="max-w-sm text-xs text-amber-300">
+                  {t("camera.recipes.readPartial", {
+                    slots: presetReadStatus.failures.map((failure) => `C${failure.slot}`).join(", "),
+                  })}
+                </p>
+              ) : null}
               <button
                 type="button"
                 disabled={presets.length === 0}
@@ -92,10 +100,31 @@ export function CameraRecipesPanel(): JSX.Element | null {
 
           {presets.length === 0 ? (
             <div className="px-6 pb-6">
-              <div className="h-1 overflow-hidden rounded-full bg-zinc-900">
-                <div className="h-full w-1/3 animate-pulse bg-emerald-400" />
-              </div>
-              <p className="mt-3 text-sm text-zinc-500">{t("camera.recipes.scanning")}</p>
+              {presetReadStatus.kind === "success" ? (
+                <div className="rounded-sm border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+                  <p className="font-medium">
+                    {presetReadStatus.failures.length > 0
+                      ? t("camera.recipes.readFailed")
+                      : t("camera.recipes.noneRead")}
+                  </p>
+                  {presetReadStatus.failures.length > 0 ? (
+                    <ul className="mt-2 space-y-1 text-xs text-amber-100/80">
+                      {presetReadStatus.failures.map((failure) => (
+                        <li key={failure.slot}>
+                          C{failure.slot}: {failure.message}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              ) : (
+                <>
+                  <div className="h-1 overflow-hidden rounded-full bg-zinc-900">
+                    <div className="h-full w-1/3 animate-pulse bg-emerald-400" />
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-500">{t("camera.recipes.scanning")}</p>
+                </>
+              )}
             </div>
           ) : (
             <ol className="grid grid-cols-1 gap-px bg-zinc-900 md:grid-cols-2 xl:grid-cols-4">

@@ -3,6 +3,32 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { App } from "../src/App";
 import { useRecipesStore } from "../src/stores/recipes";
 import { resetCameraManagerForTests, useCameraStore } from "../src/stores/camera";
+import { encodeRecipeShare } from "../src/lib/recipe-share";
+import type { RecipeType } from "@latent/recipe-schema/browser";
+
+const sharedRecipe: RecipeType = {
+  id: "88888888-8888-4888-8888-888888888888",
+  schemaVersion: 1,
+  name: "Shared Link Chrome",
+  description: "Imported from a self-contained URL.",
+  author: "Latent",
+  tags: ["shared-link"],
+  createdAt: "2026-05-06T08:00:00.000Z",
+  capabilitySetId: "x-s20-fw1.10",
+  cameraModel: "X-S20",
+  filmSimulation: "ClassicChrome",
+  dynamicRange: "DR400",
+  whiteBalance: { mode: "Daylight", shiftR: 1, shiftB: -1 },
+  highlightTone: 0,
+  shadowTone: 1,
+  color: 2,
+  sharpness: 0,
+  noiseReduction: -4,
+  clarity: 0,
+  grainEffect: { strength: "Weak", size: "Small" },
+  colorChromeEffect: "Weak",
+  colorChromeEffectBlue: "Weak",
+};
 
 describe("<App />", () => {
   beforeEach(() => {
@@ -54,6 +80,15 @@ describe("<App />", () => {
 
     expect(container.firstElementChild).toHaveAttribute("data-theme", "light");
     expect(screen.getByRole("heading", { name: "Build a recipe" })).toBeInTheDocument();
+  });
+
+  it("imports and selects a recipe shared in the URL", async () => {
+    window.history.replaceState(null, "", `/?share=${encodeRecipeShare(sharedRecipe)}#library`);
+
+    render(<App />);
+
+    expect((await screen.findAllByText("Shared Link Chrome")).length).toBeGreaterThan(0);
+    expect(useRecipesStore.getState().selectedRecipeId).toBe(sharedRecipe.id);
   });
 
   it("switches between first-class workspaces from the hash", () => {

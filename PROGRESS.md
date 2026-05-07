@@ -1,9 +1,108 @@
 # Progress
 
-> **Note:** This project was named *FilmFork* through 2026-05-04. References
+> **Note:** This project was named _FilmFork_ through 2026-05-04. References
 > to "FilmFork" or `@filmfork/*` in entries below describe the project's
 > prior name; the current name is **Latent** and packages are `@latent/*`.
 > See `CHANGELOG.md` for the rename entry.
+
+## 2026-05-06 — Phase 6 polish pass
+
+Phase 6 moved forward from general polish into concrete recipe portability
+and genealogy features.
+
+- Added self-contained recipe URL share via `?share=...#library`. Opening a
+  shared URL imports and selects the shared recipe locally.
+- URL share excludes structured `reasoning` by default, preserving the V1
+  privacy rule that reasoning stays out of share links unless explicitly
+  exported elsewhere.
+- Added recipe genealogy display in the detail metadata. Creator duplicates
+  already preserve `parentRecipeId`; the UI now shows the parent recipe name
+  when it is available locally, or a shortened parent id when it is not.
+- Added targeted tests for share encode/decode, URL import, share-link copy,
+  and parent metadata display.
+- Added a Phase 6 polish plan tracking remaining WCAG 2.2 AA and production
+  CSP validation.
+
+Remaining Phase 6 work:
+
+- Run the WCAG 2.2 AA audit on a production-like build.
+- Validate final CSP headers once Phase 7 chooses the portal hosting target.
+- Smoke test URL share on the deployed portal.
+
+## 2026-05-06 — X-S20 macOS WebUSB release fix
+
+Hardware validation found a macOS/WebUSB claim-collision path where the camera
+appeared in the browser picker but Latent could not claim the PTP interface.
+The original recovery path was too narrow: it implied Image Capture alone,
+recommended only `killall ptpcamerad`, and could reuse a stale paired WebUSB
+device after the setup flow.
+
+- Confirmed the effective release path on X-S20 FW 3.30: handle both
+  `ptpcamerad` and `icdd`, reopen the WebUSB picker, and use a clean Chrome
+  profile when the normal profile holds stale WebUSB state.
+- Reproduced the claim bug after re-enabling `ptpcamerad` and `icdd`.
+  `launchctl disable` marked the services disabled but left live processes
+  running; suspending the live daemons plus a full camera power-cycle/battery
+  reseat cleared the stale PTP session.
+- Added an optional localhost macOS camera helper for hardware QA. When started
+  with `npm run macos-camera-helper`, the setup wizard can read daemon status
+  and run release/restore actions from the web UI.
+- Moved the post-release restore affordance into a compact portal so users can
+  close the setup panel without losing the ability to restore macOS services.
+- Updated the app-side macOS wizard and copy to cover macOS services and stale
+  browser sessions instead of blaming only Image Capture.
+- Updated the connection manager so macOS setup retries force a picker reopen
+  with `autoSelectPaired: false`.
+- Hardened failed WebUSB connection cleanup so partially opened transports/raw
+  devices are closed.
+- Hardened preset reads so the UI receives partial results, slot-level
+  failures, and a timeout for stuck reads instead of staying indefinitely on
+  "Reading custom slots from the camera."
+- Documented the incident, commands, restore path, app boundary, and test
+  checklist in
+  [`docs/qa/macos-webusb-camera-release.md`](./docs/qa/macos-webusb-camera-release.md).
+- Follow-up: an X-T20 can now reach the connected/no-slots state, which should
+  be investigated as a legacy model preset-read capability issue rather than a
+  macOS release failure.
+
+## 2026-05-05 — Latent 0.1.0 hardware-backed alpha
+
+Latent `0.1.0` was tagged after the rename, repo flattening, camera-flow
+work, RAF preview work, launch documentation, and UI polish. This makes Phase
+4 alpha-complete, advances Phase 6, and starts Phase 7 launch work.
+
+- Camera connection stability moved into `@latent/camera-connection`, with
+  explicit connection states, structured error classification, stale-session
+  cleanup, reconnect handling, and macOS PTP claim-collision guidance.
+- Recipe library expanded beyond the Phase 3 shell: import/export, delete,
+  factory default restore, camera imports, deduplication, rename persistence,
+  and local-only storage behavior are implemented and tested.
+- Recipe creator is implemented in the web app: users can start from
+  photographic intents, duplicate an existing look, edit schema-backed Fuji
+  settings, save into the local library, and export validated JSON without
+  connecting hardware.
+- Custom-slot flows are implemented for the verified field set: read camera
+  C1-C4 presets, import them as recipes/backups, write recipes to selected
+  slots, verify writes, and restore previously imported backups.
+- RAF preview workspace is implemented: local RAF files can be rendered
+  through the connected camera, with diagnostic parameter-group renders for
+  investigating camera-output mismatches.
+- Public OSS launch materials are in place: README/README.it, screenshots,
+  onboarding, use cases, hardware test plan, launch checklist, governance
+  files, GitHub templates, funding metadata, and FilmKit relationship docs.
+- Hands-on hardware validation has focused on X-S20 and X-M5. Other Fujifilm
+  bodies remain community-report territory until the hardware checklist is
+  run against them.
+
+Remaining V1 work after `0.1.0`:
+
+- Phase 5: replace the `@latent/ai-agent` stub with the real AI helper, or
+  explicitly defer it from the public V1 launch.
+- Phase 6: finish WCAG 2.2 AA audit and production CSP validation.
+- Phase 7: finish ADRs, trademark review, final seed list, release checklist,
+  and deploy path.
+- Hardware QA: collect repeatable reports beyond X-S20/X-M5 and keep the
+  write whitelist narrow until fields are proven on real bodies.
 
 ## 2026-05-04 — Rename to Latent + repo restructure
 

@@ -5,6 +5,7 @@ import type {
   ConnectionState,
   ErrorReason,
   ManagerNotifications,
+  PresetReadFailure,
   RawPreset,
 } from "@latent/camera-connection";
 import { LatentError, patchProfile } from "@latent/ptp-fuji";
@@ -20,6 +21,7 @@ const MACOS_PERSISTENT_DISABLE_KEY = "latent:macos-persistent-disable-v1";
 export interface CameraStore {
   state: ConnectionState;
   presets: RawPreset[];
+  presetReadStatus: PresetReadStatus;
   writeStatus: CameraWriteStatus;
   rawPreviewStatus: RawPreviewStatus;
   rawPreviewFile: File | null;
@@ -55,6 +57,11 @@ export type CameraWriteStatus =
   | { kind: "writing"; slot: number; recipeName: string }
   | { kind: "success"; slot: number; recipeName: string; propertiesWritten: number }
   | { kind: "error"; slot: number; recipeName: string; message: string };
+
+export type PresetReadStatus =
+  | { kind: "idle" }
+  | { kind: "scanning" }
+  | { kind: "success"; failures: PresetReadFailure[] };
 
 export type RawPreviewStatus =
   | { kind: "idle" }
@@ -114,6 +121,7 @@ export const useCameraStore = create<CameraStore>((set, get) => {
   return {
     state: { kind: "idle" },
     presets: [],
+    presetReadStatus: { kind: "idle" },
     writeStatus: { kind: "idle" },
     rawPreviewStatus: { kind: "idle" },
     rawPreviewFile: null,
@@ -397,7 +405,12 @@ export function wireCameraManager(nextManager: ConnectionManager): void {
 
   unwireManager.push(
     nextManager.subscribe((state) => {
-      useCameraStore.setState({ state });
+      const previous = useCameraStore.getState().state;
+      const nextPatch: Partial<CameraStore> = { state };
+      if (!isAlive(previous) && isAlive(state)) {
+        nextPatch.presetReadStatus = { kind: "scanning" };
+      }
+      useCameraStore.setState(nextPatch);
       publishCameraDiagnostics(useCameraStore.getState());
       if (state.kind === "error") {
         // Surface the underlying error so DevTools shows the real cause
@@ -410,7 +423,7 @@ export function wireCameraManager(nextManager: ConnectionManager): void {
           store.resetMacosSetupStatus();
           useCameraStore.setState({ macosWizardOpen: false, macosShowAdvanced: true });
           publishCameraDiagnostics(useCameraStore.getState());
-        } else if (!store.macosSetupAcknowledged) {
+        } else if (store.macosBetaAcknowledged && !store.macosSetupAcknowledged) {
           useCameraStore.setState({ macosWizardOpen: true });
           publishCameraDiagnostics(useCameraStore.getState());
         }
@@ -428,8 +441,11 @@ export function wireCameraManager(nextManager: ConnectionManager): void {
   );
 
   unwireManager.push(
-    nextManager.onNotification("presets-read", ({ presets }) => {
-      useCameraStore.setState({ presets });
+    nextManager.onNotification("presets-read", ({ presets, failures }) => {
+      useCameraStore.setState({
+        presets,
+        presetReadStatus: { kind: "success", failures },
+      });
       publishCameraDiagnostics(useCameraStore.getState());
     }),
   );
@@ -467,6 +483,10 @@ function writeFlag(key: string, value: boolean): void {
   } else {
     storage.removeItem(key);
   }
+}
+
+function isAlive(state: ConnectionState): boolean {
+  return state.kind === "connected" || state.kind === "degraded";
 }
 
 function safeLocalStorage(): Storage | null {

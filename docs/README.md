@@ -21,6 +21,8 @@ humans and Claude/Codex agents working in the repo.
   repository and release checklist before a public announcement
 - [`qa/hardware-test-plan.md`](./qa/hardware-test-plan.md) — manual camera
   stability checks
+- [`qa/macos-webusb-camera-release.md`](./qa/macos-webusb-camera-release.md) —
+  release runbook for macOS Image Capture/WebUSB claim collisions
 
 End-user legal pages such as privacy policy and terms can live alongside the
 marketing site when it exists; repo-critical technical docs stay here.

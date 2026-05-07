@@ -264,6 +264,16 @@ describe("<CameraConnect />", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(text);
   });
 
+  it("Open setup opens the macOS setup wizard even before beta acknowledgement", () => {
+    useCameraStore.setState({ state: errorConnectionState("macos-claim-collision") });
+    render(<CameraConnect />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open setup/i }));
+
+    expect(screen.getByRole("dialog")).toHaveTextContent(/release the camera from macOS/i);
+    expect(screen.getByText("killall ptpcamerad icdd")).toBeInTheDocument();
+  });
+
   it("cable-unplugged title is Camera unplugged", () => {
     useCameraStore.setState({ state: errorConnectionState("cable-unplugged") });
     render(<CameraConnect />);
@@ -306,6 +316,7 @@ describe("<CameraConnect />", () => {
           },
         },
       ],
+      failures: [],
     });
     expect(useCameraStore.getState().presets).toHaveLength(1);
     expect(window.__LATENT_CAMERA_STATE__?.decodedPresets).toEqual([

@@ -24,4 +24,5 @@ export {
   ConnectionManager,
   type ConnectionManagerOptions,
   type ManagerNotifications,
+  type PresetReadFailure,
 } from "./manager.js";

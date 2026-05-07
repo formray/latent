@@ -26,11 +26,11 @@ trademarks of their respective owners.
 
 ## What Latent Does Today
 
-- **Recipe library:** browse, search, import, export, delete, restore factory
-  defaults, and keep everything local in the browser.
+- **Recipe library:** browse, search, import, export, share links, delete,
+  restore factory defaults, and keep everything local in the browser.
 - **Recipe creator:** start from photographic intents, duplicate an existing
-  look, edit schema-backed Fujifilm settings, and export a validated JSON
-  recipe without connecting hardware.
+  look with parent metadata, edit schema-backed Fujifilm settings, and export a
+  validated JSON recipe without connecting hardware.
 - **Camera connection:** connect over WebUSB in Chromium browsers, recover
   from refresh/unplug/camera sleep, and surface macOS claim-collision guidance.
 - **Custom slots:** read camera-side C1-C4 recipes, import them into the
@@ -105,13 +105,31 @@ Where Latent should go next:
 nvm use                   # Node 22, pinned by the repo
 npm install
 npm run validate          # typecheck + lint + tests + license + lockstep
-cd apps/web
-npm run dev               # Vite at http://localhost:5173
+npm run dev:macos         # Web app + local macOS camera helper
 ```
 
-Open `http://localhost:5173` in Chrome, Edge, or Arc. WebUSB works only on
+Open `http://127.0.0.1:5173/` in Chrome, Edge, or Arc. WebUSB works only on
 `localhost` or HTTPS. The recipe library works without hardware; camera flows
 need a Fujifilm body set to USB/PTP mode.
+
+`npm run dev:macos` starts the two local processes needed for hardware-backed
+macOS development:
+
+- `http://127.0.0.1:5173/` - Vite web app.
+- `http://127.0.0.1:5174/` - local macOS camera helper.
+
+The helper is intentionally local. Browsers cannot run `launchctl`, suspend
+`ptpcamerad`/`icdd`, or restore macOS camera services on their own, so Latent
+uses a localhost helper to expose explicit Release and Restore actions in the
+app. Stop the stack with `Ctrl+C`; if you released macOS camera services during
+testing, use the in-app Restore control before disconnecting.
+
+For browser-only work that does not need camera service control, you can still
+run the app directly:
+
+```bash
+npm --workspace @latent/web run dev -- --host 127.0.0.1
+```
 
 ## Hardware Notes
 
@@ -129,7 +147,9 @@ Before writing to a camera:
   claim the PTP interface.
 
 Manual release checks live in
-[`docs/qa/hardware-test-plan.md`](./docs/qa/hardware-test-plan.md).
+[`docs/qa/hardware-test-plan.md`](./docs/qa/hardware-test-plan.md). macOS
+Image Capture/WebUSB release notes live in
+[`docs/qa/macos-webusb-camera-release.md`](./docs/qa/macos-webusb-camera-release.md).
 
 ## Use Cases
 

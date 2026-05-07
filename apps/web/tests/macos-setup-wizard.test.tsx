@@ -101,7 +101,7 @@ describe("MacosSetupWizard", () => {
     useCameraStore.setState({ macosBetaAcknowledged: true });
     emitState(macosError());
     render(<CameraConnect />);
-    expect(screen.getByText("killall ptpcamerad")).toBeInTheDocument();
+    expect(screen.getByText("killall ptpcamerad icdd")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /i've run it/i }));
     expect(dispatch).toHaveBeenCalledWith({
       type: "MACOS_SETUP_ATTEMPTED",
@@ -136,6 +136,9 @@ describe("MacosSetupWizard", () => {
     render(<CameraConnect />);
     fireEvent.click(screen.getByRole("button", { name: /show advanced option/i }));
     expect(screen.getByText(/launchctl disable/)).toBeInTheDocument();
+    expect(screen.getByText(/killall -STOP ptpcamerad icdd/)).toBeInTheDocument();
+    expect(screen.getByText(/killall -CONT ptpcamerad icdd/)).toBeInTheDocument();
+    expect(screen.getAllByText(/com\.apple\.icdd/)).toHaveLength(2);
     expect(screen.getByText(/launchctl enable/)).toBeInTheDocument();
   });
 

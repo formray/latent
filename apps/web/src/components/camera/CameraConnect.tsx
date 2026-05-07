@@ -7,6 +7,7 @@ import { DegradedBanner } from "./DegradedBanner";
 import { ErrorBanner } from "./ErrorBanner";
 import { MacosBetaWarning } from "./MacosBetaWarning";
 import { MacosSetupWizard } from "./MacosSetupWizard";
+import { MacosServicesControl } from "./MacosServicesControl";
 
 export function CameraConnect(): JSX.Element {
   const state = useCameraStore((s) => s.state);
@@ -27,13 +28,11 @@ export function CameraConnect(): JSX.Element {
     <>
       {state.kind === "error" &&
       state.reason === "macos-claim-collision" &&
+      !macosWizardOpen &&
       !macosBetaAcknowledged ? (
         <MacosBetaWarning onAcknowledge={acknowledgeMacosBeta} />
       ) : null}
-      {macosWizardOpen &&
-      (macosBetaAcknowledged ||
-        state.kind !== "error" ||
-        state.reason !== "macos-claim-collision") ? (
+      {macosWizardOpen ? (
         <MacosSetupWizard
           acknowledged={macosSetupAcknowledged}
           showAdvanced={macosShowAdvanced}
@@ -44,6 +43,7 @@ export function CameraConnect(): JSX.Element {
           onClose={closeMacosWizard}
         />
       ) : null}
+      {!macosWizardOpen ? <MacosServicesControl variant="compact" /> : null}
     </>
   );
 
@@ -52,43 +52,63 @@ export function CameraConnect(): JSX.Element {
   }
 
   if (state.kind === "connected") {
-    return <Stack main={(
-      <ConnectedBadge
-        cameraModel={state.cameraModel}
-        firmwareVersion={state.firmwareVersion}
-        onDisconnect={disconnect}
+    return (
+      <Stack
+        main={
+          <ConnectedBadge
+            cameraModel={state.cameraModel}
+            firmwareVersion={state.firmwareVersion}
+            onDisconnect={disconnect}
+          />
+        }
+        overlay={overlay}
       />
-    )} overlay={overlay} />;
+    );
   }
 
   if (state.kind === "degraded") {
-    return <Stack main={(
-      <div className="flex flex-col items-end gap-2">
-        <ConnectedBadge
-          cameraModel={state.cameraModel}
-          firmwareVersion={state.firmwareVersion}
-          onDisconnect={disconnect}
-        />
-        <DegradedBanner />
-      </div>
-    )} overlay={overlay} />;
+    return (
+      <Stack
+        main={
+          <div className="flex flex-col items-end gap-2">
+            <ConnectedBadge
+              cameraModel={state.cameraModel}
+              firmwareVersion={state.firmwareVersion}
+              onDisconnect={disconnect}
+            />
+            <DegradedBanner />
+          </div>
+        }
+        overlay={overlay}
+      />
+    );
   }
 
   if (state.kind === "error") {
-    return <Stack main={(
-      <ErrorBanner
-        reason={state.reason}
-        details={state.underlying.message}
-        onRetry={retry}
-        onOpenMacosSetup={openMacosWizard}
-        onConnect={connect}
+    return (
+      <Stack
+        main={
+          <ErrorBanner
+            reason={state.reason}
+            details={state.underlying.message}
+            onRetry={retry}
+            onOpenMacosSetup={openMacosWizard}
+            onConnect={connect}
+          />
+        }
+        overlay={overlay}
       />
-    )} overlay={overlay} />;
+    );
   }
 
   return <Stack main={<ConnectButton onConnect={connect} />} overlay={overlay} />;
 }
 
 function Stack({ main, overlay }: { main: JSX.Element; overlay: JSX.Element }): JSX.Element {
-  return <div className="flex flex-col items-end gap-2">{main}{overlay}</div>;
+  return (
+    <div className="flex flex-col items-end gap-2">
+      {main}
+      {overlay}
+    </div>
+  );
 }

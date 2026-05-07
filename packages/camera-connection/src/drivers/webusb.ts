@@ -236,54 +236,73 @@ export class WebUsbCameraDriver implements CameraDriver {
   async connect(opts: ConnectOptions = {}): Promise<DriverConnectResult> {
     throwIfAborted(opts.signal);
     const device = await this.selectDevice(opts);
-    throwIfAborted(opts.signal);
-    await openAndSelect(device, this.configurationValue);
-    const initialInterface = pickPtpInterface(device);
-    await claimWithReset(device, initialInterface.interfaceNumber, this.configurationValue);
-    let iface = pickPtpInterface(device);
-    let transport = this.transportFactory(device, iface.endpointIn, iface.endpointOut, {
-      interfaceNumber: iface.interfaceNumber,
-    });
-    let session = this.sessionFactory(transport);
+    let completed = false;
+    let cleanedUp = false;
+    let transport: PtpTransport | undefined;
+    let session: FujiSessionLike | undefined;
     try {
-      await openSessionWithStaging(session, opts.signal);
-    } catch (err) {
-      if (nameOf(err) === "AbortError") throw err;
-      if (!(err instanceof LatentError) || err.stage !== "open") throw err;
-      await disposeSessionTransport(session, transport);
-      iface = await recoverFromOpenSessionFailure(device, this.configurationValue);
+      throwIfAborted(opts.signal);
+      await openAndSelect(device, this.configurationValue);
+      const initialInterface = pickPtpInterface(device);
+      await claimWithReset(device, initialInterface.interfaceNumber, this.configurationValue);
+      let iface = pickPtpInterface(device);
       transport = this.transportFactory(device, iface.endpointIn, iface.endpointOut, {
         interfaceNumber: iface.interfaceNumber,
       });
       session = this.sessionFactory(transport);
-      await openSessionWithStaging(session, opts.signal);
-    }
-    const port = new WebUsbSessionPort(session);
-    let deviceInfo: DeviceInfo;
-    try {
-      deviceInfo = await port.getDeviceInfo(opts.signal);
+      try {
+        await openSessionWithStaging(session, opts.signal);
+      } catch (err) {
+        if (nameOf(err) === "AbortError") throw err;
+        if (!(err instanceof LatentError) || err.stage !== "open") throw err;
+        await disposeSessionTransport(session, transport);
+        cleanedUp = true;
+        iface = await recoverFromOpenSessionFailure(device, this.configurationValue);
+        transport = this.transportFactory(device, iface.endpointIn, iface.endpointOut, {
+          interfaceNumber: iface.interfaceNumber,
+        });
+        session = this.sessionFactory(transport);
+        cleanedUp = false;
+        await openSessionWithStaging(session, opts.signal);
+      }
+      const activeTransport = transport;
+      const activeSession = session;
+      const port = new WebUsbSessionPort(activeSession);
+      let deviceInfo: DeviceInfo;
+      try {
+        deviceInfo = await port.getDeviceInfo(opts.signal);
+      } catch (err) {
+        await disposeSessionTransport(activeSession, activeTransport);
+        cleanedUp = true;
+        throw err;
+      }
+
+      let disposed = false;
+      const result: DriverConnectResult = {
+        port,
+        deviceInfo,
+        ...(device.serialNumber ? { usbSerialNumber: device.serialNumber } : {}),
+        dispose: async () => {
+          if (disposed) return;
+          disposed = true;
+          await disposeSessionTransport(activeSession, activeTransport);
+        },
+      };
+
+      this.activeResult = result;
+      this.activeSession = activeSession;
+      this.activeProductId = device.productId;
+      this.activeUsbSerialNumber = device.serialNumber ?? undefined;
+      completed = true;
+      return result;
     } catch (err) {
-      await disposeSessionTransport(session, transport);
+      if (!completed && !cleanedUp && session && transport) {
+        await disposeSessionTransport(session, transport);
+      } else if (!completed && !cleanedUp) {
+        await closeDevice(device);
+      }
       throw err;
     }
-
-    let disposed = false;
-    const result: DriverConnectResult = {
-      port,
-      deviceInfo,
-      ...(device.serialNumber ? { usbSerialNumber: device.serialNumber } : {}),
-      dispose: async () => {
-        if (disposed) return;
-        disposed = true;
-        await disposeSessionTransport(session, transport);
-      },
-    };
-
-    this.activeResult = result;
-    this.activeSession = session;
-    this.activeProductId = device.productId;
-    this.activeUsbSerialNumber = device.serialNumber ?? undefined;
-    return result;
   }
 
   async disconnect(): Promise<void> {
@@ -371,11 +390,20 @@ async function disposeSessionTransport(
   try {
     await session.close();
   } catch {
-    try {
-      await transport.close();
-    } catch {
-      // best-effort cleanup
-    }
+    // keep cleanup best-effort
+  }
+  try {
+    await transport.close();
+  } catch {
+    // best-effort cleanup
+  }
+}
+
+async function closeDevice(device: USBDevice): Promise<void> {
+  try {
+    if (device.opened) await device.close();
+  } catch {
+    // best-effort cleanup
   }
 }
 

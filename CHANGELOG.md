@@ -7,7 +7,34 @@ launch).
 
 ## [Unreleased]
 
-No unreleased changes yet.
+### Added
+
+- Self-contained recipe URL share links that import and select a recipe from
+  `?share=...#library`, excluding structured reasoning from the shared payload.
+- Recipe genealogy display in the detail metadata for recipes derived from a
+  parent recipe.
+- macOS WebUSB camera release runbook covering `ptpcamerad`, `icdd`, stale
+  Chromium WebUSB sessions, clean-profile recovery, restore commands, and
+  verification steps.
+
+### Fixed
+
+- macOS camera claim-collision recovery now points at both macOS camera daemons
+  and stale browser sessions instead of only Image Capture.
+- macOS setup retry now reopens the WebUSB picker instead of silently reusing a
+  stale paired device.
+- macOS setup copy now includes a camera power-cycle step, and advanced setup
+  suspends live camera daemons because `launchctl disable` can leave existing
+  processes running.
+- Optional local macOS camera helper can expose daemon status plus one-click
+  release/restore actions to the setup wizard during hardware QA.
+- When macOS camera services are left disabled/suspended, a compact restore
+  control remains available outside the setup wizard.
+- Failed WebUSB connect attempts now clean up partially opened transports or raw
+  USB devices.
+- Camera slot reads now emit partial results and slot-level failures, with a
+  timeout for stuck slots instead of leaving the UI indefinitely in the scanning
+  state.
 
 ## [0.1.0] - 2026-05-05
 

@@ -81,6 +81,24 @@ describe("<RecipeDetail />", () => {
     expect(screen.getByText("editorial, neutral")).toBeInTheDocument();
   });
 
+  it("shows the parent recipe name when genealogy metadata is available", () => {
+    const child: RecipeType = {
+      ...sample,
+      id: "66666666-6666-4666-8666-666666666666",
+      name: "Editorial Negative Copy",
+      parentRecipeId: sample.id,
+    };
+    useRecipesStore.setState({
+      recipes: [sample, child],
+      selectedRecipeId: child.id,
+    });
+
+    render(<RecipeDetail recipe={child} />);
+
+    expect(screen.getByText("Parent recipe")).toBeInTheDocument();
+    expect(screen.getByText("Editorial Negative")).toBeInTheDocument();
+  });
+
   it("renames the selected recipe from the detail header", () => {
     const renameRecipe = vi.spyOn(useRecipesStore.getState(), "renameRecipe");
     render(<RecipeDetail recipe={sample} />);
@@ -111,11 +129,30 @@ describe("<RecipeDetail />", () => {
     expect(parsed.filmSimulation).toBe("ClassicNegative");
   });
 
+  it("copies a self-contained recipe share URL", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    window.history.replaceState(null, "", "/?theme=dark#library");
+
+    render(<RecipeDetail recipe={sample} />);
+    fireEvent.click(screen.getByRole("button", { name: /copy share link/i }));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledTimes(1);
+    });
+    const copiedUrl = new URL(writeText.mock.calls[0]![0] as string);
+    expect(copiedUrl.searchParams.get("theme")).toBe("dark");
+    expect(copiedUrl.searchParams.get("share")).toBeTruthy();
+    expect(copiedUrl.hash).toBe("#library");
+  });
+
   it("download JSON creates a recipe file download", () => {
     const createObjectURL = vi.fn(() => "blob:recipe");
     const revokeObjectURL = vi.fn();
     Object.assign(URL, { createObjectURL, revokeObjectURL });
-    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
 
     render(<RecipeDetail recipe={sample} />);
     fireEvent.click(screen.getByRole("button", { name: /download .json/i }));
@@ -131,13 +168,9 @@ describe("<RecipeDetail />", () => {
     const walkthroughBtn = screen.getByRole("button", {
       name: /set up on camera/i,
     });
-    expect(
-      screen.queryByText(/follow these steps/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/follow these steps/i)).not.toBeInTheDocument();
     fireEvent.click(walkthroughBtn);
-    expect(
-      screen.getByText(/follow these steps/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/follow these steps/i)).toBeInTheDocument();
   });
 
   it("starts a RAF preview for the current recipe from the detail action", () => {
