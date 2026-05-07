@@ -93,13 +93,32 @@ Dove Latent deve andare:
 nvm use                   # Node 22, pinnato dal repo
 npm install
 npm run validate          # typecheck + lint + test + licenze + lockstep
-cd apps/web
-npm run dev               # Vite su http://localhost:5173
+npm run dev:macos         # Web app + helper locale macOS per la camera
 ```
 
-Apri `http://localhost:5173` in Chrome, Edge o Arc. WebUSB funziona solo su
+Apri `http://127.0.0.1:5173/` in Chrome, Edge o Arc. WebUSB funziona solo su
 `localhost` o HTTPS. La libreria funziona senza hardware; i flussi camera
 richiedono un corpo Fujifilm in modalita' USB/PTP.
+
+`npm run dev:macos` avvia i due processi locali necessari per lo sviluppo
+hardware su macOS:
+
+- `http://127.0.0.1:5173/` - app web Vite.
+- `http://127.0.0.1:5174/` - helper locale macOS per la camera.
+
+L'helper e' volutamente locale. Il browser non puo' eseguire `launchctl`,
+sospendere `ptpcamerad`/`icdd` o ripristinare i servizi camera di macOS da
+solo, quindi Latent usa un helper su localhost per esporre nell'app azioni
+esplicite di Release e Restore. Ferma lo stack con `Ctrl+C`; se durante il
+test hai rilasciato i servizi camera macOS, usa il controllo Restore nell'app
+prima di scollegare tutto.
+
+Per lavoro solo browser, senza controllo dei servizi camera, puoi ancora
+avviare direttamente l'app:
+
+```bash
+npm --workspace @latent/web run dev -- --host 127.0.0.1
+```
 
 ## Note hardware
 

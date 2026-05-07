@@ -21,6 +21,7 @@
     "apps/*"
   ],
   "scripts": {
+    "dev:macos": "tsx scripts/dev-macos.ts",
     "lint": "eslint --no-error-on-unmatched-pattern packages apps",
     "format": "prettier --write packages apps",
     "format:check": "prettier --check packages apps",

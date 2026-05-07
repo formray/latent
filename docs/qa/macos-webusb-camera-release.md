@@ -109,15 +109,15 @@ Fixed in the app:
 
 Implementation map:
 
-| Area | Files | Behavior |
-| --- | --- | --- |
-| macOS recovery UI | `apps/web/src/components/camera/CameraConnect.tsx`, `apps/web/src/components/camera/MacosSetupWizard.tsx` | Setup is reachable from the collision state and shows commands for both `ptpcamerad` and `icdd`; advanced mode suspends live daemon processes. |
-| macOS recovery copy | `apps/web/src/i18n/en.ts`, `apps/web/src/i18n/it.ts` | Copy now says macOS or another browser session may own the camera, avoiding a false single-cause Image Capture diagnosis. |
-| Picker retry | `packages/camera-connection/src/manager.ts` | `MACOS_SETUP_ATTEMPTED` reconnects with `autoSelectPaired: false`, forcing the browser picker and avoiding stale paired-device reuse. |
-| Failed connect cleanup | `packages/camera-connection/src/drivers/webusb.ts` | Failed connect attempts close partially opened PTP transports or raw USB devices. |
-| Preset read guardrail | `packages/camera-connection/src/manager.ts`, `apps/web/src/stores/camera.ts`, `apps/web/src/components/camera/CameraRecipesPanel.tsx` | Slot reads emit snapshots, record per-slot failures, and time out stuck reads instead of leaving the UI in permanent scanning. |
-| Local macOS helper | `scripts/macos-camera-helper.ts`, `apps/web/src/lib/macos-camera-helper.ts` | Optional localhost helper reads daemon status and runs release/restore actions from buttons in the setup wizard. |
-| Regression tests | `packages/camera-connection/tests/manager.test.ts`, `packages/camera-connection/tests/webusb-driver.test.ts`, `apps/web/tests/CameraConnect.test.tsx`, `apps/web/tests/macos-setup-wizard.test.tsx`, `apps/web/tests/CameraRecipesPanel.test.tsx` | Tests cover picker forcing, cleanup, command text, setup state, partial preset failures, and stuck-slot timeout. |
+| Area                   | Files                                                                                                                                                                                                                                             | Behavior                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| macOS recovery UI      | `apps/web/src/components/camera/CameraConnect.tsx`, `apps/web/src/components/camera/MacosSetupWizard.tsx`                                                                                                                                         | Setup is reachable from the collision state and shows commands for both `ptpcamerad` and `icdd`; advanced mode suspends live daemon processes. |
+| macOS recovery copy    | `apps/web/src/i18n/en.ts`, `apps/web/src/i18n/it.ts`                                                                                                                                                                                              | Copy now says macOS or another browser session may own the camera, avoiding a false single-cause Image Capture diagnosis.                      |
+| Picker retry           | `packages/camera-connection/src/manager.ts`                                                                                                                                                                                                       | `MACOS_SETUP_ATTEMPTED` reconnects with `autoSelectPaired: false`, forcing the browser picker and avoiding stale paired-device reuse.          |
+| Failed connect cleanup | `packages/camera-connection/src/drivers/webusb.ts`                                                                                                                                                                                                | Failed connect attempts close partially opened PTP transports or raw USB devices.                                                              |
+| Preset read guardrail  | `packages/camera-connection/src/manager.ts`, `apps/web/src/stores/camera.ts`, `apps/web/src/components/camera/CameraRecipesPanel.tsx`                                                                                                             | Slot reads emit snapshots, record per-slot failures, and time out stuck reads instead of leaving the UI in permanent scanning.                 |
+| Local macOS helper     | `scripts/macos-camera-helper.ts`, `apps/web/src/lib/macos-camera-helper.ts`                                                                                                                                                                       | Optional localhost helper reads daemon status and runs release/restore actions from buttons in the setup wizard.                               |
+| Regression tests       | `packages/camera-connection/tests/manager.test.ts`, `packages/camera-connection/tests/webusb-driver.test.ts`, `apps/web/tests/CameraConnect.test.tsx`, `apps/web/tests/macos-setup-wizard.test.tsx`, `apps/web/tests/CameraRecipesPanel.test.tsx` | Tests cover picker forcing, cleanup, command text, setup state, partial preset failures, and stuck-slot timeout.                               |
 
 Not fixable directly from the web app:
 
@@ -236,7 +236,16 @@ After suspending the daemons, physically reset the camera connection:
 
 ## Optional Local Helper
 
-For hardware QA, start the local helper before opening Latent:
+For hardware QA on macOS, the simplest path is the combined development stack:
+
+```bash
+npm run dev:macos
+```
+
+This starts the Vite app at `http://127.0.0.1:5173/` and the local helper at
+`http://127.0.0.1:5174/`.
+
+If the web app is already running, you can start only the local helper:
 
 ```bash
 npm run macos-camera-helper
@@ -329,7 +338,7 @@ Latent should support this runbook with product behavior:
 - the macOS setup wizard uses `killall ptpcamerad icdd`, not only
   `ptpcamerad`;
 - advanced setup uses `killall -STOP ptpcamerad icdd` because `launchctl
-  disable` can leave existing daemon processes running;
+disable` can leave existing daemon processes running;
 - setup copy asks for a camera power-cycle after the release command;
 - after setup confirmation, the connection manager reopens the WebUSB picker
   instead of silently reusing a stale paired device;
