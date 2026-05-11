@@ -14,9 +14,9 @@
   },
   "dependencies": {
     "@latent/camera-connection": "0.1.0",
-    "@latent/recipe-schema": "0.1.0",
     "@latent/ptp-fuji": "0.1.0",
     "@latent/ptp-fuji-webusb": "0.1.0",
+    "@latent/recipe-schema": "0.1.0",
     "clsx": "^2",
     "react": "^19",
     "react-dom": "^19",
@@ -31,7 +31,7 @@
     "@vitejs/plugin-react": "^4",
     "@vitest/coverage-v8": "^2.1.9",
     "jsdom": "^25",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.3.0",
     "vite": "^6",
     "vitest": "^2"
   }
