@@ -25,6 +25,6 @@
     "test": "vitest run --dir tests"
   },
   "dependencies": {
-    "zod": "^4"
+    "zod": "^4.4.3"
   }
 }
