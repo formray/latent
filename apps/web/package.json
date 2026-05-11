@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "@latent/camera-connection": "0.1.0",
-    "@latent/recipe-schema": "0.1.0",
     "@latent/ptp-fuji": "0.1.0",
     "@latent/ptp-fuji-webusb": "0.1.0",
+    "@latent/recipe-schema": "0.1.0",
     "clsx": "^2",
-    "react": "^19",
-    "react-dom": "^19",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "zustand": "^5"
   },
   "devDependencies": {
