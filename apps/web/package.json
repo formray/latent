@@ -14,19 +14,19 @@
   },
   "dependencies": {
     "@latent/camera-connection": "0.1.0",
-    "@latent/recipe-schema": "0.1.0",
     "@latent/ptp-fuji": "0.1.0",
     "@latent/ptp-fuji-webusb": "0.1.0",
+    "@latent/recipe-schema": "0.1.0",
     "clsx": "^2",
-    "react": "^19",
-    "react-dom": "^19",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "zustand": "^5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4",
     "@testing-library/jest-dom": "^6",
     "@testing-library/react": "^16",
-    "@types/react": "^19",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
     "@vitest/coverage-v8": "^2.1.9",
